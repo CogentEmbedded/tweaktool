@@ -1,0 +1,24 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>Tweak.qml</file>
+        <file>TweaksPage.qml</file>
+        <file>TweakScalar.qml</file>
+        <file>AutoSelectControl.qml</file>
+        <file>TweakLabel.qml</file>
+        <file>images/cogent-logo.png</file>
+        <file>images/tweak-icon.png</file>
+        <file>TweakToggle.qml</file>
+        <file>ConnectionsPage.qml</file>
+        <file>images/button-minus.png</file>
+        <file>images/button-plus.png</file>
+        <file>images/button-list.png</file>
+        <file>images/button-grid.png</file>
+        <file>TweakToolButton.qml</file>
+        <file>images/button-favorites-add.png</file>
+        <file>images/button-favorites-remove.png</file>
+        <file>images/tree-favorites.png</file>
+        <file>images/tree-connection.png</file>
+        <file>images/button-clear-all.png</file>
+    </qresource>
+</RCC>

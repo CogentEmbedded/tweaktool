@@ -1,0 +1,53 @@
+#******************************************************************************
+#
+# Doxygen configuration file for documentation generation
+#
+# Copyright (c) 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+#******************************************************************************
+
+PROJECT_NAME           = @DOXYGEN_TITLE@
+OUTPUT_DIRECTORY       = @DOXYGEN_OUTPUT_DIRECTORY@
+INPUT                  = @DOXYGEN_INPUT@
+USE_MDFILE_AS_MAINPAGE = @CMAKE_SOURCE_DIR@/README.md
+PROJECT_LOGO           = @CMAKE_SOURCE_DIR@/docs/images/cogent-embedded.png
+EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@/examples
+PROJECT_NUMBER         = @PROJECT_NUMERIC_VERSION@
+GENERATE_MAN           = NO
+GENERATE_LATEX         = NO
+MAN_EXTENSION          =.3
+DISABLE_INDEX          = NO
+GENERATE_TREEVIEW      = YES
+SHOW_FILES             = YES
+HIDE_UNDOC_CLASSES     = YES
+SOURCE_BROWSER         = NO
+INLINE_SOURCES         = NO
+EXTRACT_LOCAL_CLASSES  = NO
+ALPHABETICAL_INDEX     = NO
+FULL_PATH_NAMES        = NO
+COMPACT_LATEX          = YES
+EXTRA_PACKAGES         = amsmath
+MARKDOWN_SUPPORT       = YES
+IMAGE_PATH             = @CMAKE_SOURCE_DIR@/docs/images
+STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@
+HTML_EXTRA_STYLESHEET  = @CMAKE_SOURCE_DIR@/docs/customdoxygen.css
+UML_LOOK               = YES
+PLANTUML_JAR_PATH      = /opt/plantuml.jar

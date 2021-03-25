@@ -1,0 +1,12 @@
+UseTab: Never
+IndentWidth: 4
+BreakBeforeBraces: Allman
+NamespaceIndentation: Inner
+ForEachMacros:
+  - forever # avoids { wrapped to next line
+  - foreach
+  - Q_FOREACH
+  - BOOST_FOREACH
+IncludeCategories:
+  - Regex:           '^<Q.*'
+    Priority:        200

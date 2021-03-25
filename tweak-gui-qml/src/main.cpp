@@ -1,0 +1,88 @@
+/**
+ * @file main.cpp
+ * @ingroup GUI
+ *
+ * @brief Main QML GUI application.
+ *
+ * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ *
+ * This file is a part of Cogent Tweak Tool feature.
+ *
+ * It is subject to the license terms in the LICENSE file found in the top-level
+ * directory of this distribution or by request via http://cogentembedded.com
+ */
+
+#include "TweakTreeModel.hpp"
+#include "TweakQmlApp.hpp"
+
+#include <QCommandLineParser>
+#include <QDebug>
+#include <QDir>
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QQmlEngine>
+#include <QQmlFileSelector>
+#include <QQuickView>
+
+using namespace tweak2;
+
+namespace qqsfpm
+{
+extern void registerQQmlSortFilterProxyModelTypes();
+extern void registerFiltersTypes();
+extern void registerProxyRoleTypes();
+extern void registerSorterTypes();
+} // namespace qqsfpm
+
+void registerQmlTypes()
+{
+    qqsfpm::registerQQmlSortFilterProxyModelTypes();
+    qqsfpm::registerFiltersTypes();
+    qqsfpm::registerProxyRoleTypes();
+    qqsfpm::registerSorterTypes();
+
+    qmlRegisterType<TweakApplication>("TweakApplication", 1, 0, "TweakApplication");
+    qmlRegisterType<TweakTreeModel>("TweakApplication", 1, 0, "TweakTreeModel");
+    qmlRegisterType<TweakMetadata>("TweakApplication", 1, 0, "TweakMetadata");
+
+    qRegisterMetaType<QImage>();
+}
+
+tweak2::TweakApplication *initApplication(QGuiApplication &app)
+{
+    QCommandLineParser parser;
+    parser.setApplicationDescription(PROJECT_SUMMARY);
+    parser.addHelpOption();
+    parser.addVersionOption();
+
+    parser.process(app);
+
+    return new tweak2::TweakApplication();
+}
+
+int main(int argc, char *argv[])
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
+    QGuiApplication app(argc, argv);
+
+    app.setApplicationName("Tweak Tool V2");
+    app.setOrganizationName("Cogent Embedded Inc.");
+    app.setOrganizationDomain("v2.tweaktool.cogentembedded.com");
+    app.setApplicationVersion("2.0.0");
+    app.setQuitOnLastWindowClosed(true);
+    app.setWindowIcon(QIcon("qrc:/images/tweak-icon.png"));
+
+    registerQmlTypes();
+
+    tweak2::TweakApplication *tweakApp = initApplication(app);
+
+    QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty("tweak", tweakApp);
+    tweakApp = nullptr;
+
+    engine.load("qrc:/main.qml");
+    return app.exec();
+}

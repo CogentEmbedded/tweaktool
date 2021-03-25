@@ -1,0 +1,19 @@
+@PACKAGE_INIT@
+
+if (NOT @PROJECT_NAME@_FIND_COMPONENTS)
+    # server component is the most frequently used by user applications
+    set(@PROJECT_NAME@_FIND_COMPONENTS server)
+    message(STATUS "No components specified for @PROJECT_NAME@ package, using default: ${@PROJECT_NAME@_FIND_COMPONENTS}")
+endif()
+
+foreach(comp ${@PROJECT_NAME@_FIND_COMPONENTS})
+    find_package(@PROJECT_NAMESPACE@${comp}
+        ${_@PROJECT_NAMESPACE@_FIND_PARTS_QUIET}
+        ${_@PROJECT_NAMESPACE@_FIND_PARTS_REQUIRED}
+        PATHS "${CMAKE_CURRENT_LIST_DIR}" NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH
+    )
+
+    set(@PROJECT_NAMESPACE@_${comp}_FOUND ${@PROJECT_NAMESPACE@${comp}_FOUND})
+endforeach()
+
+check_required_components("@PROJECT_NAME@")

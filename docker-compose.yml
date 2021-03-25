@@ -1,0 +1,23 @@
+version: "3.3"
+services:
+  tweaktool_build_ubuntu_18_04:
+    image: tweaktool/build_ubuntu_18_04
+    container_name: container_tweaktool_ubuntu_18_04
+    build:
+      context: .
+      args:
+        - UBUNTU_VERSION=18.04
+        - WITH_DEFAULT_CMAKE=ON
+        - KITWARE_REPOSITORY=deb https://apt.kitware.com/ubuntu/ bionic main
+    tty: true
+
+  tweaktool_build_ubuntu_20_04:
+    image: tweaktool/build_ubuntu_20_04
+    container_name: container_tweaktool_ubuntu_20_04
+    build:
+      context: .
+      args:
+        - UBUNTU_VERSION=20.04
+        - WITH_DEFAULT_CMAKE=OFF
+        - KITWARE_REPOSITORY=deb https://apt.kitware.com/ubuntu/ focal main
+    tty: true

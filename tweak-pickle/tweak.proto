@@ -1,0 +1,142 @@
+/* Protocol description for Cogent Tweak 2.
+ *
+ * Copyright (c) 2020 Cogent Embedded Inc.
+ * ALL RIGHTS RESERVED.
+ *
+ * The source code contained or described herein and all documents related to the
+ * source code("Software") or their modified versions are owned by
+ * Cogent Embedded Inc. or its affiliates.
+ *
+ * No part of the Software may be used, copied, reproduced, modified, published,
+ * uploaded, posted, transmitted, distributed, or disclosed in any way without
+ * prior express written permission from Cogent Embedded Inc.
+ *
+ * Cogent Embedded Inc. grants a nonexclusive, non-transferable, royalty-free
+ * license to use the Software to Licensee without the right to sublicense.
+ * Licensee agrees not to distribute the Software to any third-party without
+ * the prior written permission of Cogent Embedded Inc.
+ *
+ * Unless otherwise agreed by Cogent Embedded Inc. in writing, you may not remove
+ * or alter this notice or any other notice embedded in Software in any way.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+syntax = "proto3";
+import "nanopb.proto";
+
+package tweak_pb;
+
+/* Variant value for transmission.
+ */
+message value {
+  oneof values {
+    bool is_null = 1;
+
+    bool scalar_bool = 2;
+
+    sint32 scalar_sint8 = 3;
+
+    sint32 scalar_sint16 = 4;
+
+    sint32 scalar_sint32 = 5;
+
+    sint64 scalar_sint64 = 6;
+
+    uint32 scalar_uint8 = 7;
+
+    uint32 scalar_uint16 = 8;
+
+    uint32 scalar_uint32 = 9;
+
+    uint64 scalar_uint64 = 10;
+
+    float scalar_float = 11;
+
+    double scalar_double = 12;
+  }
+}
+
+/* A model is a flat list of these items.
+ */
+message add_item {
+  /* Tweak id */
+  uint64 tweak_id = 1;
+
+  /* API references tweaks by this name */
+  string uri = 2;
+
+  /* Tweak current value */
+  value current_value = 3;
+
+  /* Detailed description */
+  string description = 4;
+
+  /* Representation details
+     recognizable by GUI.
+  */
+  string meta = 5;
+
+   /* Tweak default value */
+  value default_value = 6;
+}
+
+/* Body of "subscribe" request.
+ */
+message subscribe {
+  string uri_patterns = 1;
+}
+
+/* Body of singular change of tweak's current value.
+   Can go from server endpoint to client or vice versa.
+ */
+message change_item {
+  /* id provided by model.
+   */
+  uint64 tweak_id = 1;
+
+  /* new value.
+   */
+  value value = 2;
+}
+
+/* Body of "remove item" request.
+ */
+message remove_item {
+  /* Tweak id */
+  uint64 tweak_id = 1;
+}
+
+/* Envelope for messages being sent by client endpoint
+   to server endpoint.
+ */
+message client_node_message {
+  option (nanopb_msgopt).submsg_callback = true;
+
+  oneof request {
+    subscribe subscribe = 1;
+
+    change_item change_item = 2;
+  }
+}
+
+/* Envelope for messages being sent by server endpoint
+   to client endpoint.
+ */
+message server_node_message {
+  option (nanopb_msgopt).submsg_callback = true;
+
+  oneof request {
+    add_item add_item = 1;
+
+    change_item change_item = 2;
+
+    remove_item remove_item = 3;
+  }
+}

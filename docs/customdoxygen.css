@@ -1,0 +1,667 @@
+/*!******************************************************************************
+ *
+ * Custom CSS for Doxygen-based documentation
+ *
+ * Copyright (c) 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ ******************************************************************************/
+
+/* Custom fonts */
+@import url('https://fonts.googleapis.com/css?family=Open+Sans|Raleway');
+
+body, table, div, p, dl {
+  font: 400 16px/22px  'Open Sans',sans-serif;
+}
+
+p.reference, p.definition {
+  font: 400 16px/22px  'Open Sans',sans-serif;
+}
+.title {
+  font: 400 14px/28px Raleway,sans-serif;
+  color: #1675a9;
+  -webkit-font-feature-settings: "lnum"; 
+  -moz-font-feature-settings: "lnum"; 
+  font-feature-settings: "lnum"; 
+  font-size: 200%;
+  font-weight: 600;
+  padding-top: 20px;
+  margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color:#161616;
+  font-weight: 600;
+  font-family: 'Raleway';
+  -webkit-font-feature-settings: "lnum"; 
+  -moz-font-feature-settings: "lnum"; 
+  font-feature-settings: "lnum"; 
+  -webkit-transition: text-shadow 0.5s linear;
+  -moz-transition: text-shadow 0.5s linear;
+  -ms-transition: text-shadow 0.5s linear;
+  -o-transition: text-shadow 0.5s linear;
+  transition: text-shadow 0.5s linear;
+  margin-right: 15px;
+  padding: 5px 0px 5px 0px;
+}
+
+h1.glow, h2.glow, h3.glow, h4.glow, h5.glow, h6.glow {
+  background-color: #a4d0e8;
+  box-shadow: inset 0 0 0 5px #a4d0e8;
+  text-shadow: none;
+}
+
+a {
+  color: #1675a9;
+  text-decoration: underline;
+  font-weight: normal;
+  text-decoration: none;
+}
+
+.contents a:visited {
+  color: #002857;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: #002857;
+}
+
+pre.fragment {
+  display: block;
+  overflow: auto;
+  padding: 15px 20px 20px;
+  white-space: pre;
+  letter-spacing: .2px;
+  background: #fafafa;
+  font-size: 14px;
+  line-height: 1.5625;
+  -webkit-font-smoothing: antialiased;
+  border: none;
+}
+
+div.fragment {
+  padding: 0px;
+  margin: 4px 8px 4px 2px;
+  background-color: #fafafa;
+  border: 1px solid #e6e6e6;
+}
+
+div.line.glow {
+  background-color: #a4d0e8;
+  box-shadow: 0 0 10px #a4d0e8;
+}
+
+.memberdecls td.glow, .fieldtable tr.glow {
+  background-color: #a4d0e8;
+  box-shadow: 0 0 15px #a4d0e8;
+}
+
+.mdescLeft, .mdescRight,
+.memItemLeft, .memItemRight,
+.memTemplItemLeft, .memTemplItemRight, .memTemplParams {
+  background-color: ##fafafa;
+  border: none;
+  margin: 4px;
+  padding: 1px 0 0 8px;
+}
+
+.memtitle {
+  padding: 8px;
+  border: 1px solid #e6e6e6;
+  /*border-left: 1px solid #A8B8D9;*/
+  /*border-right: 1px solid #A8B8D9;*/
+  /*border-top-right-radius: 4px;*/
+  /*border-top-left-radius: 4px;*/
+  margin-bottom: -1px;
+  background-image:none;
+  background-repeat: repeat-x;
+  background-color: #fafafa;
+  line-height: 1.25;
+  font-weight: 300;
+  float:left;
+}
+
+.memitem.glow {
+ box-shadow: 0 0 15px #a4d0e8;
+}
+
+.memproto, dl.reflist dt {
+  border:1px solid #e6e6e6;
+  /*border-top: 1px solid #A8B8D9;*/
+  /*border-left: 1px solid #A8B8D9;*/
+  /*border-right: 1px solid #A8B8D9;*/
+  padding: 6px 0px 6px 0px;
+  color: #253555;
+  font-weight: bold;
+  /*text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.9);*/
+  background-color: #fafafa;
+  /* opera specific markup */
+  /*box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);*/
+  /*border-top-right-radius: 4px;*/
+  /* firefox specific markup */
+  -moz-box-shadow: rgba(0, 0, 0, 0.15) 5px 5px 5px;
+  -moz-border-radius-topright: 4px;
+  /* webkit specific markup */
+  -webkit-box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
+  -webkit-border-top-right-radius: 4px;
+
+}
+
+.overload {
+  font-family: monospace;
+  font-size: 65%;
+}
+
+.memdoc, dl.reflist dd {
+  border:1px solid #e6e6e6;
+/*        border-bottom: 1px solid #e6e6e6;      
+  border-left: 1px solid #e6e6e6;      
+  border-right: 1px solid #e6e6e6; */
+  padding: 6px 10px 2px 10px;
+  background-color: #fafafa;
+  border-top-width: 0;
+  background-repeat:repeat-x;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  background-image: none;
+  -webkit-box-shadow: none;
+
+}
+
+.arrow {
+  color: #343434;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: pointer;
+  font-size: 80%;
+  display: inline-block;
+  width: 16px;
+  height: 22px;
+}
+
+.icon {
+  font-family: Arial, Helvetica;
+  font-weight: bold;
+  font-size: 12px;
+  height: 14px;
+  width: 16px;
+  display: inline-block;
+  background-color: #728DC1;
+  color: white;
+  text-align: center;
+  border-radius: 4px;
+  margin-left: 2px;
+  margin-right: 2px;
+}
+
+.navpath ul
+{
+  font-size: 11px;
+  background-image:none;
+  background-repeat:repeat-x;
+  background-position: 0 -5px;
+  height:30px;
+  line-height:30px;
+  color:#8AA0CC;
+  border-top:solid 1px #e6e6e6;
+  overflow:hidden;
+  margin:0px;
+  padding:0px;
+}
+
+.navpath li
+{
+  list-style-type:none;
+  float:left;
+  padding-left:10px;
+  padding-right:15px;
+  background-image:url('bc_s.png');
+  background-repeat:no-repeat;
+  background-position:right;
+  color:#343434;
+}
+
+.navpath li.navelem a
+{
+  height:32px;
+  display:block;
+  text-decoration: none;
+  outline: none;
+  color: #343434;
+  font-family: 'Open Sans',sans-serif;
+  text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.9);
+  text-decoration: none;        
+}
+
+.navpath li.footer
+{
+  list-style-type:none;
+  float:right;
+  padding-left:10px;
+  padding-right:15px;
+  background-image:none;
+  background-repeat:no-repeat;
+  background-position:right;
+  color:#343434;
+  font-size: 8pt;
+}
+
+div.header
+{
+  background-repeat:repeat-x;
+  background-image: none;
+  margin:  0px;
+  border:none;
+  background-color: transparent;
+}
+
+#projectname
+{
+  font: 300% Raleway,sans-serif;
+  margin: 0px;
+  padding: 2px 0px;
+}
+
+#projectbrief
+{
+  font: 120% Open-Sans,sans-serif;
+  margin: 0px;
+  padding: 0px;
+}
+
+#projectnumber
+{
+  font: 50% Open-Sans,sans-serif;
+  margin: 0px;
+  padding: 0px;
+}
+
+#titlearea
+{
+  padding: 0px;
+  margin: 0px;
+  width: 100%;
+  border-bottom: none;
+}
+
+div.toc {
+  padding: 14px 25px;
+  background-color: #fafafa;
+  float: right;
+  height: auto;
+  margin: 0 20px 20px 20px;
+  width: 200px;
+  border: none;
+  border-radius: 0px;
+}
+
+div.toc li {
+  font: 14px/1.2 Open-Sans,sans-serif;
+  margin-top: 5px;
+  padding-top: 2px;
+  background: none;
+}
+
+div.toc h3 {
+  font: 14px/1.2 Open-Sans,sans-serif;
+  color: #272727;
+  border-bottom: 0 none;
+  margin: 0;
+}
+
+/*=============================NAVTREE.CSS Updates===============================================*/
+#nav-tree .children_ul {
+  margin:0px;
+  padding:0px;
+
+}
+
+#nav-tree ul {
+  list-style:none outside none;
+  margin:0px;
+  padding-left:20px;
+  padding-top: 20px;
+}
+
+#nav-tree li {
+  white-space:nowrap;
+  margin:3px;
+  padding:0px;
+}
+
+#nav-tree .selected {
+  background-repeat:repeat-x;
+  font-weight: bold;
+  background-image: none;
+  text-shadow: none;
+}
+
+#nav-tree a {
+  text-decoration:none;
+  padding-top: 6px;
+  padding-right: 5px;
+  padding-bottom: 6px;
+  margin:0px;
+  outline:none;
+  color:#343434;
+  line-height: 19.25px;
+}
+
+#nav-tree .label {
+  margin:0px;
+  padding:0px;
+  font: 14px 'Open Sans',sans-serif;
+}
+
+#nav-tree .label a {
+  padding:2px;
+}
+
+#nav-tree .selected a {
+  text-decoration:none;
+  color:#343434;
+  font-weight: bold;
+  background-image: none;
+}
+
+#side-nav {
+  padding:0 6px 0 0;
+  margin: 0px;
+  display:block;
+  position: absolute;
+  left: 0px;
+  width: 290px !important ;
+}
+
+.ui-resizable .ui-resizable-handle {
+  background-image:  none;
+  display:block;
+}
+
+.ui-resizable-e {
+  background-size:100%;
+  background-repeat:no-repeat;
+  background-attachment: scroll;
+  cursor:ew-resize;
+  height:100%;
+  right:0;
+  top:0;
+  width:6px;
+}
+
+#nav-tree {
+  background-image:none;
+  background-repeat:repeat-x;
+  background-color: #fafafa;
+  -webkit-overflow-scrolling : touch; /* iOS 5+ */
+  box-shadow: inset -1px 0 0 0 #e6e6e6;
+}
+
+/*=============================TABS.CSS Updates===============================================*/
+.sm-dox {
+  /*background-image: url("tab_b.png")*/
+}
+
+.sm-dox a, .sm-dox a:focus, .sm-dox a:hover, .sm-dox a:active {
+  padding: 0 12px;
+  padding-right: 43px;
+  font-family: "Open Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 36px;
+  text-decoration: none;
+  text-transform: uppercase;
+  color: #343434;
+  outline: 0
+  text-shadow: none;
+}
+
+.sm-dox a:hover {
+  background-repeat: repeat-x;
+  color: #1675a9;
+  -webkit-transition:color .2s ease-in;
+}
+
+.sm-dox ul a:hover {
+  background-repeat: repeat-x;
+  color: #1675a9;
+}
+
+.sm-dox {
+  padding: 20px 10px;
+  border-bottom:  solid 1px #e6e6e6;
+  line-height: 36px;
+  background-image: none;
+}
+
+.sm-dox a, .sm-dox a:focus, .sm-dox a:active, .sm-dox a:hover, .sm-dox a.highlighted {
+  padding: 0 12px;
+  background-repeat: repeat-x;
+  background-position: right;
+  -moz-border-radius: 0 !important;
+  -webkit-border-radius: 0;
+  border-radius: 0 !important;
+  background-image: none;
+  text-shadow: none;
+}
+
+.sm-dox a:hover {
+  background-repeat: repeat-x;
+  color: #1675a9;
+  text-shadow: none;
+}
+
+.sm-dox ul a:hover {
+  background-repeat: repeat-x;
+  color: #1675a9;
+  text-shadow: none;
+  background-image: none;
+}
+
+.sm-dox a:hover span.sub-arrow {
+  border-color: black transparent transparent transparent;
+}
+
+.sm-dox ul a:hover span.sub-arrow {
+  border-color: black transparent transparent white
+}
+
+
+.sm-dox a span.sub-arrow {
+  top: 50%;
+  margin-top: -2px;
+  right: 12px;
+  width: 0;
+  height: 0;
+  border-width: 4px;
+  border-style: solid dashed dashed dashed;
+  border-color: #283a5d transparent transparent transparent;
+  background: transparent;
+  -moz-border-radius: 0;
+  -webkit-border-radius: 0;
+  border-radius: 0
+}
+
+.sm-dox a.has-submenu {
+  padding-right: 24px
+}
+
+.sm-dox ul {
+  border: 1px solid #e6e6e6;
+  padding: 5px 0;
+  background: #fafafa;
+  -moz-border-radius: none !important;
+  -webkit-border-radius: none;
+  border-radius: none !important;
+  -moz-box-shadow: none;
+  -webkit-box-shadow: none; 
+  box-shadow: none; 
+}
+/*=============================SEARCH.CSS Updates===============================================*/
+#MSearchBox {
+  white-space : nowrap;
+  float: none;
+  margin-top: 8px;
+  right: 110px;
+  width: 270px;
+  height: 30px;
+  z-index: 102;
+}
+
+#MSearchBox .left
+{
+  display:block;
+  position:absolute;
+  left:10px;
+  padding: 15px
+  width:20px;
+  height:30px;
+  border: none;
+  background:none;
+}
+
+.left #MSearchSelect {
+  left:-5px;
+  top:5px;
+}
+
+.right #MSearchSelect {
+  right:15px;
+}
+
+#MSearchField {
+  display:block;
+  position:absolute;
+  height:30px;
+  border: solid 1px #e6e6e6;
+  /*border-bottom: none;*/
+  background:none;
+  width:140px;
+  margin-left:20px;
+  padding-left:4px;
+  color: #909090;
+  outline: none;
+  font: 12pt Open-Sans, sans-serif;
+  -webkit-border-radius: 0px;
+}
+
+#MSearchBox .right {
+  border: none;
+  background:none;
+  display:block;
+  position:absolute;
+  right:95px;
+  background-position:left;
+}
+
+#MSearchClose {
+  display: none;
+  position: absolute;
+  top: 5px;
+  background : none;
+  border: none;
+  margin: 0px 4px 0px 0px;
+  padding: 3px 0px;
+  outline: none;
+}
+
+.left #MSearchClose {
+  left: 5px;
+
+}
+
+.right #MSearchClose {
+  right: -15px;
+}
+
+/*---------------- Search filter selection */
+
+#MSearchSelectWindow {
+  display: none;
+  position: absolute;
+  left: 0; top: 0;
+  border: 1px solid #e6e6e6;
+  background-color: #F9FAFC;
+  z-index: 10001;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.SelectItem {
+  font: 12pt Open-Sans, sans-serif;
+  padding-left:  2px;
+  padding-right: 12px;
+  border: 0px;
+}
+
+a.SelectItem:hover {
+  color: #1675a9;
+  background-color: transparent;
+  outline-style: none;
+  text-decoration: none;
+  cursor: pointer;
+  display: block;
+}
+
+#MSearchResultsWindow {
+  margin-top: 12px;
+  margin-left: 18px;
+  display: none;
+  position: absolute;
+  left: 0; top: 0;
+  border: 1px solid #e6e6e6;
+  background-color: #fafafa;
+  z-index:10000;
+}
+
+.SREntry {
+  font-size: 12pt;
+  padding-left: 1ex;
+}
+
+.SRPage .SREntry {
+  font-size: 12pt;
+  padding: 1px 5px;
+}
+
+.SRSymbol {
+  font-weight: bold; 
+  color: #425E97;
+  font-family: Open-Sans, sans-serif;
+  text-decoration: none;
+  outline: none;
+}
+
+a.SRScope {
+  display: block;
+  color: #425E97; 
+  font-family: Open-Sans, sans-serif;
+  text-decoration: none;
+  outline: none;
+}
+
+.SRPage .SRStatus {
+  padding: 2px 5px;
+  font-size: 12pt;
+  font-style: normal;
+}

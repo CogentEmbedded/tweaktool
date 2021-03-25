@@ -1,0 +1,94 @@
+#!/usr/bin/expect -f
+
+# ##############################################################################
+#
+# Test fixture for command-line client of Cogent Tweak Tool.
+#
+# Copyright (c) 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+#
+# The source code contained or described herein and all documents related to the
+# source code("Software") or their modified versions are owned by Cogent
+# Embedded Inc. or its affiliates.
+#
+# No part of the Software may be used, copied, reproduced, modified, published,
+# uploaded, posted, transmitted, distributed, or disclosed in any way without
+# prior express written permission from Cogent Embedded Inc.
+#
+# Cogent Embedded Inc. grants a nonexclusive, non-transferable, royalty-free
+# license to use the Software to Licensee without the right to sublicense.
+# Licensee agrees not to distribute the Software to any third-party without the
+# prior written permission of Cogent Embedded Inc.
+#
+# Unless otherwise agreed by Cogent Embedded Inc. in writing, you may not remove
+# or alter this notice or any other notice embedded in Software in any way.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# ##############################################################################
+
+set timeout 3
+set TWEAK_APP_CL [lindex $argv 0]
+set MOCK_SERVER [lindex $argv 1]
+
+set prompt "id : .+ >"
+
+set port [expr {32769 + round(rand() * 20000)}]
+set uri "tcp://0.0.0.0:$port"
+set connection_type "nng"
+
+## Check for expected output to be valid
+# param[in] arg Expected output
+proc expect_output { arg1 } {
+    expect {
+        -regexp $arg1 { }
+        timeout { error "" "\nTimout on waiting for '$arg1'\n" }
+    }
+}
+
+## Expect a command-line prompt
+proc expect_prompt {} {
+    global prompt
+
+    expect {
+        -re $prompt { }
+        timeout { error "Error waiting for the prompt" }
+    }
+}
+
+## Run a command but do not expect any output (yet)
+proc run_command {command} {
+    expect_prompt
+    send "$command\r"
+}
+
+## Start the server with the selected connection_type, uri and port
+proc run_server {} {
+    global connection_type
+    global uri
+    global mock_server_spawn_id
+    global MOCK_SERVER
+
+    spawn $MOCK_SERVER -t $connection_type -u $uri -L /dev/null
+    set mock_server_spawn_id $spawn_id
+
+    send_user "\nStarted $MOCK_SERVER: $mock_server_spawn_id\n"
+}
+
+# Stop the server and check it produces eof
+proc stop_server {} {
+    global mock_server_spawn_id
+    global MOCK_SERVER
+
+    set spawn_id $mock_server_spawn_id
+    send \x03
+    expect {
+        eof { }
+        timeout { exit 1 }
+    }
+    send_user "\nClosed $MOCK_SERVER: $mock_server_spawn_id\n"
+}

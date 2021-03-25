@@ -1,0 +1,162 @@
+= Tweak Tool User Manual
+:idprefix:
+:idseparator: -
+:sectanchors:
+:sectlinks:
+:sectnumlevels: 6
+:sectnums:
+:toc: macro
+:toclevels: 6
+:toc-title:
+
+image:./images/cogent-embedded.png[cogent-embedded]
+
+toc::[]
+
+== About
+Tweak Tool is a universal tool for configuring embedded software.
+
+Server side is written in compatrible subset of C99 and requires only POSIX compatible IO and threading primitives from host system.
+It is designed to support multiple transports: TCP/IP, serial ports, CAN bus. Writting of new transport plugins is simple and requires only four
+function implementations. It uses protobuf (https://developers.google.com/protocol-buffers) for
+serealization/deserialization. 
+
+There are two client programs in distribution: REPL
+based console client and Qt/QML GUI client. User could write new client software using
+provided client library. 
+
+Current release of tweaktool uses point-to-point full duplex
+connection. Multiple clients can't connect to the same board and work concurrently at
+the moment.
+
+== GUI Client
+
+Launch the client:
+
+....
+tweaktool-gui 
+....
+
+The tool has 3 sections:
+
+* Create new connections in the link:#connections[Connections] tab.
+* Setup parameters in the link:#tweaks[Tweaks] tab.
+* link:#scripts[Scripts.]
+
+=== Connections
+
+image:./images/connections-page.png[width=600] 
+
+GUI client could connect to multiple boards simultaneously.
+
+*To add a new connection:*
+
+* Click *'Add'* button (1).
+
+* Fill out the following fields:
+
+** *Name*
+  
+** *Connect automatically* +
+Set "Connect automatically" checkbox to create respective connection 
+automatically at program startup.
+
+** *URI* +
+URI stands for network interface. Format of this string is defined by pespective 
+transport backend plugin. For Nng + point-to-point + TCP it is a string has format 
+tcp://ip_number:port/.
+
+** *Context type* +
+Context type stands for transport backend plugin, only
+  nng/point-to-point is supported in this release. Nng make use of nng library
+  which is a MIT-licensed portable library for C message passing
+  (https://github.com/nanomsg/nng).
+
+** *Role* +
+Role stands for additional parameters passed to transport backend plugin that
+  could alter its behaviour. For Nng + point-to-point + TCP it is whether client acts
+  as an initiator of connection whilst board listens inbound TCp connections at
+  specified port.
+
+* Click *'Connect'* button (3).
+
+* Check if the indicator *'Disconnected'* changed to *'Connected'*.
+
+image:./images/conn-dis.png[width=600] 
+
+*To disconnect:*
+
+* Click *'Disconnect'* button (5) of the connection you'd like to disconnect.
+
+* Check if the indicator *'Connected'* changed to *'Disconnected'*.
+
+*To remove a connection:*
+
+* Click the *'Cross'* button (4) near *'Connected'*/*'Disconnected'* indicator of the connection you'd like to remove.
+
+*To remove all connections:*
+
+* Click the *'Clear'* button (2).
+
+=== Tweaks
+
+Tweaks are parameters exported by embedded software for managing by this program using.
+
+At this moment, only atomic types for parameters are supported: flags, integers 
+and single and double precision floating point numbers. Vector data types are planned for future
+release. 
+
+Each tweak is internally a structure having these fields:
+
+* *URI tweak identifier* +
+A unique itenfifier of a tweak within a board.
+* *Meta* +
+Internal string describing GUI control to interface with user. Internal, handled by GUI program.
+* *Description* +
+Textual user readable information describing function of a tweak. It's displayed in the GUI as a hint when mouse float over a URI field.
+ * *Default value* +
+ Builtin initial value of a tweak. This GUI doesn't expose this value to user.
+ * *Current value* +
+ The only value that could be changed after tweak has been created by embedded software.
+ Both client and server could do that. However, there could be an artifical restriction by the board that prohibits
+ user from altering some values that are output-only by design.
+
+_Note: only parameters with slider or switch button are changeable, the others are read only._
+
+image:./images/tweaks-page.png[width=600] 
+
+Use section *Favorites* for quick access to some of the parameters.
+
+image:./images/empty_favs.png[width=600] 
+
+* Add a parameter to *Favotites* by clicking the *'Star +'* button.
+
+image:./images/favs.png[width=600] 
+
+* Remove a parameter from the *Favotites* by clicking the *'Star -'* button (1).
+
+* Clear the *Favotites* section by clicking the *'Clear All Favorites'* button (2).
+
+=== Scripts
+
+The feature is not supported in this release.
+In future releases, user would be able
+to run JavaScript batches performing complex operations on large gooups of tweaks.
+
+== Command-line Client
+
+Launch the client:
+
+....
+tweak-app-cl [-u uri]
+....
+
+_Note: by default uri is tcp://0.0.0.0:7777/_
+
+More details are in link:./tweak-app-cl.asciidoc[Tweak Console Client
+document.]
+
+== Troubleshooting
+
+At this moment, there's one known bug when GUI sometimes doesn't restore TCP
+connection after board reboot.

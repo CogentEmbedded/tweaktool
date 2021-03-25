@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Encoding=UTF-8
+Name=Tweak Tool
+Comment=Cogent Tweak Tool
+Exec=@GUI_TOOL_NAME@
+Icon=@ICON_NAME@
+Terminal=false

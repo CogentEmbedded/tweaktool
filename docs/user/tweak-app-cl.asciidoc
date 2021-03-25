@@ -1,0 +1,107 @@
+= Tweak Console Client
+:idprefix:
+:idseparator: -
+:sectanchors:
+:sectlinks:
+:sectnumlevels: 6
+:sectnums:
+:toc: macro
+:toclevels: 6
+:toc-title:
+
+image:./images/cogent-embedded.png[cogent-embedded]
+
+toc::[]
+
+== How to start the client application
+
+Client is a REPL console that connects to a tweak server on startup and
+maintains the connection during entire lifecycle of this program. If
+Tweak server is being disconnected, program tries to restore connection.
+
+== Program arguments
+
+Program is being started with these arguments:
+
+....
+tweak-app-cl [-t connection_type] [-p params] [-u uri]
+....
+
+All arguments are optional.
+
+* connection_type: One of "nng", "serial". Type is case-sensitive.
+* params: Additional params for backend separated by semicolon ';'. Only
+mutually exclusive "role=server" and "role=client" are currently
+recognized for IP-based connections.
+* uri: Connection URI for the given network backend.
+
+By default connection_type is "nng", params argument is "role=client",
+and uri is tcp://0.0.0.0:7777/.
+
+== Operation
+
+* User start the application with arguments described in previous
+section.
+* Asks user to enter a new value, User enters a new value, it is sent to
+the server. No ack is available so nothing is printed on the screen.
+* On new value coming from the server it is printed on the screen after
+select command was run
+* If user wants to enter new value but server connection has dropped/is
+down we show a message:
++
+Editing disabled, connection dropped.
+
+== Supported commands
+
+....
+list [re][filter]
+select [uri]
+set [uri] [value]
+set [value]
+get [uri]
+get
+load filename
+save filename
+exit
+....
+
+* Spaces in arguments
+
+This program recognizes backslash as an escape char, therefore user might use _select /a b c/d e f_ to access item with an uri /a b c/d e f.
+
+* list
+
+This function is invoked by _list_ command followed by optional pattern.
+It displays all items whose uris matches provided pattern. If pattern is
+omitted, no filter is applied. User might use POSIX regex be prefixing
+filter with re marker, for instance _list re [RWX]/a_ shall match R/a,
+W/a and X/a.
+
+* select
+
+Select one item to access it with short _set_ and _get_ commands.
+
+* set
+
+This command sends updated value to a server. Two variants of this
+command available: with three arguments and with two arguments. Former
+command affects value of an item provided explicitly by uri, latter
+affects value of an item previously selected with _select_ command.
+
+* get
+
+This command displays most recent value of an item. Like _set_, it has
+two variations: one allowing to pick an item explicitly by its uri and
+one that gives value of an item previously selected by _select_ command.
+Former one takes a single _uri_ argument, latter doesn't require any
+argument at all.
+
+* load
+
+This command allows to run a batch consisting of all commands provided
+by this REPL. It has mandatory _filename_ argument.
+
+* save
+
+This command allows to store a dump of the current state of a server as
+a sequence of _set_ commands. It has mandatory _filename_ argument.
