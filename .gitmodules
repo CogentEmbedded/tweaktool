@@ -1,0 +1,9 @@
+[submodule "extern/nanopb"]
+	path = extern/nanopb
+	url = https://github.com/nanopb/nanopb.git
+[submodule "extern/uthash"]
+	path = extern/uthash
+	url = https://github.com/CogentEmbedded/uthash.git
+[submodule "extern/SortFilterProxyModel"]
+	path = extern/SortFilterProxyModel
+	url = https://github.com/oKcerG/SortFilterProxyModel.git
