@@ -29,6 +29,13 @@ class TweakMetadata : public QObject
     Q_OBJECT
 
 public:
+    enum class ControlType {
+        GENERIC,
+        TOGGLE,
+        ENUM
+    };
+    Q_ENUM(ControlType)
+
     QString m_tweakType;
     bool m_readonly = false;
 
@@ -39,9 +46,8 @@ public:
     QString m_raw = "";
 
     quint32 m_decimals = 3;
-
-    bool m_toggle = false;
-
+    ControlType m_controlType;
+    QStringList m_options;
 public:
     Q_PROPERTY(QString tweakType MEMBER m_tweakType CONSTANT)
     Q_PROPERTY(bool readonly MEMBER m_readonly CONSTANT)
@@ -50,7 +56,8 @@ public:
     Q_PROPERTY(double step MEMBER m_step CONSTANT)
     Q_PROPERTY(QString raw MEMBER m_raw CONSTANT)
     Q_PROPERTY(quint32 decimals MEMBER m_decimals CONSTANT)
-    Q_PROPERTY(bool toggle MEMBER m_toggle CONSTANT)
+    Q_PROPERTY(ControlType controlType MEMBER m_controlType CONSTANT)
+    Q_PROPERTY(QStringList options MEMBER m_options CONSTANT)
 };
 
 
@@ -85,6 +92,6 @@ public:
 
 }
 
-Q_DECLARE_METATYPE(tweak2::TweakMetadata*);
+Q_DECLARE_METATYPE(tweak2::TweakMetadata*)
 
 #endif // TWEAKMETADATAPARSER_HPP

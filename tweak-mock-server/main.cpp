@@ -12,7 +12,7 @@
  * directory of this distribution or by request via www.cogentembedded.com
  */
 
-#include <tweak2.h>
+#include <tweak2/tweak2.h>
 #include <tweak2/log.h>
 
 #include <algorithm>

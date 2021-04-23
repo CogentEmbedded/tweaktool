@@ -34,7 +34,7 @@ set(LIBRARY_SOVERSION 0)
 # Dependencies
 # ------------------------------------------------------------------------------
 
-set(${LIBRARY_NAME}_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/tweak2.h)
+set(${LIBRARY_NAME}_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/tweak2/tweak2.h)
 
 set(${LIBRARY_NAME}_DEPENDENCIES ${PROJECT_NAMESPACE}::common
                                  ${PROJECT_NAMESPACE}::app)

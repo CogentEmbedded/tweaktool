@@ -39,7 +39,13 @@ typedef enum {
   TWEAK_MODEL_INDEX_NO_MEMORY,
 } tweak_model_index_result;
 
-struct tweak_model_uri_to_tweak_id_index_base {};
+struct tweak_model_uri_to_tweak_id_index_base {
+  int dummy; /* Empty structures are implementation specific. */
+             /* ANSI ISO C99 doesn't forbid nor explicitly allow them. */
+             /* GreenHills C compiler, MSVC and GCC in pedantic mode */
+             /* would issue a warning or an error */
+             /* if this dummy placeholder is removed. */
+};
 
 typedef struct tweak_model_uri_to_tweak_id_index_base *tweak_model_uri_to_tweak_id_index;
 /**

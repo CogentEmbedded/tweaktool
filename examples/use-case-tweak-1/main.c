@@ -1,10 +1,10 @@
 /**
  * @file main.c
  * @ingroup tweak-examples
- * 
+ *
  * @brief Clean and nice simple example.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
  *
  * This file is a part of Cogent Tweak Tool feature.
  *
@@ -13,23 +13,21 @@
  */
 
 #define _GNU_SOURCE
-#include <fcntl.h>
-#include <tweak.h>
-#include <string.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <signal.h>
-#include <unistd.h>
 #include <math.h>
 #include <poll.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <tweak2/tweak2.h>
+#include <unistd.h>
 
 /**
  * @brief Print log_message message with newline in the end.
  * @details Arguments are same as in @ref printf.
  */
-void __attribute__((format(printf, 1, 2))) log_message(const char *format, ...) 
+void __attribute__((format(printf, 1, 2))) log_message(const char *format, ...)
 {
     va_list(args);
     va_start(args, format);
@@ -41,7 +39,7 @@ void __attribute__((format(printf, 1, 2))) log_message(const char *format, ...)
         /*.. Print newline character if needed */
         fprintf(stderr, "\n");
     }
-};
+}
 
 /**
  * @brief File descriptor to request application termination.
@@ -53,24 +51,9 @@ volatile int terminate_fd = false;
  */
 void sigint_handler(int dummy)
 {
+    (void)dummy;
     write(terminate_fd, "\001", 1);
 }
-
-// tweak_model_t model[] = {
-//     {"my_controls", TWEAK_START_GROUP},
-//     {"omega", TWEAK_FLOAT, TWEAK_BIND_DIRECTLY, &omega},
-//     {"beta", TWEAK_UINT},
-//     {"gamma", TWEAK_VEC3_FLOAT, TWEAK_BIND_UNLOCKED, &getter, &setter},
-//     {"Z", TWEAK_DOUBLE, TWEAK_BIND_AUTOLOCK, &getter2, &setter2},
-//     {NULL}
-// };
-
-// if (!tweak_update_model(&model))
-// {
-//     abort();
-// };
-// tweak_add_slider_full("omega", -100, 100, omega, 3, getter, setter, &omega);
-
 
 /**
  * @brief Important job.
@@ -80,34 +63,58 @@ void sigint_handler(int dummy)
  *   3. Prints y if t % 10 = 0
  *   Where t is an integer cycle count.
  * @param fd File descriptor to watch for.
- * @param omega Wave frequency.
  */
-void important_work(int fd, float omega)
+void important_work(int fd)
 {
-    /*.. Cycle count. It roll-overs. */
-    uint64_t t = 0;
+    const char *meta_bool = "{"
+                            "\"type\": \"bool\","
+                            "\"control\": \"checkbox\""
+                            "}";
 
-    /*.. Tune omega */
-    tweak_add_slider("omega", -100, 100, omega, 3);
+
+    const char *meta_coefficient = "{"
+                                   "\"control\": \"slider\","
+                                   "\"min\": -100,"
+                                   "\"max\": 100,"
+                                   "\"readonly\": false,"
+                                   "\"decimals\": 4"
+                                   "}";
+
+    const char *meta_readonly = "{"
+                                "\"readonly\": true"
+                                "}";
+
+    tweak_id enable_tid = tweak_add_scalar_bool("/enable", "Argument A of quadratic equation", meta_bool, true);
+    tweak_id a_tid = tweak_add_scalar_float("/coefficients/a", "Argument A of quadratic equation", meta_coefficient, 0.f);
+    tweak_id b_tid = tweak_add_scalar_float("/coefficients/b", "Argument B of quadratic equation", meta_coefficient, 0.f);
+    tweak_id c_tid = tweak_add_scalar_float("/coefficients/c", "Argument C of quadratic equation", meta_coefficient, 0.f);
+    tweak_id x1_tid = tweak_add_scalar_float("/roots/x1", "Root x1 of quadratic equation", meta_readonly, 0.f);
+    tweak_id x2_tid = tweak_add_scalar_float("/roots/x2", "Root x2 of quadratic equation", meta_readonly, 0.f);
 
     bool terminate = false;
 
     /*.. main loop */
     while (!terminate)
     {
-        /*.. Tune omega */
-        double double_omega;
-        tweak_get("omega", &double_omega);
-        omega = double_omega;
+        /*.. solve quadratic equation */
+        bool enable = tweak_get_scalar_bool(enable_tid);
+        float x1 = NAN;
+        float x2 = NAN;
 
-        /*.. Important calculations */
-        float y = sinf(omega * t);
+        if (enable)
+        {
+            float a = tweak_get_scalar_float(a_tid);
+            float b = tweak_get_scalar_float(b_tid);
+            float c = tweak_get_scalar_float(c_tid);
 
-        /*.. Generate the output */
-        log_message("Iteration %12lu: %12.6f", t, y);
+            float d = b * b - 4.f * a * c;
 
-        /*.. Increase cycle count */
-        t++;
+            x1 = (-b + sqrtf(d)) / 2. * a;
+            x2 = (-b - sqrtf(d)) / 2. * a;
+        }
+
+        tweak_set_scalar_float(x1_tid, x1);
+        tweak_set_scalar_float(x2_tid, x2);
 
         /*.. Poll for new event or timeout */
         struct pollfd fds[1] = {0};
@@ -122,14 +129,12 @@ void important_work(int fd, float omega)
             terminate = true;
         }
     }
-
-    log_message("We have been interrupted after %llu iterations", t);
 }
 
 int main()
 {
     /*.. Initialize with default parameters */
-    tweak_init_library("0.0.0.0", 7777);
+    tweak_initialize_library("nng", "role=server", "tcp://0.0.0.0:7777/");
 
     /*.. Setup termination signals */
     int fd[2];
@@ -146,7 +151,7 @@ int main()
 
     /*.. Start working */
     /*.. TODO: Remove hard-code */
-    important_work(fd[0], 0.1);
+    important_work(fd[0]);
 
     /*.. Terminate gracefully */
     return 0;

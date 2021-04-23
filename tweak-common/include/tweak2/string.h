@@ -73,8 +73,10 @@ typedef struct {
     * the string will be on heap.
     */
     char* large_buffer;
-  };
+  } buffers;
 } tweak_variant_string;
+
+#define TWEAK_VARIANT_STRING_EMPTY { 0 }
 
 /**
  * @brief Checks string storage.

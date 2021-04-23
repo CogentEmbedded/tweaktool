@@ -4,7 +4,7 @@
  *
  * @brief Tweak QML Application Model.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
  *
  * This file is a part of Cogent Tweak Tool feature.
  *
@@ -22,6 +22,66 @@
 
 namespace tweak2
 {
+ConnectionItem::ConnectionItem(QString name, ConnectionId connectionId, QString contextType,
+               QString params, QString uri, tweak_app_client_context clientContext)
+    :name(name), connectionId(connectionId), contextType(contextType)
+    ,params(params), uri(uri), clientContext(clientContext)
+{}
+
+ConnectionItem::ConnectionItem(ConnectionItem&& connectionItem)
+    :name(std::move(connectionItem.name)), connectionId(connectionItem.connectionId)
+    ,contextType(std::move(connectionItem.contextType)), params(std::move(connectionItem.params))
+    ,uri(std::move(connectionItem.uri)), clientContext(connectionItem.clientContext)
+{
+    connectionItem.clientContext = NULL;
+}
+
+ConnectionItem& ConnectionItem::operator=(ConnectionItem&& connectionItem) {
+    name = std::move(connectionItem.name);
+    connectionId = connectionItem.connectionId;
+    contextType = std::move(connectionItem.contextType);
+    params = std::move(connectionItem.params);
+    uri = std::move(connectionItem.uri);
+    clientContext = connectionItem.clientContext;
+    connectionItem.clientContext = NULL;
+    return *this;
+}
+
+ConnectionItem::~ConnectionItem() {
+    if (clientContext) {
+        tweak_app_destroy_context(clientContext);
+    }
+}
+
+QString ConnectionItem::getName() const {
+    return name;
+}
+
+ConnectionId ConnectionItem::getConnectionId() const {
+    return connectionId;
+}
+
+QString ConnectionItem::getContextType() const {
+    return contextType;
+}
+
+QString ConnectionItem::getParams() const {
+    return params;    
+}
+
+QString ConnectionItem::getUri() const {
+    return uri;    
+}
+
+tweak_app_client_context ConnectionItem::getClientContext() const {
+    return clientContext;
+}
+
+tweak_app_client_context ConnectionItem::releaseClientContext() {
+    tweak_app_client_context retVal = clientContext;
+    clientContext = NULL;
+    return retVal;
+}
 
 TweakApplication::TweakApplication(QObject *parent, Qt::ConnectionType connectionType)
     : QAbstractListModel(parent), d_ptr(new TweakApplicationPrivate(this, connectionType))
@@ -53,14 +113,14 @@ QVariant TweakApplication::data(const QModelIndex &index, int role) const
         return QVariant();
     }
 
-    if (!(index.row() >= 0 && index.row() < d->tweakControlIdList.size()))
+    if (!(index.row() >= 0 && index.row() < static_cast<int>(d->tweakControlIdList.size())))
     {
         return QVariant();
     }
 
     const TweakControlId id = d->tweakControlIdList[index.row()];
     auto predicate = [&id](const ConnectionItem& arg) {
-        return id.connectionId == arg.connectionId;
+        return id.connectionId == arg.getConnectionId();
     };
 
     tweak_app_client_context clientContext;
@@ -71,8 +131,8 @@ QVariant TweakApplication::data(const QModelIndex &index, int role) const
         if (itr == d->connectionIdList.end()) {
             return QVariant();
         }
-        clientContext = itr->clientContext;
-        name = itr->name;
+        clientContext = itr->getClientContext();
+        name = itr->getName();
     }
 
     QVariant result;
@@ -135,14 +195,14 @@ bool TweakApplication::setData(const QModelIndex &index, const QVariant &value, 
         return false;
     }
 
-    if (index.row() >= d->tweakControlIdList.size())
+    if (index.row() >= static_cast<int>(d->tweakControlIdList.size()))
     {
         return false;
     }
 
     const TweakControlId id = d->tweakControlIdList[index.row()];
     auto predicate = [&id](const ConnectionItem& arg) {
-        return id.connectionId == arg.connectionId;
+        return id.connectionId == arg.getConnectionId();
     };
     tweak_app_client_context clientContext;
     {
@@ -151,7 +211,7 @@ bool TweakApplication::setData(const QModelIndex &index, const QVariant &value, 
         if (itr == d->connectionIdList.end()) {
             return false;
         }
-        clientContext = itr->clientContext;
+        clientContext = itr->getClientContext();
     }
     tweak_variant_type type = tweak_app_item_get_type(clientContext, id.tweakId);
     tweak_variant tweak_variant_value = TWEAK_VARIANT_INIT_EMPTY;
@@ -287,14 +347,14 @@ QModelIndex TweakApplicationPrivate::indexByUri(ConnectionId connectionId, QStri
     {
         QReadLocker locker(&lock);
         auto connIdPredicate = [connectionId](const ConnectionItem& arg) {
-            return connectionId == arg.connectionId;
+            return connectionId == arg.getConnectionId();
         };
         auto connectionIdListItr = std::find_if(connectionIdList.begin(),
                                                 connectionIdList.end(), connIdPredicate);
         if (connectionIdListItr == connectionIdList.end()) {
             return QModelIndex();
         }
-        clientContext = connectionIdListItr->clientContext;
+        clientContext = connectionIdListItr->getClientContext();
     }
     tweak_id tweak_id = tweak_app_find_id(clientContext, uri.toStdString().c_str());
     if (tweak_id == TWEAK_INVALID_ID) {
@@ -356,9 +416,9 @@ Qt::ItemFlags TweakApplication::flags(const QModelIndex &index) const
 
 ConnectionId TweakApplicationPrivate::addClient(QString name, QString contextType, QString params, QString uri) {
     auto predicate = [&contextType, &params, &uri](const ConnectionItem& arg) {
-        return contextType == arg.contextType
-                && params == arg.params
-                && uri == arg.uri;
+        return contextType == arg.getContextType()
+                && params == arg.getParams()
+                && uri == arg.getUri();
     };
     
     {
@@ -366,18 +426,17 @@ ConnectionId TweakApplicationPrivate::addClient(QString name, QString contextTyp
         auto connectionIdListItr = std::find_if(connectionIdList.begin(), connectionIdList.end(), predicate);
         if (connectionIdListItr != connectionIdList.end()) {
             qWarning() << "Attmept to add a connection twice";
-            return connectionIdListItr->connectionId;
+            return connectionIdListItr->getConnectionId();
         }
     }
 
-    tweak_app_client_callbacks client_callbacks = {
-        .cookie = this,
-        .on_connection_status_changed = &TweakApplicationPrivate::statusChangedAdapter,
-        .on_new_item = &TweakApplicationPrivate::newItemAdapter,
-        .on_current_value_changed = &TweakApplicationPrivate::currentValueChangedAdapter,
-        .on_item_removed = &TweakApplicationPrivate::itemRemovedAdapter
-    };
-
+    tweak_app_client_callbacks client_callbacks;
+    memset(&client_callbacks, 0, sizeof(client_callbacks));
+    client_callbacks.cookie = this;
+    client_callbacks.on_connection_status_changed = &TweakApplicationPrivate::statusChangedAdapter;
+    client_callbacks.on_new_item = &TweakApplicationPrivate::newItemAdapter;
+    client_callbacks.on_current_value_changed = &TweakApplicationPrivate::currentValueChangedAdapter;
+    client_callbacks.on_item_removed = &TweakApplicationPrivate::itemRemovedAdapter;
     {
         QWriteLocker locker(&lock);
 
@@ -389,16 +448,7 @@ ConnectionId TweakApplicationPrivate::addClient(QString name, QString contextTyp
 
         if (clientContext) {
             ConnectionId connectionId = ++seed;
-            ConnectionItem connectionItem = {
-                .name = name,
-                .connectionId = connectionId,
-                .contextType = contextType,
-                .params = params,
-                .uri = uri,
-                .clientContext = clientContext,
-            };
-
-            connectionIdList.push_back(connectionItem);
+            connectionIdList.push_back(ConnectionItem(name, connectionId, contextType, params, uri, clientContext));
             return connectionId;
         } else {
             qWarning() << "Failed to create clientContext";
@@ -411,7 +461,7 @@ void TweakApplicationPrivate::removeClient(ConnectionId connectionId) {
     Q_Q(TweakApplication);
 
     auto connectionIdListPredicate = [connectionId](const ConnectionItem& arg) -> bool {
-        return connectionId == arg.connectionId;
+        return connectionId == arg.getConnectionId();
     };
     tweak_app_client_context clientContext = NULL;
     {
@@ -419,7 +469,7 @@ void TweakApplicationPrivate::removeClient(ConnectionId connectionId) {
         auto connectionIdListItr = std::find_if(connectionIdList.begin(),
             connectionIdList.end(), connectionIdListPredicate);
         if (connectionIdListItr != connectionIdList.end()) {
-            clientContext = connectionIdListItr->clientContext;
+            clientContext = connectionIdListItr->releaseClientContext();
         } else {
             qWarning() << "Attempt to remove a connection that does not exist";
         }
@@ -452,25 +502,19 @@ void TweakApplicationPrivate::saveFavorites(const QStringList &uris)
     settings.endGroup();
 }
 
-TweakApplicationPrivate::~TweakApplicationPrivate() {
-    QWriteLocker locker(&lock);
-    for (auto itr = connectionIdList.begin(); itr != connectionIdList.end(); ++itr) {
-        tweak_app_destroy_context(itr->clientContext);
-    }
-    connectionIdList.clear();
-}
-
 ConnectionId TweakApplicationPrivate::appContextToConnId(tweak_app_context context) {
     QReadLocker locker(&lock);
     for (auto itr = connectionIdList.begin(); itr != connectionIdList.end(); ++itr) {
-        if (itr->clientContext == context) {
-            return itr->connectionId;
+        if (itr->getClientContext() == context) {
+            return itr->getConnectionId();
         }
     }
     return InvalidClientConnectionId;
 }
 
 void TweakApplicationPrivate::statusChangedImpl(quint64 connection_id, bool is_connected) {
+    (void) connection_id;
+    (void) is_connected;
 }
 
 void TweakApplicationPrivate::newItemImpl(quint64 connection_id, quint64 tweak_id, QString uri) {
@@ -486,7 +530,7 @@ void TweakApplicationPrivate::newItemImpl(quint64 connection_id, quint64 tweak_i
     QString path = "";
 
     auto predicate = [&tweakControlId](const ConnectionItem& arg) {
-        return tweakControlId.connectionId == arg.connectionId;
+        return tweakControlId.connectionId == arg.getConnectionId();
     };
     tweak_app_client_context clientContext = NULL;
     QString name;
@@ -494,8 +538,8 @@ void TweakApplicationPrivate::newItemImpl(quint64 connection_id, quint64 tweak_i
         QReadLocker locker(&lock); /*.. needed ? */
         auto itr = std::find_if(connectionIdList.begin(), connectionIdList.end(), predicate);
         if (itr != connectionIdList.end()) {
-            clientContext = itr->clientContext;
-            name = itr->name;
+            clientContext = itr->getClientContext();
+            name = itr->getName();
         }
     }
 
@@ -606,6 +650,7 @@ void TweakApplicationPrivate::newItemAdapter(tweak_app_context context, tweak_id
 void TweakApplicationPrivate::currentValueChangedAdapter(tweak_app_context context, tweak_id id,
                                                          tweak_variant* value, void *cookie)
 {
+    (void)value;
     TweakApplicationPrivate* tweakApplicationPrivate = (TweakApplicationPrivate*) cookie;
     Q_ASSERT(tweakApplicationPrivate != NULL);
     ConnectionId connectionId = tweakApplicationPrivate->appContextToConnId(context);

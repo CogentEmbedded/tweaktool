@@ -250,33 +250,32 @@ const QSet<TweakControlId> &TweakUriTree::tweaks(const Item *item) const
 
 const void *TweakUriTree::rootItem() const { return &root; }
 
-unsigned int TweakUriTree::childCount(const void *const item) const
+unsigned int TweakUriTree::childCount(const void * item) const
 {
     if (item == nullptr)
     {
         throw std::invalid_argument("item");
     }
 
-    const Item &n = *static_cast<const Item *const>(item);
-
-    return n.children.size();
+    const Item* n = static_cast<const Item*>(item);
+    return n->children.size();
 }
 
-const void *TweakUriTree::child(const void *const item, int index) const
+const void *TweakUriTree::child(const void * item, int index) const
 {
     if (item == nullptr)
     {
         throw std::invalid_argument("item");
     }
 
-    const Item &n = *static_cast<const Item *const>(item);
-    const auto found = n.children.begin() + index;
+    const Item* n = static_cast<const Item *>(item);
+    const auto found = n->children.cbegin() + index;
 
     /*.. found is always valid */
     return &*found;
 }
 
-const void *TweakUriTree::parentItem(const void *const item) const
+const void *TweakUriTree::parentItem(const void * item) const
 {
     if (item == nullptr)
     {
@@ -288,8 +287,8 @@ const void *TweakUriTree::parentItem(const void *const item) const
     return &n.parent;
 }
 
-unsigned int TweakUriTree::childIndex(const void *const parent,
-                                      const void *const item) const
+unsigned int TweakUriTree::childIndex(const void * parent,
+                                      const void * item) const
 {
     if (parent == nullptr)
     {
@@ -321,7 +320,7 @@ unsigned int TweakUriTree::childIndex(const void *const parent,
     return dist;
 }
 
-QString TweakUriTree::itemDisplayName(const void *const item) const
+QString TweakUriTree::itemDisplayName(const void * item) const
 {
     if (item == nullptr)
     {

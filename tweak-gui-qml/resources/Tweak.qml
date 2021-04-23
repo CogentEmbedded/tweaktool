@@ -6,10 +6,10 @@
  *
  * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool.
+ * This file is a part of Cogent Tweak Tool feature.
  *
  * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via http://cogentembedded.com
+ * directory of this distribution or by request via www.cogentembedded.com
  */
 
 import QtQuick 2.0

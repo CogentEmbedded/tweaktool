@@ -14,6 +14,7 @@
 
 #include "TweakTreeModel.hpp"
 #include "TweakQmlApp.hpp"
+#include "TweakComponents.hpp"
 
 #include <QCommandLineParser>
 #include <QDebug>
@@ -68,14 +69,17 @@ int main(int argc, char *argv[])
 #endif
     QGuiApplication app(argc, argv);
 
+    /*.. Initialize resources from the static library */
+    Q_INIT_RESOURCE(main);
+
     app.setApplicationName("Tweak Tool V2");
     app.setOrganizationName("Cogent Embedded Inc.");
     app.setOrganizationDomain("v2.tweaktool.cogentembedded.com");
-    app.setApplicationVersion("2.0.0");
+    app.setApplicationVersion("v2.0.0");
     app.setQuitOnLastWindowClosed(true);
     app.setWindowIcon(QIcon("qrc:/images/tweak-icon.png"));
 
-    registerQmlTypes();
+    tweak2::registerQmlTypes();
 
     tweak2::TweakApplication *tweakApp = initApplication(app);
 

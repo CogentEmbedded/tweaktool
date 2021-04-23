@@ -80,6 +80,8 @@ static void server_connection_state_listener(tweak_wire_connection connection,
                                              tweak_wire_connection_state conn_state,
                                              void *cookie)
 {
+  (void) connection;
+  (void) cookie;
   pthread_mutex_lock(&s_lock);
   s_server_conn_state = conn_state;
   pthread_cond_broadcast(&s_cond);
@@ -98,6 +100,8 @@ static void client_connection_state_listener(tweak_wire_connection connection,
                                              tweak_wire_connection_state conn_state,
                                              void *cookie)
 {
+  (void) connection;
+  (void) cookie;
   pthread_mutex_lock(&s_lock);
   s_client_conn_state = conn_state;
   pthread_cond_broadcast(&s_cond);
@@ -125,7 +129,7 @@ void test_wire() {
     .has_value = false
   };
 
-  tweak_wire_connection_state server_conn_state, client_conn_state;
+  tweak_wire_connection_state server_conn_state;
   pthread_mutex_lock(&s_lock);
   server_conn_state = s_server_conn_state;
   pthread_mutex_unlock(&s_lock);
@@ -140,7 +144,7 @@ void test_wire() {
   puts("SUCCESS");
 
   puts("Transmit datagram from server to non-existing client...");
-  char lost[] = "Lost!";
+  uint8_t lost[] = "Lost!";
   TEST_CHECK(tweak_wire_transmit(server_context, lost, sizeof(lost)) == TWEAK_WIRE_ERROR_TIMEOUT);
   puts("Got timeout error, SUCCESS");
 
@@ -163,21 +167,21 @@ void test_wire() {
   TEST_CHECK(server_conn_state == TWEAK_WIRE_CONNECTED);
 
   puts("Transmit datagram from client to server...");
-  char data[] = "Hello!";
-  tweak_wire_transmit(client_context, data, sizeof(data));
+  const char *data= "Hello!";
+  tweak_wire_transmit(client_context, (const uint8_t*)data, strlen(data));
   wait_buffer(&server_buff);
 
-  TEST_CHECK(strncmp(data, server_buff.buffer, server_buff.size) == 0);
+  TEST_CHECK(strncmp(data, (const char *)server_buff.buffer, server_buff.size) == 0);
   puts("SUCCESS");
 
   clear_wait_buffer(&server_buff);
 
   puts("Transmit datagram from server to client...");
-  char atad[] = "!olleH";
-  tweak_wire_transmit(server_context, atad, sizeof(atad));
+  const char *atad = "!olleH";
+  tweak_wire_transmit(server_context, (const uint8_t*)atad, strlen(atad));
   wait_buffer(&client_buff);
 
-  TEST_CHECK(strncmp(atad, client_buff.buffer, client_buff.size) == 0);
+  TEST_CHECK(strncmp(atad, (const char *)client_buff.buffer, client_buff.size) == 0);
   puts("SUCCESS");
 
   clear_wait_buffer(&client_buff);

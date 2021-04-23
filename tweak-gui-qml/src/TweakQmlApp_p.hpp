@@ -4,7 +4,7 @@
  *
  * @brief Private part of Tweak QML Application Model.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
  *
  * This file is a part of Cogent Tweak Tool feature.
  *
@@ -23,21 +23,38 @@
 #include <QHash>
 #include <QReadWriteLock>
 #include <QSettings>
+#include <vector>
 
 namespace tweak2
 {
-struct ConnectionItem {
+class ConnectionItem {
     QString name;
     ConnectionId connectionId;
     QString contextType;
     QString params;
     QString uri;
     tweak_app_client_context clientContext;
+public:
+    ConnectionItem() = delete;
+    ConnectionItem(const ConnectionItem&) = delete;
+    ConnectionItem& operator=(const ConnectionItem&) = delete;
+    ConnectionItem& operator=(ConnectionItem&& connectionItem);
+    ConnectionItem(ConnectionItem&& connectionItem);
+    ConnectionItem(QString name, ConnectionId connectionId, QString contextType,
+                   QString params, QString uri, tweak_app_client_context clientContext);
+    QString getName() const;
+    ConnectionId getConnectionId() const;
+    QString getContextType() const;
+    QString getParams() const;
+    QString getUri() const;
+    tweak_app_client_context getClientContext() const;
+    tweak_app_client_context releaseClientContext();
+    ~ConnectionItem();
 };
 
-using ConnectionIdList = QList<ConnectionItem>;
+using ConnectionIdList = std::vector<ConnectionItem>;
 
-using TweakControlIdList = QList<TweakControlId>;
+using TweakControlIdList = std::vector<TweakControlId>;
 
 using TweakControlIdListIndex = typename TweakControlIdList::difference_type;
 
@@ -49,7 +66,6 @@ class TweakApplicationPrivate
     TweakApplication *const q_ptr;
     ConnectionId seed;
     mutable QReadWriteLock lock;
-    Qt::ConnectionType connectionType;
     Q_DECLARE_PUBLIC(TweakApplication)
 
     static void statusChangedAdapter(tweak_app_context context, bool is_connected, void *cookie);
@@ -74,8 +90,6 @@ class TweakApplicationPrivate
   public:
     explicit TweakApplicationPrivate(TweakApplication *application, Qt::ConnectionType connectionType);
 
-    ~TweakApplicationPrivate();
-
     ConnectionId addClient(QString name, QString contextType, QString params, QString uri);
 
     void removeClient(ConnectionId clientConnectionId);
@@ -89,6 +103,8 @@ class TweakApplicationPrivate
     TweakTreeModel treeModel;
 
     TweakMetadataParser metadataParser;
+
+    Qt::ConnectionType connectionType;
 
     QSettings settings;
 

@@ -50,6 +50,22 @@ message(
 message(STATUS "Project description: ${PROJECT_SUMMARY}")
 
 # ------------------------------------------------------------------------------
+# User-configurable options
+# ------------------------------------------------------------------------------
+# cmake-format: off
+# <Option name>        <Description/Help>                <Default value>
+option(BUILD_TESTS     "Build tests"                         OFF)
+option(BUILD_GUI       "Build host tools"                    OFF)
+option(WITH_DOXYGEN    "Enable Doxygen-based documentation"  OFF)
+option(WITH_WIRE_NNG   "Build NNG wire backend"              ON)
+option(WITH_WIRE_RPMSG "Build RPMSG wire backend"            OFF)
+
+set(TWEAK_COMMON_LOG_LEVELS Trace Debug Test Warn Error Fatal)
+list(LENGTH TWEAK_COMMON_LOG_LEVELS TWEAK_COMMON_LOG_LEVELS_LENGTH) 
+set(TWEAK_COMMON_LOG_LEVEL Test CACHE STRING "Statically disable log levels less severe than this")
+set_property(CACHE TWEAK_COMMON_LOG_LEVEL PROPERTY STRINGS ${TWEAK_COMMON_LOG_LEVELS})
+
+# ------------------------------------------------------------------------------
 # Global project configuration
 # ------------------------------------------------------------------------------
 set(CMAKE_POSITION_INDEPENDENT_CODE YES)
@@ -110,24 +126,9 @@ include(tweakComponentInstall)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-# TODO: Make this conditional
-find_package(Asan)
-
-# ------------------------------------------------------------------------------
-# User-configurable options
-# ------------------------------------------------------------------------------
-# cmake-format: off
-# <Option name>        <Description/Help>                <Default value>
-option(BUILD_TESTS     "Build tests"                         OFF)
-option(BUILD_GUI       "Build host tools"                    OFF)
-option(WITH_DOXYGEN    "Enable Doxygen-based documentation"  OFF)
-option(WITH_WIRE_NNG   "Build NNG wire backend"              ON)
-option(WITH_WIRE_RPMSG "Build RPMSG wire backend"            OFF)
-
-set(TWEAK_COMMON_LOG_LEVELS Trace Debug Test Warn Error Fatal)
-list(LENGTH TWEAK_COMMON_LOG_LEVELS TWEAK_COMMON_LOG_LEVELS_LENGTH) 
-set(TWEAK_COMMON_LOG_LEVEL Test CACHE STRING "Statically disable log levels less severe than this")
-set_property(CACHE TWEAK_COMMON_LOG_LEVEL PROPERTY STRINGS ${TWEAK_COMMON_LOG_LEVELS})
+if (CMAKE_BUILD_TYPE STREQUAL "Asan")
+  find_package(Asan)
+endif()
 
 # cmake-format: on
 
@@ -160,6 +161,8 @@ include_directories(${PROJECT_BINARY_DIR}/generated)
 # ------------------------------------------------------------------------------
 # Compilation flags
 # ------------------------------------------------------------------------------
+
+add_compile_options(-Wall -Wextra -Wno-deprecated-declarations -Wno-deprecated-copy -Werror)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
   include(CheckCXXCompilerFlag)
@@ -216,7 +219,8 @@ write_basic_package_version_file(
 
 install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Version.cmake"
               "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAMESPACE})
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAMESPACE}
+        COMPONENT dev)
 
 # ------------------------------------------------------------------------------
 # Building docs with collected sets of files

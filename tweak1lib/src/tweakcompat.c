@@ -21,14 +21,12 @@
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <uthash.h>
+#include <stdarg.h>
 
 static tweak_app_server_context s_context = NULL;
 
-#define MAX_BUFFER_SIZE 256
-
-static pthread_mutex_t s_log_lock = { };
-
-static pthread_mutex_t s_callback_lock = { };
+static pthread_mutex_t s_callback_lock = { 0 };
 
 static tweak_update_handler s_callback = NULL;
 
@@ -36,23 +34,138 @@ static void* s_callback_cookie = NULL;
 
 static uint32_t s_layout_id = 0L;
 
-static char* s_layout = NULL;
+static char* s_current_widget_name = NULL;
 
-static void* s_item_change_listener_cookie = NULL;
+static char* s_layout_meta = NULL;
 
-static void print_event(FILE* file, const char* format, int line, const char* source, ...) {
-  char message[MAX_BUFFER_SIZE] = { 0 };
-  va_list args;
-  va_start (args, source);
-  int char_count = vsnprintf(message, sizeof(message), format, args);
-  message[char_count] = '\0';
-  va_end (args);
-  pthread_mutex_lock(&s_log_lock);
-  fprintf(file, "LOG_ERROR file: %s line: %d | %s\n", source, line, message);
-  pthread_mutex_unlock(&s_log_lock);
+#define MAX_BUFFER_SIZE (4 * 1024)
+
+#define MAX_NAME_LENGTH 256
+
+#define MAX_OPTIONS_STRING_SIZE 512
+
+static char s_buffer[MAX_BUFFER_SIZE];
+
+struct name_uri_pair {
+  char* name;
+  char* uri;
+  UT_hash_handle hh;
+};
+
+static pthread_rwlock_t s_name_uri_lock = { 0 };
+
+struct name_uri_pair* s_name_uri_pairs = NULL;
+
+struct name_uri_pair* s_uri_name_pairs = NULL;
+
+static char s_uri_concat_buffer[MAX_BUFFER_SIZE];
+
+static char* add_uri_mapping(const char* name, const char* uri) {
+  struct name_uri_pair* pair = NULL;
+  HASH_FIND_STR(s_name_uri_pairs, name, pair);
+  if (pair != NULL) {
+    TWEAK_FATAL("duplicate name");
+  }
+  pair = malloc(sizeof(*pair));
+  if (pair == NULL) {
+    TWEAK_FATAL("malloc() returned NULL");
+  }
+  size_t length = strlen(name);
+  char* name_dup = strdup(name);
+  char* uri_dup = strdup(uri);
+  pair->name = name_dup;
+  pair->uri = uri_dup;
+  HASH_ADD_KEYPTR(hh, s_name_uri_pairs, name_dup, length, pair);
+  return uri_dup;
+}
+
+static char* add_name_mapping(const char* uri, const char* name) {
+  struct name_uri_pair* pair = NULL;
+  HASH_FIND_STR(s_uri_name_pairs, uri, pair);
+  if (pair != NULL) {
+    TWEAK_FATAL("duplicate name");
+  }
+  pair = malloc(sizeof(*pair));
+  if (pair == NULL) {
+    TWEAK_FATAL("malloc() returned NULL");
+  }
+  char* name_dup = strdup(name);
+  size_t length = strlen(uri);
+  char* uri_dup = strdup(uri);
+  pair->name = name_dup;
+  pair->uri = uri_dup;
+  HASH_ADD_KEYPTR(hh, s_uri_name_pairs, uri_dup, length, pair);
+  return name_dup;
+}
+
+static char* get_uri(const char* name);
+
+static const char* map_uri(const char* layout_name, const char* name) {
+  if (!name) {
+    TWEAK_FATAL("Name parameter is NULL");
+    return NULL;
+  }
+  if (strlen(name) >= MAX_NAME_LENGTH) {
+    TWEAK_FATAL("name is too long");
+    return NULL;
+  }
+  if (layout_name && strlen(layout_name) >= MAX_NAME_LENGTH) {
+    TWEAK_FATAL("layout name is too long");
+    return NULL;
+  }
+
+  const char* uri = NULL;
+  pthread_rwlock_wrlock(&s_name_uri_lock);
+  s_uri_concat_buffer[0] = '\0';
+  if (layout_name != NULL) {
+    if (layout_name[0] != '/') {
+      strcat(s_uri_concat_buffer, "/");
+    }
+    strcat(s_uri_concat_buffer, layout_name);
+    strcat(s_uri_concat_buffer, "/");
+    strcat(s_uri_concat_buffer, name);
+  } else {
+    if (name[0] != '/') {
+      strcat(s_uri_concat_buffer, "/");
+    }
+    strcat(s_uri_concat_buffer, name);
+  }
+  uri = add_uri_mapping(name, s_uri_concat_buffer);
+  add_name_mapping(s_uri_concat_buffer, name);
+  pthread_rwlock_unlock(&s_name_uri_lock);
+  return uri;
+}
+
+static char* get_uri(const char* name) {
+  if (!name) {
+    TWEAK_FATAL("name is NULL");
+  }
+  struct name_uri_pair* pair = NULL;
+  pthread_rwlock_rdlock(&s_name_uri_lock);
+  HASH_FIND_STR(s_name_uri_pairs, name, pair);
+  pthread_rwlock_unlock(&s_name_uri_lock);
+  if (pair == NULL) {
+    return NULL;
+  }
+  return pair->uri;
+}
+
+static char* get_name(const char* uri) {
+  if (!uri) {
+    TWEAK_FATAL("uri is NULL");
+  }
+  struct name_uri_pair* pair = NULL;
+  pthread_rwlock_rdlock(&s_name_uri_lock);
+  HASH_FIND_STR(s_uri_name_pairs, uri, pair);
+  pthread_rwlock_unlock(&s_name_uri_lock);
+  if (pair == NULL) {
+    return NULL;
+  }
+  return pair->name;
 }
 
 void tweak_on_update(const char* name) {
+  (void) name;
   TWEAK_FATAL("Not supported in TWEAK 2."
               " Use tweak_set_update_handler");
 }
@@ -71,7 +184,8 @@ static void on_current_value_changed(tweak_app_context context,
   pthread_mutex_unlock(&s_callback_lock);
   if (callback) {
     tweak_app_item_snapshot* snapshot = tweak_app_item_get_snapshot(s_context, id);
-    callback(tweak_variant_string_c_str(&snapshot->uri), callback_cookie);
+    const char *name = get_name(tweak_variant_string_c_str(&snapshot->uri));
+    callback(name, callback_cookie);
     tweak_app_release_snapshot(s_context, snapshot);
   }
 }
@@ -84,8 +198,8 @@ void tweak_set_update_handler(tweak_update_handler handler, void* cookie) {
 }
 
 int tweak_connect(void) {
-  pthread_mutex_init(&s_log_lock, NULL);
   pthread_mutex_init(&s_callback_lock, NULL);
+  pthread_rwlock_init(&s_name_uri_lock, NULL); 
 
   tweak_app_server_callbacks callbacks = {
     .on_current_value_changed = &on_current_value_changed
@@ -101,20 +215,31 @@ int tweak_connect(void) {
 }
 
 static const char* LAYOUT_META_TEMPLATE = "{"
-  "\"layout_id\"=%u,"
-  "\"width\"=%u,"
-  "\"horizontal_vertical\"=%u,"
-  "\"layout_name=\"%s\""
+  "\"layout_id\": %u,"
+  "\"width\": %u,"
+  "\"horizontal_vertical\": %u,"
+  "\"layout_name\": \"%s\""
   "}";
 
 void tweak_add_layout(unsigned int width, unsigned int horizontal_vertical, const char* name) {
-  char layout_buff[256] = {};
   ++s_layout_id;
-  snprintf(layout_buff, sizeof(layout_buff) - 1, LAYOUT_META_TEMPLATE,
-    s_layout_id, width, horizontal_vertical, name);
-  char* old_layout = s_layout;
-  s_layout = strdup(layout_buff);
-  free(old_layout);
+  int result_size;
+
+  result_size = snprintf(s_buffer, sizeof(s_buffer),
+    LAYOUT_META_TEMPLATE, s_layout_id, width,
+    horizontal_vertical, name);
+
+  if (result_size >= MAX_BUFFER_SIZE) {
+    TWEAK_FATAL("Buffer to format meta string is too small");
+  }
+
+  char* old_layout_meta = s_layout_meta;
+  s_layout_meta = strdup(s_buffer);
+  if (!s_layout_meta) {
+    TWEAK_FATAL("strdup() returned NULL");
+  }
+
+  free(old_layout_meta);
 }
 
 void tweak_close() {
@@ -123,17 +248,38 @@ void tweak_close() {
     return;
   }
 
+
+  pthread_rwlock_wrlock(&s_name_uri_lock); 
+  struct name_uri_pair *pair = NULL;
+  struct name_uri_pair *tmp = NULL;
+  HASH_ITER(hh, s_name_uri_pairs, pair, tmp) {
+    HASH_DEL(s_name_uri_pairs, pair);
+    free(pair->name);
+    free(pair->uri);
+    free(pair);
+  }
+  s_name_uri_pairs = NULL;
+  HASH_ITER(hh, s_uri_name_pairs, pair, tmp) {
+    HASH_DEL(s_uri_name_pairs, pair);
+    free(pair->name);
+    free(pair->uri);
+    free(pair);
+  }
+  s_uri_name_pairs = NULL;
+  pthread_rwlock_unlock(&s_name_uri_lock); 
+
   tweak_app_destroy_context(s_context);
+  pthread_rwlock_destroy(&s_name_uri_lock); 
   pthread_mutex_destroy(&s_callback_lock);
-  pthread_mutex_destroy(&s_log_lock);
 
   s_context = NULL;
 
-  free(s_layout);
-  s_layout = NULL;
+  free(s_layout_meta);
+  s_layout_meta = NULL;
 }
 
 static const char* META_TEMPLATE_WITH_LAYOUT = "{"
+  "\"type\": \"double\","
   "\"control\": \"%s\","
   "\"min\": %f,"
   "\"max\": %f,"
@@ -143,6 +289,7 @@ static const char* META_TEMPLATE_WITH_LAYOUT = "{"
   "}";
 
 static const char* META_TEMPLATE_WITHOUT_LAYOUT = "{"
+  "\"type\": \"double\","
   "\"control\": \"%s\","
   "\"min\": %f,"
   "\"max\": %f,"
@@ -151,23 +298,27 @@ static const char* META_TEMPLATE_WITHOUT_LAYOUT = "{"
   "}";
 
 void tweak_add_slider(const char* name, double minv, double maxv, double def, unsigned int precision) {
-  char meta_buff[256] = {};
+  int result_size;
 
-  if (s_layout) {
-    snprintf(meta_buff, sizeof(meta_buff) - 1,
+  const char* uri = map_uri(s_current_widget_name, name);
+  if (s_layout_meta) {
+    result_size = snprintf(s_buffer, sizeof(s_buffer),
       META_TEMPLATE_WITH_LAYOUT,
-      "slider", minv, maxv, precision, s_layout);
+      "slider", minv, maxv, precision, s_layout_meta);
   } else {
-    snprintf(meta_buff, sizeof(meta_buff) - 1,
+    result_size = snprintf(s_buffer, sizeof(s_buffer),
       META_TEMPLATE_WITHOUT_LAYOUT,
       "slider", minv, maxv, precision);
+  }
+  if (result_size >= MAX_BUFFER_SIZE) {
+    TWEAK_FATAL("Buffer to format meta string is too small");
   }
 
   tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
   tweak_variant_create_double(&value, def);
 
   tweak_id id = tweak_app_server_add_item(s_context,
-    name, name, meta_buff, &value, NULL);
+    uri, name, s_buffer, &value, NULL);
 
   if (id == TWEAK_INVALID_ID) {
     TWEAK_LOG_ERROR("Can't add control, duplicate name");
@@ -175,22 +326,27 @@ void tweak_add_slider(const char* name, double minv, double maxv, double def, un
 }
 
 void tweak_add_spinbox(const char* name, double minv, double maxv, double def, unsigned int precision) {
-  char meta_buff[256] = {};
-  if (s_layout) {
-    snprintf(meta_buff, sizeof(meta_buff) - 1,
+  int result_size;
+
+  const char* uri = map_uri(s_current_widget_name, name);
+  if (s_layout_meta) {
+    result_size = snprintf(s_buffer, sizeof(s_buffer),
       META_TEMPLATE_WITH_LAYOUT,
-      "spinbox", minv, maxv, precision, s_layout);
+      "spinbox", minv, maxv, precision, s_layout_meta);
   } else {
-    snprintf(meta_buff, sizeof(meta_buff) - 1,
+    result_size = snprintf(s_buffer, sizeof(s_buffer),
       META_TEMPLATE_WITHOUT_LAYOUT,
       "spinbox", minv, maxv, precision);
+  }
+  if (result_size >= MAX_BUFFER_SIZE) {
+    TWEAK_FATAL("Buffer to format meta string is too small");
   }
 
   tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
   tweak_variant_create_double(&value, def);
 
   tweak_id id = tweak_app_server_add_item(s_context,
-    name, name, meta_buff, &value, NULL);
+    uri, name, s_buffer, &value, NULL);
 
   if (id == TWEAK_INVALID_ID) {
     TWEAK_LOG_ERROR("Can't add control, duplicate name");
@@ -198,6 +354,7 @@ void tweak_add_spinbox(const char* name, double minv, double maxv, double def, u
 }
 
 static const char* BOOL_META_TEMPLATE_WITH_LAYOUT = "{"
+  "\"type\": \"bool\","
   "\"control\": \"%s\","
   "\"min\": false,"
   "\"max\": true,"
@@ -206,6 +363,7 @@ static const char* BOOL_META_TEMPLATE_WITH_LAYOUT = "{"
   "}";
 
 static const char* BOOL_META_TEMPLATE_WITHOUT_LAYOUT = "{"
+  "\"type\": \"bool\","
   "\"control\": \"%s\","
   "\"min\": false,"
   "\"max\": true,"
@@ -213,20 +371,25 @@ static const char* BOOL_META_TEMPLATE_WITHOUT_LAYOUT = "{"
   "}";
 
 void tweak_add_checkbox(const char* name, int def_val) {
-  char meta_buff[256] = {};
-  if (s_layout) {
-    snprintf(meta_buff, sizeof(meta_buff) - 1,
-      BOOL_META_TEMPLATE_WITH_LAYOUT, "checkbox", s_layout);
+  int result_size;
+
+  const char* uri = map_uri(s_current_widget_name, name);
+  if (s_layout_meta) {
+    result_size = snprintf(s_buffer, sizeof(s_buffer),
+      BOOL_META_TEMPLATE_WITH_LAYOUT, "checkbox", s_layout_meta);
   } else {
-    snprintf(meta_buff, sizeof(meta_buff) - 1,
+    result_size = snprintf(s_buffer, sizeof(s_buffer),
       BOOL_META_TEMPLATE_WITHOUT_LAYOUT, "checkbox");
+  }
+  if (result_size >= MAX_BUFFER_SIZE) {
+    TWEAK_FATAL("Buffer to format meta string is too small");
   }
 
   tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
   tweak_variant_create_bool(&value, def_val != 0);
 
   tweak_id id = tweak_app_server_add_item(s_context,
-    name, name, meta_buff, &value, NULL);
+    uri, name, s_buffer, &value, NULL);
 
   if (id == TWEAK_INVALID_ID) {
     TWEAK_LOG_ERROR("Can't add control, duplicate name");
@@ -234,20 +397,25 @@ void tweak_add_checkbox(const char* name, int def_val) {
 }
 
 void tweak_add_button(const char* name) {
-  char meta_buff[256] = {};
-  if (s_layout) {
-    snprintf(meta_buff, sizeof(meta_buff) - 1,
-      BOOL_META_TEMPLATE_WITH_LAYOUT, "button", s_layout);
+  int result_size;
+
+  const char* uri = map_uri(s_current_widget_name, name);
+  if (s_layout_meta) {
+    result_size = snprintf(s_buffer, sizeof(s_buffer),
+      BOOL_META_TEMPLATE_WITH_LAYOUT, "button", s_layout_meta);
   } else {
-    snprintf(meta_buff, sizeof(meta_buff) - 1,
+    result_size = snprintf(s_buffer, sizeof(s_buffer),
       BOOL_META_TEMPLATE_WITHOUT_LAYOUT, "button");
+  }
+  if (result_size >= MAX_BUFFER_SIZE) {
+    TWEAK_FATAL("Buffer to format meta string is too small");
   }
 
   tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
   tweak_variant_create_bool(&value, false);
 
   tweak_id id = tweak_app_server_add_item(s_context,
-    name, name, meta_buff, &value, NULL);
+    uri, name, s_buffer, &value, NULL);
 
   if (id == TWEAK_INVALID_ID) {
     TWEAK_LOG_ERROR("Can't add control, duplicate name");
@@ -255,33 +423,60 @@ void tweak_add_button(const char* name) {
 }
 
 static const char* RADIO_BUTTON_META_TEMPLATE_WITH_LAYOUT = "{"
+  "\"type\": \"enum\","
   "\"control\": \"radio\","
-  "\"desc\": \"%s\","
+  "\"options\": [%s],"
   "\"readonly\": false,"
   "\"layout\": %s"
   "}";
 
 static const char* RADIO_BUTTON_META_TEMPLATE_WITHOUT_LAYOUT = "{"
+  "\"type\": \"enum\","
   "\"control\": \"radio\","
-  "\"desc\": \"%s\","
+  "\"options\": [%s],"
   "\"readonly\": false"
   "}";
 
-void tweak_add_groupbox(const char* name, const char* desc, unsigned int def) {
-  char meta_buff[256] = {};
-  if (s_layout) {
-    snprintf(meta_buff, sizeof(meta_buff) - 1,
-      RADIO_BUTTON_META_TEMPLATE_WITH_LAYOUT, desc, s_layout);
-  } else {
-    snprintf(meta_buff, sizeof(meta_buff) - 1,
-      RADIO_BUTTON_META_TEMPLATE_WITHOUT_LAYOUT, desc);
+void tweak_add_groupbox(const char* name, const char* options, unsigned int def) {
+  assert(options != NULL && strlen(options) < MAX_OPTIONS_STRING_SIZE);
+  const char* uri = map_uri(s_current_widget_name, name);
+
+  char* token;
+  char* options_dup = strdup(options);
+  char* rest = options_dup;
+
+  s_buffer[0] = '\0';
+  token = strtok_r(rest, ";", &rest);
+  while (token) {
+    strcat(s_buffer, "\"");
+    strcat(s_buffer, token);
+    strcat(s_buffer, "\"");
+    token = strtok_r(rest, ";", &rest);
+    if (token) {
+      strcat(s_buffer, ",");
+    }
   }
+  free(options_dup);
+  char* options_json = strdup(s_buffer);
+
+  int result_size;
+  if (s_layout_meta) {
+    result_size = snprintf(s_buffer, sizeof(s_buffer),
+      RADIO_BUTTON_META_TEMPLATE_WITH_LAYOUT, options_json, s_layout_meta);
+  } else {
+    result_size = snprintf(s_buffer, sizeof(s_buffer),
+      RADIO_BUTTON_META_TEMPLATE_WITHOUT_LAYOUT, options_json);
+  }
+  if (result_size >= MAX_BUFFER_SIZE) {
+    TWEAK_FATAL("Buffer to format meta string is too small");
+  }
+  free(options_json);
 
   tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
   tweak_variant_create_uint32(&value, def);
 
   tweak_id id = tweak_app_server_add_item(s_context,
-    name, name, meta_buff, &value, NULL);
+    uri, name, s_buffer, &value, NULL);
 
   if (id == TWEAK_INVALID_ID) {
     TWEAK_LOG_ERROR("Can't add control, duplicate name");
@@ -289,71 +484,60 @@ void tweak_add_groupbox(const char* name, const char* desc, unsigned int def) {
 }
 
 void tweak_add_widget(const char* name) {
-  char meta_buff[256] = {};
-  if (s_layout) {
-    snprintf(meta_buff, sizeof(meta_buff) - 1,
-      BOOL_META_TEMPLATE_WITH_LAYOUT, "widget", s_layout);
-  } else {
-    snprintf(meta_buff, sizeof(meta_buff) - 1,
-      BOOL_META_TEMPLATE_WITHOUT_LAYOUT, "widget");
+  char* old_widget_name = s_current_widget_name;
+  s_current_widget_name = strdup(name);
+  if (!s_current_widget_name) {
+    TWEAK_FATAL("strdup() returned NULL");
   }
-
-  tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
-  tweak_variant_create_bool(&value, false);
-
-  tweak_id id = tweak_app_server_add_item(s_context,
-    name, name, meta_buff, &value, NULL);
-
-  if (id == TWEAK_INVALID_ID) {
-    TWEAK_LOG_ERROR("Can't add control, duplicate name");
-  }
+  free(old_widget_name);
 }
 
 double tweak_get(const char* name, double defval) {
-  tweak_id id = tweak_app_find_id(s_context, name);
+  const char* uri = get_uri(name);
+  tweak_id id = tweak_app_find_id(s_context, uri);
   if (id == TWEAK_INVALID_ID) {
     TWEAK_LOG_ERROR("No tweak with name: %s", name);
     return defval;
   }
-  tweak_variant variant_value = {
-    .type = TWEAK_VARIANT_TYPE_IS_NULL
-  };
+  tweak_variant variant_value = TWEAK_VARIANT_INIT_EMPTY;
   double result = defval;
   tweak_app_error_code error_code = tweak_app_item_clone_current_value((tweak_app_context)s_context, id, &variant_value);
   if (error_code == TWEAK_APP_SUCCESS) {
     switch (variant_value.type) {
     case TWEAK_VARIANT_TYPE_BOOL:
-      result = variant_value.value_bool;
+      result = variant_value.value.b;
       break;
     case TWEAK_VARIANT_TYPE_SINT8:
-      result = variant_value.sint8;
+      result = variant_value.value.sint8;
       break;
     case TWEAK_VARIANT_TYPE_SINT16:
-      result = variant_value.sint16;
+      result = variant_value.value.sint16;
       break;
     case TWEAK_VARIANT_TYPE_SINT32:
-      result = variant_value.sint32;
+      result = variant_value.value.sint32;
       break;
     case TWEAK_VARIANT_TYPE_SINT64:
-      result = variant_value.sint64;
+      result = variant_value.value.sint64;
       break;
     case TWEAK_VARIANT_TYPE_UINT8:
-      result = variant_value.uint8;
+      result = variant_value.value.uint8;
       break;
     case TWEAK_VARIANT_TYPE_UINT16:
-      result = variant_value.uint16;
+      result = variant_value.value.uint16;
       break;
     case TWEAK_VARIANT_TYPE_UINT32:
-      result = variant_value.uint32;
+      result = variant_value.value.uint32;
       break;
     case TWEAK_VARIANT_TYPE_UINT64:
-      result = variant_value.uint64;
+      result = variant_value.value.uint64;
       break;
     case TWEAK_VARIANT_TYPE_FLOAT:
-      result = variant_value.fp32;
+      result = variant_value.value.fp32;
       break;
     case TWEAK_VARIANT_TYPE_DOUBLE:
-      result = variant_value.fp64;
+      result = variant_value.value.fp64;
+      break;
+    default:
       break;
     }
   } else {
@@ -364,13 +548,14 @@ double tweak_get(const char* name, double defval) {
 }
 
 void tweak_set(const char* name, double val) {
-  tweak_id id = tweak_app_find_id(s_context, name);
+  const char* uri = get_uri(name);
+  tweak_id id = tweak_app_find_id(s_context, uri);
   if (id == TWEAK_INVALID_ID) {
     TWEAK_LOG_ERROR("No tweak with name: %s", name);
     return;
   }
   tweak_variant_type type = tweak_app_item_get_type(s_context, id);
-  if (type != TWEAK_VARIANT_TYPE_IS_NULL) {
+  if (type != TWEAK_VARIANT_TYPE_NULL) {
     tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
     switch (type) {
     case TWEAK_VARIANT_TYPE_BOOL:
@@ -422,27 +607,26 @@ void tweak_set(const char* name, double val) {
 double tweak_get_string(const char* name, double defval) {
   (void) name;
   (void) defval;
-  TWEAK_FATAL("tweak_get_string not implemented");
+  TWEAK_LOG_WARN("tweak_get_string not implemented");
   return 0;
 }
-
 
 uint64_t tweak_fopen(const char* name, const char* mode) {
   (void) name;
   (void) mode;
-  TWEAK_FATAL("tweak_get_string not implemented");
+  TWEAK_LOG_WARN("tweak_get_string not implemented");
   return 0;
 }
 
 uint64_t tweak_fclose(uint64_t fd) {
   (void) fd;
-  TWEAK_FATAL("tweak_fclose not implemented");
+  TWEAK_LOG_WARN("tweak_fclose not implemented");
   return 0;
 }
 
 uint64_t tweak_ftell(uint64_t fd) {
   (void) fd;
-  TWEAK_FATAL("tweak_ftell not implemented");
+  TWEAK_LOG_WARN("tweak_ftell not implemented");
   return 0;
 }
 
@@ -450,7 +634,7 @@ uint64_t tweak_fseek(uint64_t fd, int32_t offset, int32_t where){
   (void) fd;
   (void) offset;
   (void) where;
-  TWEAK_FATAL("tweak_fseek not implemented");
+  TWEAK_LOG_WARN("tweak_fseek not implemented");
   return 0;
 }
 
@@ -458,7 +642,7 @@ uint64_t tweak_fwrite(uint64_t fd, uint32_t sz, void* p_data) {
   (void) fd;
   (void) sz;
   (void) p_data;
-  TWEAK_FATAL("tweak_fwrite not implemented");
+  TWEAK_LOG_WARN("tweak_fwrite not implemented");
   return 0;
 }
 
@@ -466,27 +650,27 @@ uint64_t tweak_fread(uint64_t fd, uint32_t sz, void* p_data) {
   (void) fd;
   (void) sz;
   (void) p_data;
-  TWEAK_FATAL("tweak_fread not implemented");
+  TWEAK_LOG_WARN("tweak_fread not implemented");
   return 0;
 }
 
 uint64_t tweak_config_fopen(const char* name, const char* mode) {
   (void) name;
   (void) mode;
-  TWEAK_FATAL("tweak_config_fopen not implemented");
+  TWEAK_LOG_WARN("tweak_config_fopen not implemented");
   return 0;
 }
 
 uint64_t tweak_config_fclose(uint64_t fd) {
   (void) fd;
-  TWEAK_FATAL("tweak_config_fclose not implemented");
+  TWEAK_LOG_WARN("tweak_config_fclose not implemented");
   return 0;
 }
 
 uint64_t tweak_config_add(uint32_t sz, void* p_data) {
   (void) sz;
   (void) p_data;
-  TWEAK_FATAL("tweak_config_add not implemented");
+  TWEAK_LOG_WARN("tweak_config_add not implemented");
   return 0;
 }
 
@@ -494,7 +678,7 @@ void tweak_get_file_path(char* dst, const char* mask, uint32_t read) {
   (void) dst;
   (void) mask;
   (void) read;
-  TWEAK_FATAL("tweak_get_file_path not implemented");
+  TWEAK_LOG_WARN("tweak_get_file_path not implemented");
 }
 
 uint32_t tweak_json_config_read(void* p_data, uint32_t max_sz, int cfg_enum, const char* cfg_name_ver, const char* path) {
@@ -503,7 +687,7 @@ uint32_t tweak_json_config_read(void* p_data, uint32_t max_sz, int cfg_enum, con
   (void) cfg_enum;
   (void) cfg_name_ver;
   (void) path;
-  TWEAK_FATAL("tweak_json_config_read not implemented");
+  TWEAK_LOG_WARN("tweak_json_config_read not implemented");
   return 0;
 }
 
@@ -513,6 +697,6 @@ uint32_t tweak_json_config_write(void* p_data, uint32_t max_sz, int cfg_enum, co
   (void) cfg_enum;
   (void) cfg_name_ver;
   (void) path;
-  TWEAK_FATAL("tweak_json_config_write  not implemented");
+  TWEAK_LOG_WARN("tweak_json_config_write  not implemented");
   return 0;
 }

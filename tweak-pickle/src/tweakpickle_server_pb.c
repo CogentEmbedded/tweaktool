@@ -115,7 +115,7 @@ struct decoded_client_node_message {
     tweak_pickle_subscribe subscribe;
 
     tweak_pickle_change_item change_item;
-  };
+  } body;
 };
 
 static bool decode_client_subscribe_request(pb_istream_t *stream, tweak_pb_subscribe *subscribe,
@@ -124,10 +124,10 @@ static bool decode_client_subscribe_request(pb_istream_t *stream, tweak_pb_subsc
   TWEAK_LOG_TRACE_ENTRY("stream = %p, subscribe = %p, decoded_client_node_message = %p",
     stream, subscribe, decoded_client_node_message);
   subscribe->uri_patterns = make_decode_callback_for_tweak_variant_string(
-    &decoded_client_node_message->subscribe.uri_patterns
+    &decoded_client_node_message->body.subscribe.uri_patterns
   );
   if (!pb_decode(stream, tweak_pb_subscribe_fields, subscribe)) {
-    tweak_variant_destroy_string(&decoded_client_node_message->subscribe.uri_patterns);
+    tweak_variant_destroy_string(&decoded_client_node_message->body.subscribe.uri_patterns);
     TWEAK_LOG_WARN("Can't decode inbound subscribe request");
     return false;
   }
@@ -144,8 +144,8 @@ static bool decode_client_change_item_request(pb_istream_t *stream, tweak_pb_cha
     return false;
   }
 
-  decoded_client_node_message->change_item.tweak_id = change_item->tweak_id;
-  decoded_client_node_message->change_item.value = tweak_pickle_from_pb_variant(&change_item->value);
+  decoded_client_node_message->body.change_item.tweak_id = change_item->tweak_id;
+  decoded_client_node_message->body.change_item.value = tweak_pickle_from_pb_variant(&change_item->value);
   return true;
 }
 
@@ -182,7 +182,7 @@ static void server_receive_listener(const uint8_t *buffer, size_t size,
     (struct tweak_pickle_endpoint_server_impl*)arg;
 
   pb_istream_t stream = pb_istream_from_buffer(buffer, size);
-  struct decoded_client_node_message decoded_client_node_message = {};
+  struct decoded_client_node_message decoded_client_node_message = { 0 };
 
   tweak_pb_client_node_message message = {
     .cb_request = {
@@ -196,13 +196,13 @@ static void server_receive_listener(const uint8_t *buffer, size_t size,
   if (pb_decode(&stream, tweak_pb_client_node_message_fields, &message)) {
     switch(decoded_client_node_message.tag) {
     case tweak_pb_client_node_message_subscribe_tag:
-      trace_subscribe_req("Inbound", &decoded_client_node_message.subscribe);
-      TRIGGER_EVENT(endpoint->skeleton.subscribe_listener, &decoded_client_node_message.subscribe);
+      tweak_pickle_trace_subscribe_req("Inbound", &decoded_client_node_message.body.subscribe);
+      TRIGGER_EVENT(endpoint->skeleton.subscribe_listener, &decoded_client_node_message.body.subscribe);
       break;
     case tweak_pb_client_node_message_change_item_tag:
-      trace_change_item_req("Inbound", &decoded_client_node_message.change_item);
-      TRIGGER_EVENT(endpoint->skeleton.change_item_listener, &decoded_client_node_message.change_item);
-      tweak_variant_destroy(&decoded_client_node_message.change_item.value);
+      tweak_pickle_trace_change_item_req("Inbound", &decoded_client_node_message.body.change_item);
+      TRIGGER_EVENT(endpoint->skeleton.change_item_listener, &decoded_client_node_message.body.change_item);
+      tweak_variant_destroy(&decoded_client_node_message.body.change_item.value);
       break;
     default:
       TWEAK_LOG_WARN("Should never happen.\n"
@@ -253,12 +253,12 @@ tweak_pickle_call_result
     return TWEAK_PICKLE_BAD_PARAMETER;
   }
 
-  if (add_item->current_value.type == TWEAK_VARIANT_TYPE_IS_NULL) {
-    TWEAK_LOG_ERROR("add_item->current_value.type == TWEAK_VARIANT_TYPE_IS_NULL");
+  if (add_item->current_value.type == TWEAK_VARIANT_TYPE_NULL) {
+    TWEAK_LOG_ERROR("add_item->current_value.type == TWEAK_VARIANT_TYPE_NULL");
     return TWEAK_PICKLE_BAD_PARAMETER;
   }
 
-  bool has_default_value = add_item->default_value.type != TWEAK_VARIANT_TYPE_IS_NULL;
+  bool has_default_value = add_item->default_value.type != TWEAK_VARIANT_TYPE_NULL;
   tweak_pb_value default_value = tweak_pb_value_init_default;
   if (has_default_value) {
     default_value = tweak_pickle_to_pb_variant(&add_item->default_value);
@@ -278,7 +278,7 @@ tweak_pickle_call_result
       }
     }
   };
-  trace_add_item_req("Outbound", add_item);
+  tweak_pickle_trace_add_item_req("Outbound", add_item);
   tweak_pickle_call_result result = encode_and_transmit_server_message(server_endpoint, &message);
   if (result == TWEAK_PICKLE_SUCCESS) {
     TWEAK_LOG_TRACE("Server message has been encoded and transmitted");
@@ -298,7 +298,7 @@ tweak_pickle_call_result
     return TWEAK_PICKLE_BAD_PARAMETER;
   }
 
-  if (change->value.type == TWEAK_VARIANT_TYPE_IS_NULL) {
+  if (change->value.type == TWEAK_VARIANT_TYPE_NULL) {
     return TWEAK_PICKLE_BAD_PARAMETER;
   }
 
@@ -312,7 +312,7 @@ tweak_pickle_call_result
       }
     }
   };
-  trace_change_item_req("Outbound", change);
+  tweak_pickle_trace_change_item_req("Outbound", change);
   tweak_pickle_call_result result = encode_and_transmit_server_message(server_endpoint, &message);
   if (result == TWEAK_PICKLE_SUCCESS) {
     TWEAK_LOG_TRACE("Server message has been encoded and transmitted");
@@ -336,7 +336,7 @@ tweak_pickle_call_result
     }
   };
 
-  trace_remove_item_req("Outbound", remove_item);
+  tweak_pickle_trace_remove_item_req("Outbound", remove_item);
   tweak_pickle_call_result result = encode_and_transmit_server_message(server_endpoint, &message);
   if (result == TWEAK_PICKLE_SUCCESS) {
     TWEAK_LOG_TRACE("Server message has been encoded and transmitted");

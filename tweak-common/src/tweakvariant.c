@@ -54,7 +54,7 @@ static tweak_variant_type_conversion_result
 tweak_variant_type_conversion_result tweak_variant_from_string(const char* arg,
   tweak_variant_type target_type, tweak_variant* out)
 {
-  assert(out->type == TWEAK_VARIANT_TYPE_IS_NULL);
+  assert(out->type == TWEAK_VARIANT_TYPE_NULL);
   switch(target_type) {
   case TWEAK_VARIANT_TYPE_BOOL:
     return parse_bool(arg, out);
@@ -85,53 +85,53 @@ tweak_variant_type_conversion_result tweak_variant_from_string(const char* arg,
 }
 
 tweak_variant_string tweak_variant_to_string(const tweak_variant* arg) {
-  tweak_variant_string result = {};
+  tweak_variant_string result = TWEAK_VARIANT_STRING_EMPTY;
   char buff[128];
   switch (arg->type) {
-  case TWEAK_VARIANT_TYPE_IS_NULL:
+  case TWEAK_VARIANT_TYPE_NULL:
     tweak_variant_assign_string(&result, "null");
     break;
   case TWEAK_VARIANT_TYPE_BOOL:
-    tweak_variant_assign_string(&result, arg->value_bool ? "true" : "false");
+    tweak_variant_assign_string(&result, arg->value.b ? "true" : "false");
     break;
   case TWEAK_VARIANT_TYPE_SINT8:
-    sprintf(buff, "%d", (int)arg->sint8);
+    sprintf(buff, "%d", (int)arg->value.sint8);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_SINT16:
-    sprintf(buff, "%d", (int)arg->sint16);
+    sprintf(buff, "%d", (int)arg->value.sint16);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_SINT32:
-    sprintf(buff, "%d", (int)arg->sint32);
+    sprintf(buff, "%d", (int)arg->value.sint32);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_SINT64:
-    sprintf(buff, "%" PRIi64 "", arg->sint64);
+    sprintf(buff, "%" PRIi64 "", arg->value.sint64);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_UINT8:
-    sprintf(buff, "%u", (unsigned)arg->uint8);
+    sprintf(buff, "%u", (unsigned)arg->value.uint8);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_UINT16:
-    sprintf(buff, "%u", (unsigned)arg->uint16);
+    sprintf(buff, "%u", (unsigned)arg->value.uint16);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_UINT32:
-    sprintf(buff, "%u", (unsigned)arg->uint32);
+    sprintf(buff, "%u", (unsigned)arg->value.uint32);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_UINT64:
-    sprintf(buff, "%" PRIu64 "", arg->uint64);
+    sprintf(buff, "%" PRIu64 "", arg->value.uint64);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_FLOAT:
-    sprintf(buff, "%f", arg->fp32);
+    sprintf(buff, "%f", arg->value.fp32);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_DOUBLE:
-    sprintf(buff, "%f", arg->fp64);
+    sprintf(buff, "%f", arg->value.fp64);
     tweak_variant_assign_string(&result, buff);
     break;
   default:
@@ -143,54 +143,54 @@ tweak_variant_string tweak_variant_to_string(const tweak_variant* arg) {
 }
 
 tweak_variant_string tweak_variant_to_json(const tweak_variant* arg) {
-  tweak_variant_string result = {};
+  tweak_variant_string result = TWEAK_VARIANT_STRING_EMPTY;
   char buff[128];
   switch (arg->type) {
-  case TWEAK_VARIANT_TYPE_IS_NULL:
+  case TWEAK_VARIANT_TYPE_NULL:
     tweak_variant_assign_string(&result, "null");
     break;
   case TWEAK_VARIANT_TYPE_BOOL:
     tweak_variant_assign_string(&result,
-      arg->value_bool ? "{\"bool\":true}" : "{\"bool\":false}");
+      arg->value.b ? "{\"bool\":true}" : "{\"bool\":false}");
     break;
   case TWEAK_VARIANT_TYPE_SINT8:
-    sprintf(buff, "{\"sint8\":%d}", (int)arg->sint8);
+    sprintf(buff, "{\"sint8\":%d}", (int)arg->value.sint8);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_SINT16:
-    sprintf(buff, "{\"sint16\":%d}", (int)arg->sint16);
+    sprintf(buff, "{\"sint16\":%d}", (int)arg->value.sint16);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_SINT32:
-    sprintf(buff, "{\"sint32\":%d}", (int)arg->sint32);
+    sprintf(buff, "{\"sint32\":%d}", (int)arg->value.sint32);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_SINT64:
-    sprintf(buff, "{\"sint64\":%" PRIi64 "}", arg->sint64);
+    sprintf(buff, "{\"sint64\":%" PRIi64 "}", arg->value.sint64);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_UINT8:
-    sprintf(buff, "{\"uint8\":%u}", (unsigned)arg->uint8);
+    sprintf(buff, "{\"uint8\":%u}", (unsigned)arg->value.uint8);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_UINT16:
-    sprintf(buff, "{\"uint16\":%u}", (unsigned)arg->uint16);
+    sprintf(buff, "{\"uint16\":%u}", (unsigned)arg->value.uint16);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_UINT32:
-    sprintf(buff, "{\"uint32\":%u}", (unsigned)arg->uint32);
+    sprintf(buff, "{\"uint32\":%u}", (unsigned)arg->value.uint32);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_UINT64:
-    sprintf(buff, "{\"uint64\":%" PRIu64 "}", arg->uint64);
+    sprintf(buff, "{\"uint64\":%" PRIu64 "}", arg->value.uint64);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_FLOAT:
-    sprintf(buff, "{\"float\":%f}", arg->fp32);
+    sprintf(buff, "{\"float\":%f}", arg->value.fp32);
     tweak_variant_assign_string(&result, buff);
     break;
   case TWEAK_VARIANT_TYPE_DOUBLE:
-    sprintf(buff, "{\"double\":%f}", arg->fp64);
+    sprintf(buff, "{\"double\":%f}", arg->value.fp64);
     tweak_variant_assign_string(&result, buff);
     break;
   default:
@@ -207,11 +207,11 @@ static tweak_variant_type_conversion_result
 {
   if (strcasecmp(arg, "true") == 0 || strcmp(arg, "1") == 0) {
     out->type = TWEAK_VARIANT_TYPE_BOOL;
-    out->value_bool = true;
+    out->value.b = true;
     return TWEAK_VARIANT_TYPE_CONVERSION_RESULT_SUCCESS;
   } else if (strcasecmp(arg, "false") == 0 || strcmp(arg, "0") == 0) {
     out->type = TWEAK_VARIANT_TYPE_BOOL;
-    out->value_bool = false;
+    out->value.b = false;
     return TWEAK_VARIANT_TYPE_CONVERSION_RESULT_SUCCESS;
   } else {
     return TWEAK_VARIANT_TYPE_CONVERSION_RESULT_ERROR_FAIL;
@@ -241,12 +241,12 @@ static inline bool can_handle_conversion_result(
 
 #define COERCE_INT(VARIANT_FIELD, VARIANT_TYPE, VARIANT_TYPE_MIN, VARIANT_TYPE_MAX) \
   if (val >= VARIANT_TYPE_MIN && val <= VARIANT_TYPE_MAX) {                         \
-    result.VARIANT_FIELD = (VARIANT_TYPE) val;                                      \
+    result.value.VARIANT_FIELD = (VARIANT_TYPE) val;                                \
   } else if (val < VARIANT_TYPE_MIN) {                                              \
-    result.VARIANT_FIELD = VARIANT_TYPE_MIN;                                        \
+    result.value.VARIANT_FIELD = VARIANT_TYPE_MIN;                                  \
     conversion_result = TWEAK_VARIANT_TYPE_CONVERSION_RESULT_ERROR_TRUNCATED;       \
   } else if (val > VARIANT_TYPE_MAX) {                                              \
-    result.VARIANT_FIELD = VARIANT_TYPE_MAX;                                        \
+    result.value.VARIANT_FIELD = VARIANT_TYPE_MAX;                                  \
     conversion_result = TWEAK_VARIANT_TYPE_CONVERSION_RESULT_ERROR_TRUNCATED;       \
   }
 
@@ -275,7 +275,7 @@ static tweak_variant_type_conversion_result
       break;
     case TWEAK_VARIANT_TYPE_SINT64:
       result.type = TWEAK_VARIANT_TYPE_SINT64;
-      result.sint64 = val;
+      result.value.sint64 = val;
       break;
     default:
       TWEAK_FATAL("Unknown signed integer type: %d", target_type);
@@ -304,9 +304,9 @@ static tweak_variant_type_conversion_result
 
 #define COERCE_UINT(VARIANT_FIELD, VARIANT_TYPE, VARIANT_TYPE_MAX)                  \
   if (val <= VARIANT_TYPE_MAX)  {                                                   \
-    result.VARIANT_FIELD = (VARIANT_TYPE) val;                                      \
+    result.value.VARIANT_FIELD = (VARIANT_TYPE) val;                                \
   } else  {                                                                         \
-    result.VARIANT_FIELD = VARIANT_TYPE_MAX;                                        \
+    result.value.VARIANT_FIELD = VARIANT_TYPE_MAX;                                  \
     conversion_result = TWEAK_VARIANT_TYPE_CONVERSION_RESULT_ERROR_TRUNCATED;       \
   }
 
@@ -335,7 +335,7 @@ static tweak_variant_type_conversion_result
       break;
     case TWEAK_VARIANT_TYPE_UINT64:
       result.type = TWEAK_VARIANT_TYPE_UINT64;
-      result.uint64 = val;
+      result.value.uint64 = val;
       break;
     default:
       TWEAK_FATAL("Unknown signed integer type: %d", target_type);
@@ -375,11 +375,11 @@ static tweak_variant_type_conversion_result
     switch (target_type) {
     case TWEAK_VARIANT_TYPE_FLOAT:
       result.type = TWEAK_VARIANT_TYPE_FLOAT;
-      result.fp32 = (float) val;
+      result.value.fp32 = (float) val;
       break;
     case TWEAK_VARIANT_TYPE_DOUBLE:
       result.type = TWEAK_VARIANT_TYPE_DOUBLE;
-      result.fp64 = val;
+      result.value.fp64 = val;
       break;
     default:
       TWEAK_FATAL("Unknown signed integer type: %d", target_type);
@@ -390,4 +390,52 @@ static tweak_variant_type_conversion_result
     *out = result;
   }
   return conversion_result;
+}
+
+tweak_variant tweak_variant_copy(const tweak_variant* variant) {
+  switch (variant->type) {
+  case TWEAK_VARIANT_TYPE_NULL:
+  case TWEAK_VARIANT_TYPE_BOOL:
+  case TWEAK_VARIANT_TYPE_SINT8:
+  case TWEAK_VARIANT_TYPE_SINT16:
+  case TWEAK_VARIANT_TYPE_SINT32:
+  case TWEAK_VARIANT_TYPE_SINT64:
+  case TWEAK_VARIANT_TYPE_UINT8:
+  case TWEAK_VARIANT_TYPE_UINT16:
+  case TWEAK_VARIANT_TYPE_UINT32:
+  case TWEAK_VARIANT_TYPE_UINT64:
+  case TWEAK_VARIANT_TYPE_FLOAT:
+  case TWEAK_VARIANT_TYPE_DOUBLE:
+    return *variant;
+  default:
+    TWEAK_FATAL("Unknown type: %d", variant->type);
+    break;
+  }
+  tweak_variant null_value = {
+    .type = TWEAK_VARIANT_TYPE_NULL
+  };
+  return null_value;
+}
+
+void tweak_variant_destroy(tweak_variant* variant) {
+  switch (variant->type) {
+  case TWEAK_VARIANT_TYPE_NULL:
+  case TWEAK_VARIANT_TYPE_BOOL:
+  case TWEAK_VARIANT_TYPE_SINT8:
+  case TWEAK_VARIANT_TYPE_SINT16:
+  case TWEAK_VARIANT_TYPE_SINT32:
+  case TWEAK_VARIANT_TYPE_SINT64:
+  case TWEAK_VARIANT_TYPE_UINT8:
+  case TWEAK_VARIANT_TYPE_UINT16:
+  case TWEAK_VARIANT_TYPE_UINT32:
+  case TWEAK_VARIANT_TYPE_UINT64:
+  case TWEAK_VARIANT_TYPE_FLOAT:
+  case TWEAK_VARIANT_TYPE_DOUBLE:
+    break;
+  default:
+    TWEAK_FATAL("Unknown type: %d", variant->type);
+    break;
+  }
+  memset(variant, 0, sizeof(*variant));
+  variant->type = TWEAK_VARIANT_TYPE_NULL;
 }

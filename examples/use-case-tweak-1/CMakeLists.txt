@@ -38,7 +38,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE YES)
 # ------------------------------------------------------------------------------
 # Dependencies
 # ------------------------------------------------------------------------------
-find_package(tweak REQUIRED)
+find_package(tweak2 REQUIRED)
 
 find_package(Threads REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -54,7 +54,7 @@ set(${PROJECT_NAME}_SOURCES main.c)
 # ------------------------------------------------------------------------------
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCES})
 
-target_link_libraries(${PROJECT_NAME} tweak-client m)
+target_link_libraries(${PROJECT_NAME} tweak2::server m)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES C_STANDARD 99
                                                  C_STANDARD_REQUIRED YES)

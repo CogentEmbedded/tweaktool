@@ -69,9 +69,9 @@ void test_model() {
       TEST_CHECK(tweak_id == item->id);
       TEST_CHECK(strcmp(tweak_variant_string_c_str(&uris[ix]), tweak_variant_string_c_str(&item->uri)) == 0);
       TEST_CHECK(item->current_value.type == TWEAK_VARIANT_TYPE_FLOAT);
-      TEST_CHECK(item->current_value.fp32 == values[ix].fp32);
+      TEST_CHECK(item->current_value.value.fp32 == values[ix].value.fp32);
     }
-    size_t to_replace[BATCH_SIZE] = {};
+    size_t to_replace[BATCH_SIZE] = { 0 };
     for (size_t ix = 0; ix < BATCH_SIZE; ix++) {
       to_replace[ix] = rand() % NUM_TWEAKS;
     }
@@ -103,6 +103,7 @@ void test_model() {
 
       tweak_model_error_code ec = tweak_model_create_item(model, ids[ix],
         &uri, &description, &meta, &default_value, &current_value, NULL);
+      TEST_CHECK(ec == TWEAK_MODEL_SUCCESS);
     }
   }
   tweak_model_destroy(model);

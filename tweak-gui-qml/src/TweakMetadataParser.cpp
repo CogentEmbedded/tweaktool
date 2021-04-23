@@ -23,6 +23,14 @@
 namespace tweak2
 {
 
+QStringList extractStringArray(const QJsonArray& jsonArray) {
+    QStringList result;
+    for (const QJsonValue &value : jsonArray) {
+        result.push_back(value.toString());
+    }
+    return result;
+}
+
 TweakMetadata *readJsonMeta(const TweakMetadataParser *parser,
                             const QJsonObject &json,
                             const QString meta)
@@ -43,9 +51,16 @@ TweakMetadata *readJsonMeta(const TweakMetadataParser *parser,
         m->m_max = json["step"].toDouble();
 
     QString controlType;
-    if (json.contains("type") && json["type"].isString())
+    if (json.contains("type") && json["type"].isString()) {
         controlType = json["type"].toString();
+    }
 
+    if (json.contains("options") && json["options"].isArray()) {
+        controlType = "enum";
+        m->m_options = extractStringArray(json["options"].toArray());
+    }
+
+    m->m_controlType = TweakMetadata::ControlType::GENERIC;
     if (controlType.contains("int"))
     {
         m->m_decimals = 0;
@@ -53,7 +68,12 @@ TweakMetadata *readJsonMeta(const TweakMetadataParser *parser,
     else if (controlType.contains("bool"))
     {
         m->m_decimals = 0;
-        m->m_toggle = true;
+        m->m_controlType = TweakMetadata::ControlType::TOGGLE;
+    }
+    else if (controlType.contains("enum"))
+    {
+        m->m_decimals = 0;
+        m->m_controlType = TweakMetadata::ControlType::ENUM;
     }
 
     m->m_raw = meta;

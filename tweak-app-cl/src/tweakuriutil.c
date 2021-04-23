@@ -114,7 +114,7 @@ struct tweak_app_cl_tweak_uris_list* tweak_app_cl_create_sorted_tweak_uris_list_
     pattern = filter;
   }
 
-  struct enumerate_context enumerate_context = {};
+  struct enumerate_context enumerate_context = { 0 };
   int ec = regcomp(&enumerate_context.regex, pattern, 0);
   if (ec != 0) {
     return NULL;

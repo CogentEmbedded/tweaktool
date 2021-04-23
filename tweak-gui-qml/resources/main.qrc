@@ -9,6 +9,7 @@
         <file>images/cogent-logo.png</file>
         <file>images/tweak-icon.png</file>
         <file>TweakToggle.qml</file>
+        <file>TweakEnum.qml</file>
         <file>ConnectionsPage.qml</file>
         <file>images/button-minus.png</file>
         <file>images/button-plus.png</file>
@@ -20,5 +21,6 @@
         <file>images/tree-favorites.png</file>
         <file>images/tree-connection.png</file>
         <file>images/button-clear-all.png</file>
+        <file>ValidatedTextField.qml</file>
     </qresource>
 </RCC>

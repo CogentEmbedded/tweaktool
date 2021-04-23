@@ -41,30 +41,30 @@ static inline QVariant from_tweak_variant(const tweak_variant *arg)
 
     switch (arg->type)
     {
-    case TWEAK_VARIANT_TYPE_IS_NULL:
+    case TWEAK_VARIANT_TYPE_NULL:
         return QVariant();
     case TWEAK_VARIANT_TYPE_BOOL:
-        return QVariant(arg->value_bool);
+        return QVariant(arg->value.b);
     case TWEAK_VARIANT_TYPE_SINT8:
-        return QVariant(arg->sint8);
+        return QVariant(arg->value.sint8);
     case TWEAK_VARIANT_TYPE_SINT16:
-        return QVariant(arg->sint16);
+        return QVariant(arg->value.sint16);
     case TWEAK_VARIANT_TYPE_SINT32:
-        return QVariant(arg->sint32);
+        return QVariant(arg->value.sint32);
     case TWEAK_VARIANT_TYPE_SINT64:
-        return QVariant(static_cast<qlonglong>(arg->sint64));
+        return QVariant(static_cast<qlonglong>(arg->value.sint64));
     case TWEAK_VARIANT_TYPE_UINT8:
-        return QVariant(arg->uint8);
+        return QVariant(arg->value.uint8);
     case TWEAK_VARIANT_TYPE_UINT16:
-        return QVariant(arg->uint16);
+        return QVariant(arg->value.uint16);
     case TWEAK_VARIANT_TYPE_UINT32:
-        return QVariant(arg->uint32);
+        return QVariant(arg->value.uint32);
     case TWEAK_VARIANT_TYPE_UINT64:
-        return QVariant(static_cast<qulonglong>(arg->uint64));
+        return QVariant(static_cast<qulonglong>(arg->value.uint64));
     case TWEAK_VARIANT_TYPE_FLOAT:
-        return QVariant(arg->fp32);
+        return QVariant(arg->value.fp32);
     case TWEAK_VARIANT_TYPE_DOUBLE:
-        return QVariant(arg->fp64);
+        return QVariant(arg->value.fp64);
     default:
         Q_UNREACHABLE();
         break;
@@ -76,40 +76,40 @@ static inline void to_tweak_variant(tweak_variant *dest, tweak_variant_type dest
     dest->type = dest_type;
     switch (dest_type)
     {
-    case TWEAK_VARIANT_TYPE_IS_NULL:
+    case TWEAK_VARIANT_TYPE_NULL:
         break;
     case TWEAK_VARIANT_TYPE_BOOL:
-        dest->value_bool = static_cast<bool>(src.toBool());
+        dest->value.b = static_cast<bool>(src.toBool());
         break;
     case TWEAK_VARIANT_TYPE_SINT8:
-        dest->sint8 = static_cast<int8_t>(src.toInt());
+        dest->value.sint8 = static_cast<int8_t>(src.toInt());
         break;
     case TWEAK_VARIANT_TYPE_SINT16:
-        dest->sint16 = static_cast<int16_t>(src.toInt());
+        dest->value.sint16 = static_cast<int16_t>(src.toInt());
         break;
     case TWEAK_VARIANT_TYPE_SINT32:
-        dest->sint32 = static_cast<int32_t>(src.toInt());
+        dest->value.sint32 = static_cast<int32_t>(src.toInt());
         break;
     case TWEAK_VARIANT_TYPE_SINT64:
-        dest->sint64 = static_cast<int64_t>(src.toLongLong());
+        dest->value.sint64 = static_cast<int64_t>(src.toLongLong());
         break;
     case TWEAK_VARIANT_TYPE_UINT8:
-        dest->uint8 = static_cast<uint8_t>(src.toUInt());
+        dest->value.uint8 = static_cast<uint8_t>(src.toUInt());
         break;
     case TWEAK_VARIANT_TYPE_UINT16:
-        dest->uint16 = static_cast<uint16_t>(src.toUInt());
+        dest->value.uint16 = static_cast<uint16_t>(src.toUInt());
         break;
     case TWEAK_VARIANT_TYPE_UINT32:
-        dest->uint32 = static_cast<uint32_t>(src.toUInt());
+        dest->value.uint32 = static_cast<uint32_t>(src.toUInt());
         break;
     case TWEAK_VARIANT_TYPE_UINT64:
-        dest->uint64 = static_cast<uint64_t>(src.toULongLong());
+        dest->value.uint64 = static_cast<uint64_t>(src.toULongLong());
         break;
     case TWEAK_VARIANT_TYPE_FLOAT:
-        dest->fp32 = static_cast<float>(src.toFloat());
+        dest->value.fp32 = static_cast<float>(src.toFloat());
         break;
     case TWEAK_VARIANT_TYPE_DOUBLE:
-        dest->fp64 = static_cast<double>(src.toDouble());
+        dest->value.fp64 = static_cast<double>(src.toDouble());
         break;
     default:
         Q_UNREACHABLE();

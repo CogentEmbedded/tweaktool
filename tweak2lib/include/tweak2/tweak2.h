@@ -4,7 +4,7 @@
  *
  * @brief tweak2 public API.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
  *
  * This file is a part of Cogent Tweak Tool feature.
  *
@@ -37,7 +37,8 @@ extern "C" {
  * int main(int argc, char *argv[])
  * {
  *   // Init tweak from application main() (no threads)
- *   tweak_initialize_library(NULL, NULL, NULL);  // No error code is returned, analyze tweak log for problems.
+ *   tweak_initialize_library("nng", "role=server", "tcp://0.0.0.0:7777/"); // No error code is returned, 
+ *                                                                          // analyze tweak log for problems.
  *
  *   // Other code that uses tweak library. This code can be executed from multiple threads concurrently.
  *
@@ -65,7 +66,7 @@ void tweak_initialize_library(const char *context_type, const char *params, cons
  * Since this system uses singular point to point connection, it is capable to serve only one incoming
  * RPC request at a time. Thus, next change item event won't be handled unless this callback finishes its work.
  *
- * Because of that, duration of this callback times be considerably shorter than average timegap
+ * Because of that, duration of this callback times should be considerably shorter than average time gap
  * between two inbound item change events. Because of that, it's unadvised to do any IO operation
  * within this callback. If a user fails to follow this guideline, then the behaviour is backend specific.
  * Some implementations might drop some inbound packets, thus causing loss of synchronization

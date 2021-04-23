@@ -218,7 +218,7 @@ static void execute_set_cmd(tweak_app_client_context context, char **tokens) {
     return;
 
   tweak_variant_type type = tweak_app_item_get_type(context, tweak_id);
-  if (type != TWEAK_VARIANT_TYPE_IS_NULL) {
+  if (type != TWEAK_VARIANT_TYPE_NULL) {
     tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
     tweak_variant_type_conversion_result conversion_result =
       tweak_variant_from_string(value_str, type, &value);
@@ -256,7 +256,7 @@ static void execute_line(tweak_app_client_context context, char* line);
 
 static char* expand_tilde(const char* arg) {
   char* result = NULL;
-  wordexp_t exp_result = {};
+  wordexp_t exp_result = { 0 };
   wordexp(arg, &exp_result, 0);
   if (exp_result.we_wordc == 1) {
     result = strdup(exp_result.we_wordv[0]);
@@ -626,7 +626,7 @@ static char* get_nth_match(const char* str, size_t length, int n) {
 
 int main(int argc, char **argv) {
   tweak_common_set_log_level(TWEAK_LOG_LEVEL_FATAL);
-  struct tweak_uri_list tweak_uri_list = {};
+  struct tweak_uri_list tweak_uri_list = { 0 };
   pthread_mutex_init(&tweak_uri_list.lock, NULL);
   s_tweak_uri_list = &tweak_uri_list;
 

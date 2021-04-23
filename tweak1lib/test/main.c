@@ -29,8 +29,9 @@
 enum { ITEM_COUNT = 20 };
 
 static void tweak_update(const char *name, void *cookie) {
-    double v = tweak_get(name, 0.0);
-    TWEAK_LOG_TEST("%s = %.5f, cookie = %p \n", name, v, cookie);
+  (void)name;
+  (void)cookie;
+  TWEAK_LOG_TEST("%s = %.5f, cookie = %p \n", name, tweak_get(name, 0.0), cookie);
 }
 
 void test_local() {
@@ -79,6 +80,7 @@ struct test_connect_context {
 static void status_changed_callback(tweak_app_context context,
   bool is_connected, void *cookie)
 {
+  (void)context;
   struct test_connect_context* connect_context = (struct test_connect_context*) cookie;
   pthread_mutex_lock(&connect_context->lock);
   connect_context->is_connected = is_connected;
@@ -97,6 +99,7 @@ static void wait_connected(struct test_connect_context* connect_context) {
 static void on_new_item_callback(tweak_app_context context,
   tweak_id id, void *cookie)
 {
+  (void) context;
   struct test_connect_context* connect_context = (struct test_connect_context*) cookie;
   pthread_mutex_lock(&connect_context->lock);
   connect_context->ids[connect_context->item_count] = id;
@@ -124,7 +127,7 @@ static void on_current_value_changed_callback(tweak_app_context context,
   tweak_app_item_snapshot* snapshot = tweak_app_item_get_snapshot(context, id);
   strcpy(connect_context->expected_change, tweak_variant_string_c_str(&snapshot->uri));
   tweak_app_release_snapshot(context, snapshot);
-  connect_context->received_value = value->fp64;
+  connect_context->received_value = value->value.fp64;
   connect_context->is_updated = true;
   pthread_cond_broadcast(&connect_context->cond);
   pthread_mutex_unlock(&connect_context->lock);
@@ -148,10 +151,13 @@ static void wait_updated(struct test_connect_context* connect_context) {
 static void on_item_removed_callback(tweak_app_context context,
   tweak_id id, void *cookie)
 {
+  (void)context;
+  (void)id;
+  (void)cookie;
 }
 
 void test_connect() {
-  struct test_connect_context connect_context = {};
+  struct test_connect_context connect_context = { 0 };
   pthread_mutex_init(&connect_context.lock, NULL);
   pthread_cond_init(&connect_context.cond, NULL);
 
@@ -184,7 +190,8 @@ void test_connect() {
     reset_updated(&connect_context);
     tweak_set(name, value);
     wait_updated(&connect_context);
-    TEST_CHECK(strcmp(connect_context.expected_change, name) == 0);
+    char* tail = &connect_context.expected_change[strlen(connect_context.expected_change) - strlen(name)];
+    TEST_CHECK(strcmp(tail, name) == 0);
     TEST_CHECK(connect_context.received_value == value);
   }
 
@@ -210,7 +217,7 @@ static void server_tweak_update_handler(const char* name, void* cookie) {
 }
 
 void test_server_update() {
-  struct test_connect_context connect_context = {};
+  struct test_connect_context connect_context = { 0 };
   pthread_mutex_init(&connect_context.lock, NULL);
   pthread_cond_init(&connect_context.cond, NULL);
 

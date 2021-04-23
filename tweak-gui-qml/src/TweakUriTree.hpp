@@ -392,7 +392,7 @@ public: /** @subsection API for GUI */
      * @param item Item to inspect.
      * @return Number of children, greater or equal to zero.
      */
-    unsigned int childCount(const void *const item) const;
+    unsigned int childCount(const void* item) const;
 
     /**
      * @brief A child of the given @p item with the @p index.
@@ -400,14 +400,14 @@ public: /** @subsection API for GUI */
      * index are supplied.
      * @return Item. Not null.
      */
-    const void *child(const void *const item, int index) const;
+    const void *child(const void* item, int index) const;
 
     /**
      * @brief A parent of the given @p item.
      * @param item A valid item to seek parent for.
      * @return Parent item. Not null.
      */
-    const void *parentItem(const void *const item) const;
+    const void *parentItem(const void * item) const;
 
     /**
      * @brief Checks if @p item is the root item of the tree.
@@ -417,7 +417,7 @@ public: /** @subsection API for GUI */
      * @param item Item to check.
      * @return @c true if @p item is the root of the tree.
      */
-    bool isRootItem(const void *const item) const
+    bool isRootItem(const void * item) const
     {
         return item == rootItem();
     }
@@ -432,20 +432,20 @@ public: /** @subsection API for GUI */
      * @note The function throws @ref std::invalid_argument exception in case
      *       the @p item is not a child of @p parent.
      */
-    unsigned int childIndex(const void *const parent,
-                            const void *const item) const;
+    unsigned int childIndex(const void * parent,
+                            const void * item) const;
 
     /**
      * @brief User-visible name of the item.
      * @return Non-empty string.
      */
-    QString itemDisplayName(const void *const item) const;
+    QString itemDisplayName(const void * item) const;
 
     /**
      * @brief Uri of the item.
      * @return Non-empty uri.
      */
-    QUrl itemUri(const void *const item) const;
+    QUrl itemUri(const void * item) const;
 
     /**
      * @brief Find an item by its uri.
@@ -458,7 +458,7 @@ public: /** @subsection API for GUI */
 
 } // namespace tweak2
 
-Q_DECLARE_METATYPE(tweak2::TweakControlId);
-Q_DECLARE_METATYPE(tweak_id);
+Q_DECLARE_METATYPE(tweak2::TweakControlId)
+Q_DECLARE_METATYPE(tweak_id)
 
 #endif /* TWEAK_URI_TREE_H_INCLUDED */

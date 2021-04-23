@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 
 static int32_t answer_count = false;
 
@@ -56,12 +57,16 @@ static void
 connection_state_listener_impl(tweak_pickle_connection_state connection_state,
                                void *cookie)
 {
+  (void)connection_state;
+  (void)cookie;
   notify_answer_received();
 }
 
 static void handle_subscribe_impl(tweak_pickle_subscribe* subscribe,
   void *cookie)
 {
+  (void)subscribe;
+  (void)cookie;
   TEST_CHECK(strcmp(tweak_variant_string_c_str(&subscribe->uri_patterns), "*") == 0);
   notify_answer_received();
 }
@@ -69,12 +74,14 @@ static void handle_subscribe_impl(tweak_pickle_subscribe* subscribe,
 static void handle_client_change_tweak_impl(tweak_pickle_change_item *change,
   void *cookie)
 {
+  (void)change;
+  (void)cookie;
   TEST_CHECK(change->tweak_id == 11);
   TWEAK_LOG_TEST("change->tweak_id is correct\n");
   TEST_CHECK(change->value.type == TWEAK_VARIANT_TYPE_FLOAT);
   TWEAK_LOG_TEST("change->value.type is correct\n");
-  TEST_CHECK(abs(change->value.fp32 - 32.f) < .0001f);
-  TWEAK_LOG_TEST("change->value.fp32 is correct\n");
+  TEST_CHECK(fabsf(change->value.value.fp32 - 32.f) < .0001f);
+  TWEAK_LOG_TEST("change->value.value.fp32 is correct\n");
   notify_answer_received();
 }
 
@@ -82,12 +89,14 @@ static void
   handle_server_change_tweak_impl(tweak_pickle_change_item *change_item,
     void *cookie)
 {
+  (void)change_item;
+  (void)cookie;
   TEST_CHECK(change_item->tweak_id == 17);
   TWEAK_LOG_TEST("change_item->tweak_i is correct\n");
   TEST_CHECK(change_item->value.type == TWEAK_VARIANT_TYPE_FLOAT);
   TWEAK_LOG_TEST("change_item->value.type is correct\n");
-  TEST_CHECK(abs(change_item->value.fp32 - 36.f) < .00001f );
-  TWEAK_LOG_TEST("change_item->value.fp32 is correct\n");
+  TEST_CHECK(fabsf(change_item->value.value.fp32 - 36.f) < .00001f );
+  TWEAK_LOG_TEST("change_item->value.value.fp32 is correct\n");
   notify_answer_received();
 }
 
@@ -95,6 +104,7 @@ static void
   handle_add_item_impl(tweak_pickle_add_item *add_item,
     void *cookie)
 {
+  (void)cookie;
   TEST_CHECK(add_item->tweak_id == 26);
   TWEAK_LOG_TEST("add_item->tweak_id is correct\n");
   TEST_CHECK(strcmp(tweak_variant_string_c_str(&add_item->uri), "X") == 0);
@@ -105,7 +115,7 @@ static void
   TWEAK_LOG_TEST("add_item->description is correct\n");
   TEST_CHECK(add_item->current_value.type == TWEAK_VARIANT_TYPE_FLOAT);
   TWEAK_LOG_TEST("add_item->current_value.type is correct\n");
-  TEST_CHECK(add_item->current_value.fp32 == 17.f);
+  TEST_CHECK(add_item->current_value.value.fp32 == 17.f);
   TWEAK_LOG_TEST("add_item->current_value.fp32 is correct\n");
   notify_answer_received();
 }
@@ -114,6 +124,7 @@ static void
   handle_server_remove_tweak(tweak_pickle_remove_item* pickle_remove_item,
     void *cookie)
 {
+  (void)cookie;
   TEST_CHECK(pickle_remove_item->tweak_id == 42);
   TWEAK_LOG_TEST("remove tweak_id is correct\n");
   notify_answer_received();
@@ -187,11 +198,15 @@ void test_pickle() {
     .description = create_variant_string("First control"),
     .default_value = {
       .type = TWEAK_VARIANT_TYPE_FLOAT,
-      .fp32 = 3.f
+      .value = {
+        .fp32 = 3.f
+      }
     },
     .current_value = {
       .type = TWEAK_VARIANT_TYPE_FLOAT,
-      .fp32 = 17.f
+      .value = {
+        .fp32 = 17.f
+      }
     }
   };
 
@@ -199,7 +214,9 @@ void test_pickle() {
     .tweak_id = 17,
     .value = {
       .type = TWEAK_VARIANT_TYPE_FLOAT,
-      .fp32 = 36.f
+      .value = {
+        .fp32 = 36.f
+      }
     }
   };
 
@@ -207,7 +224,9 @@ void test_pickle() {
     .tweak_id = 11,
     .value = {
       .type = TWEAK_VARIANT_TYPE_FLOAT,
-      .fp32 = 32.f
+      .value = {
+        .fp32 = 32.f
+      }
     }
   };
 

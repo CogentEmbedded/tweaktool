@@ -15,7 +15,7 @@
 #include <QtTest/QtTest>
 
 #include "TweakQmlApp.hpp"
-#include <tweak2.h>
+#include <tweak2/tweak2.h>
 
 #include <stdexcept>
 #include <vector>
@@ -53,6 +53,8 @@ class TestTweakApplication : public QObject
   void rowsAboutToBeInserted(TweakApplication *tweakApplication,
     const QModelIndex &parent, int start, int end)
   {
+    (void)tweakApplication;
+    (void)parent;
     pthread_mutex_lock(&_lock);
     struct row_interval tmp = { start, end };
     std::swap(_row_interval, tmp);
@@ -65,6 +67,8 @@ class TestTweakApplication : public QObject
     const QModelIndex &topLeft, const QModelIndex &bottomRight,
     const QVector<int> &roles)
   {
+    (void)bottomRight;
+    (void)roles;
     pthread_mutex_lock(&_lock);
     _value = tweakApplication->data(topLeft, TweakApplication::ValueRole);
     _updated = true;
@@ -75,6 +79,8 @@ class TestTweakApplication : public QObject
   void rowsAboutToBeRemoved(TweakApplication *tweakApplication,
     const QModelIndex &parent, int start, int end)
   {
+    (void)tweakApplication;
+    (void)parent;
     pthread_mutex_lock(&_lock);
     struct row_interval tmp = { start, end };
     std::swap(_row_interval, tmp);

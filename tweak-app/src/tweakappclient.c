@@ -34,9 +34,10 @@ struct tweak_app_context_client_impl {
 };
 
 static void io_loop_subscribe(tweak_id tweak_id, void* cookie) {
+  (void)tweak_id;
   TWEAK_LOG_TRACE_ENTRY("tweak_id = %" PRId64 " , cookie = %p", cookie);
   struct tweak_app_context_client_impl* client_impl = cookie;
-  tweak_pickle_subscribe subscribe = {};
+  tweak_pickle_subscribe subscribe = { 0 };
   tweak_pickle_call_result result = tweak_pickle_client_subscribe(client_impl->rpc_endpoint, &subscribe);
   if (result != TWEAK_PICKLE_SUCCESS) {
     TWEAK_LOG_ERROR("tweak_pickle_client_subscribe() returned %d", result);
@@ -140,7 +141,7 @@ static tweak_model_index_result update_index(tweak_model_uri_to_tweak_id_index i
 {
   TWEAK_LOG_TRACE_ENTRY();
   uint64_t bound_id = tweak_model_uri_to_tweak_id_index_lookup(index, old_uri);
-  tweak_model_index_result rv;
+  tweak_model_index_result rv = TWEAK_MODEL_INDEX_KEY_NOT_FOUND;
   if (bound_id == tweak_id) {
     if (strcmp(old_uri, uri) == 0) {
       rv = TWEAK_MODEL_INDEX_SUCCESS;
@@ -233,7 +234,7 @@ static void client_change_item_pickle_impl(tweak_pickle_change_item *change, voi
   struct tweak_model_impl* model = &client_impl->base.model_impl;
   bool emit_change_event = false;
   tweak_id id;
-  tweak_variant value = {};
+  tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
   pthread_rwlock_wrlock(&model->model_lock);
   tweak_item* item = tweak_model_find_item_by_id(model->model, change->tweak_id);
   if (item) {
@@ -287,7 +288,7 @@ static void io_loop_change(tweak_id tweak_id, void* cookie) {
   TWEAK_LOG_TRACE_ENTRY();
   struct tweak_app_context_client_impl* client_impl = cookie;
   struct tweak_model_impl* model = &client_impl->base.model_impl;
-  tweak_variant value = {};
+  tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
   bool should_push_change = false;
   pthread_rwlock_rdlock(&model->model_lock);
   tweak_item* item = tweak_model_find_item_by_id(model->model, tweak_id);
@@ -345,9 +346,13 @@ static tweak_app_error_code check_connection_and_replace_current_value(tweak_app
 static void client_destroy_context(struct tweak_app_context_base* context) {
   TWEAK_LOG_TRACE_ENTRY();
   struct tweak_app_context_client_impl* client_impl = (struct tweak_app_context_client_impl*)context;
-  tweak_app_queue_stop(client_impl->base.job_queue);
+  if (client_impl->base.job_queue) {
+    tweak_app_queue_stop(client_impl->base.job_queue);
+  }
   call_remove_callback_for_all_items(client_impl);
-  tweak_pickle_destroy_client_endpoint(client_impl->rpc_endpoint);
+  if (client_impl->rpc_endpoint) {
+    tweak_pickle_destroy_client_endpoint(client_impl->rpc_endpoint);
+  }
   tweak_app_context_private_destroy_base(&client_impl->base);
   free(context);
 }
@@ -389,7 +394,7 @@ tweak_app_client_context tweak_app_create_client_context(const char *context_typ
 
   if (!tweak_app_context_private_initialize_base(&client_impl->base, TWEAK_APP_CLIENT_QUEUE_SIZE)) {
     TWEAK_LOG_ERROR("tweak_app_context_private_initialize_base() fail");
-    goto free_client_context;
+    goto destroy_context;
   }
 
   client_impl->base.clone_current_value_proc = &check_connection_and_clone_current_value;
@@ -410,10 +415,6 @@ tweak_app_client_context tweak_app_create_client_context(const char *context_typ
   return &client_impl->base;
 
 destroy_context:
-   tweak_app_context_private_destroy_base(&client_impl->base);
-
-free_client_context:
-  free(client_impl);
-
+  client_destroy_context(&client_impl->base);
   return NULL;
 }

@@ -183,7 +183,7 @@ tweak_app_item_snapshot* tweak_app_item_get_snapshot(tweak_app_context context,
  * @param context an application context.
  * @param id tweak id.
  *
- * @return type of a given item or TWEAK_VARIANT_TYPE_IS_NULL if there's no such item.
+ * @return type of a given item or TWEAK_VARIANT_TYPE_NULL if there's no such item.
  *
  * @note It is assumed that items having NULL value are useless, thus user isn't
  * allowed to create them.
@@ -236,7 +236,7 @@ tweak_app_error_code tweak_app_item_replace_current_value(tweak_app_context cont
 void tweak_app_destroy_context(tweak_app_context context);
 
 #ifdef __cplusplus
-};
+}
 #endif
 
 #endif //TWEAK2_APP_COMMON_H_INCLUDED

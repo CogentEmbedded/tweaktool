@@ -30,6 +30,10 @@ tweak_wire_connection tweak_wire_create_connection(
     void *connection_state_cookie, tweak_wire_receive_listener receive_listener,
     void *receive_listener_cookie)
 {
+   if (!connection_type) {
+      return TWEAK_WIRE_INVALID_CONNECTION;
+   }
+
 #ifdef WITH_WIRE_NNG
    if (strcmp(connection_type, "nng") == 0) {
       return tweak_wire_create_nng_connection(connection_type, params, uri,

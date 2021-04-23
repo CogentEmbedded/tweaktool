@@ -24,78 +24,25 @@
 
 #define TRIGGER_EVENT(event, ...) ((event).callback(__VA_ARGS__, (event).cookie))
 
-#if TWEAK_LOG_LEVEL <= 0
-static void trace_add_item_req(const char* direction, const tweak_pickle_add_item *add_item) {
-  assert(direction);
-  assert(add_item);
-  tweak_variant_string current_value_str = tweak_variant_to_json(&add_item->current_value);
-  tweak_variant_string default_value_str = tweak_variant_to_json(&add_item->default_value);
-  TWEAK_LOG_TRACE("%s request: add_item"
-    " {"
-    " .tweak_id=%" PRId64 ","
-    " .uri=\"%s\","
-    " .description=\"%s\","
-    " .meta=\"%s\","
-    " .current_value=\"%s\","
-    " .default_value=\"%s\","
-    "}"
-    , direction
-    , add_item->tweak_id
-    , tweak_variant_string_c_str(&add_item->uri)
-    , tweak_variant_string_c_str(&add_item->description)
-    , tweak_variant_string_c_str(&add_item->meta)
-    , tweak_variant_string_c_str(&current_value_str)
-    , tweak_variant_string_c_str(&default_value_str)
-  );
-  tweak_variant_destroy_string(&default_value_str);
-  tweak_variant_destroy_string(&current_value_str);
-}
+#if TWEAK_LOG_LEVEL == 0
 
-static void trace_change_item_req(const char* direction, const tweak_pickle_change_item *change_item) {
-  assert(direction);
-  assert(change_item);
-  tweak_variant_string value_str = tweak_variant_to_json(&change_item->value);
-  TWEAK_LOG_TRACE("%s request: change_item"
-    " {"
-    " .tweak_id=%" PRId64 ","
-    " .value=\"%s\""
-    " }"
-    , direction
-    , change_item->tweak_id
-    , tweak_variant_string_c_str(&value_str));
-    tweak_variant_destroy_string(&value_str);
-}
+void tweak_pickle_trace_add_item_req(const char* direction, const tweak_pickle_add_item *add_item);
 
-static void trace_remove_item_req(const char* direction, const tweak_pickle_remove_item *remove_item) {
-  assert(direction);
-  assert(remove_item);
-  TWEAK_LOG_TRACE("%s request: remove_item"
-    " {"
-    " .tweak_id=%" PRId64 ","
-    " }",
-    direction,
-    remove_item->tweak_id);
-}
+void tweak_pickle_trace_change_item_req(const char* direction, const tweak_pickle_change_item *change_item);
 
-static void trace_subscribe_req(const char* direction, const tweak_pickle_subscribe* subscribe) {
-  assert(direction);
-  TWEAK_LOG_TRACE("%s request: subscribe"
-    " {"
-    " .uri_patterns=\"%s\""
-    " }",
-    direction,
-    subscribe ? tweak_variant_string_c_str(&subscribe->uri_patterns) : "*");
-}
+void tweak_pickle_trace_remove_item_req(const char* direction, const tweak_pickle_remove_item *remove_item);
+
+void tweak_pickle_trace_subscribe_req(const char* direction, const tweak_pickle_subscribe* subscribe);
 
 #else
 
-static inline void trace_add_item_req(const char* direction, const tweak_pickle_add_item *add_item) { }
+#define tweak_pickle_trace_add_item_req(...)
 
-static inline void trace_change_item_req(const char* direction, const tweak_pickle_change_item *change_item) { }
+#define tweak_pickle_trace_change_item_req(...)
 
-static inline void trace_remove_item_req(const char* direction, const tweak_pickle_remove_item *remove_item0) { }
+#define tweak_pickle_trace_remove_item_req(...)
 
-static inline void trace_subscribe_req(const char* direction, const tweak_pickle_subscribe* subscribe) { }
+#define tweak_pickle_trace_subscribe_req(...)
 
 #endif
 
@@ -106,16 +53,16 @@ static inline void reserve_tweak_string(size_t length,
   assert(buff);
 
   size_t desired_capacity = length + 1;
-  if (desired_capacity <= sizeof(string->small_buffer)) {
-    string->capacity = sizeof(string->small_buffer);
+  if (desired_capacity <= sizeof(string->buffers.small_buffer)) {
+    string->capacity = sizeof(string->buffers.small_buffer);
     string->length = length;
-    *buff = string->small_buffer;
+    *buff = string->buffers.small_buffer;
   } else {
-    string->large_buffer = calloc(1, desired_capacity);
-    assert(string->large_buffer);
+    string->buffers.large_buffer = calloc(1, desired_capacity);
+    assert(string->buffers.large_buffer);
     string->capacity = desired_capacity;
     string->length = length;
-    *buff = string->large_buffer;
+    *buff = string->buffers.large_buffer;
   }
 }
 
@@ -123,7 +70,7 @@ static inline bool decode_tweak_string(pb_istream_t *stream,
   const pb_field_t *field, void ** arg)
 {
   assert(stream);
-  assert(field);
+  (void)field;
   assert(arg);
 
   tweak_variant_string *string = *(tweak_variant_string **)arg;

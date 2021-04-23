@@ -51,12 +51,11 @@ tweak_model_index_result tweak_model_uri_to_tweak_id_index_insert(tweak_model_ur
   }
   pair->tweak_id = tweak_id;
   size_t length = strlen(uri);
-  pair->key = malloc(length + 1);
+  pair->key = strdup(uri);
   if (pair->key == NULL) {
     free(pair);
     return TWEAK_MODEL_INDEX_NO_MEMORY;
   }
-  strncpy(pair->key, uri, length + 1);
   HASH_ADD_KEYPTR(hh, index_impl->pairs, pair->key, length, pair);
   return TWEAK_MODEL_INDEX_SUCCESS;
 }

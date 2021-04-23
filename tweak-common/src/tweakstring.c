@@ -16,13 +16,13 @@
 
 bool tweak_variant_is_small_string(const tweak_variant_string* string) {
   assert(string);
-  return string->capacity <= sizeof(string->small_buffer);
+  return string->capacity <= sizeof(string->buffers.small_buffer);
 }
 
 void tweak_variant_destroy_string(tweak_variant_string* string) {
   if (string) {
     if (!tweak_variant_is_small_string(string)) {
-      free(string->large_buffer);
+      free(string->buffers.large_buffer);
     }
     tweak_variant_string empty = { 0 };
     *string = empty;
@@ -39,20 +39,20 @@ void tweak_variant_assign_string(tweak_variant_string* string, const char* arg) 
     size_t desired_capacity = length + 1;
     if (desired_capacity > string->capacity) {
       if (!tweak_variant_is_small_string(string))
-        free(string->large_buffer);
+        free(string->buffers.large_buffer);
 
       size_t overcommitted_capacity = desired_capacity * 3 / 2;
 
-      string->large_buffer = (char*)malloc(overcommitted_capacity);
-      assert(string->large_buffer);
+      string->buffers.large_buffer = (char*)malloc(overcommitted_capacity);
+      assert(string->buffers.large_buffer);
 
       string->capacity = overcommitted_capacity;
     }
 
     char* destination =
       tweak_variant_is_small_string(string)
-        ? string->small_buffer
-        : string->large_buffer;
+        ? string->buffers.small_buffer
+        : string->buffers.large_buffer;
 
     strncpy(destination, arg, string->capacity);
     string->length = length;
@@ -74,8 +74,8 @@ const char* tweak_variant_string_c_str(const tweak_variant_string* string) {
     return NULL;
 
   return tweak_variant_is_small_string(string)
-    ? string->small_buffer
-    : string->large_buffer;
+    ? string->buffers.small_buffer
+    : string->buffers.large_buffer;
 }
 
 bool tweak_variant_string_is_empty(const tweak_variant_string* string) {
@@ -96,7 +96,9 @@ tweak_variant_string tweak_variant_string_copy(const tweak_variant_string* arg) 
     tweak_variant_string result = {
       .length = arg->length,
       .capacity = capacity,
-      .large_buffer = large_buffer
+      {
+        .large_buffer = large_buffer
+      }
     };
     return result;
   }

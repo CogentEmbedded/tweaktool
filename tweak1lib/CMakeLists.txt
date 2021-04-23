@@ -28,10 +28,30 @@
 # ------------------------------------------------------------------------------
 
 set(LIBRARY_NAME compatibility-server)
+set(LIBRARY_SOVERSION 0)
 
 # ------------------------------------------------------------------------------
 # Dependencies
 # ------------------------------------------------------------------------------
+
+# Prefer system version of uthash packages. Use a submodule if not available.
+find_package(uthash)
+if(NOT UTHASH_INCLUDE_DIR)
+  find_path(
+    UTHASH_INCLUDE_DIR
+    NAMES "uthash.h"
+    PATHS "${CMAKE_CURRENT_LIST_DIR}/../extern/uthash/include/"
+    NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
+
+  if(UTHASH_INCLUDE_DIR)
+    message(STATUS "Using uthash from a submodule: ${UTHASH_INCLUDE_DIR}")
+  else()
+    message(
+      FATAL_ERROR "uthash.h is NOT FOUND, please init and update all submodules"
+    )
+  endif()
+endif()
+
 
 set(${LIBRARY_NAME}_HEADERS)
 set(${LIBRARY_NAME}_COMPAT_HEADERS
@@ -60,11 +80,18 @@ add_library(${PROJECT_NAMESPACE}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
 target_link_libraries(${LIBRARY_NAME} PRIVATE ${${LIBRARY_NAME}_DEPENDENCIES})
 
 set_target_properties(${LIBRARY_NAME} PROPERTIES C_STANDARD 99
-                                                 C_STANDARD_REQUIRED YES)
+                                                 C_STANDARD_REQUIRED YES
+                                                 SOVERSION ${LIBRARY_SOVERSION}
+                                                 SONAME ${LIBRARY_NAME}
+                                                 OUTPUT_NAME ${PROJECT_NAME}${LIBRARY_NAME}
+                                                 VERSION "${PROJECT_NUMERIC_VERSION}")
 
 # INSTALL_INTERFACE header path is specified during installation
 target_include_directories(
-  ${LIBRARY_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+  ${LIBRARY_NAME}
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE $<BUILD_INTERFACE:${UTHASH_INCLUDE_DIR}>
+)
 
 # ------------------------------------------------------------------------------
 # Documentation

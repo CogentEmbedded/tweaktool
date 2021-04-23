@@ -80,6 +80,7 @@ static void* producer(void *arg) {
     tweak_app_queue_push(job_queue, &job);
   }
   tweak_app_queue_stop(job_queue);
+  return NULL;
 }
 
 static void* slow_producer(void *arg) {
@@ -98,6 +99,7 @@ static void* slow_producer(void *arg) {
     sleepmillis(10);
   }
   tweak_app_queue_stop(job_queue);
+  return NULL;
 }
 
 void test_queue() {

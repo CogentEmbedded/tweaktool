@@ -41,7 +41,7 @@ extern "C" {
 typedef struct {
   tweak_variant_type type;
   union {
-    bool value_bool;
+    bool b;
     int8_t sint8;
     int16_t sint16;
     int32_t sint32;
@@ -52,10 +52,10 @@ typedef struct {
     uint64_t uint64;
     float fp32;
     double fp64;
-  };
+  } value;
 } tweak_variant;
 
-#define TWEAK_VARIANT_INIT_EMPTY { .type = TWEAK_VARIANT_TYPE_IS_NULL, }
+#define TWEAK_VARIANT_INIT_EMPTY { TWEAK_VARIANT_TYPE_NULL, { 0 } }
 
 /**
  * @brief assign bool value to variant.
@@ -65,7 +65,7 @@ typedef struct {
  */
 static inline void tweak_variant_create_bool(tweak_variant* variant, bool arg) {
   variant->type = TWEAK_VARIANT_TYPE_BOOL;
-  variant->value_bool = arg;
+  variant->value.b = arg;
 }
 
 /**
@@ -76,7 +76,7 @@ static inline void tweak_variant_create_bool(tweak_variant* variant, bool arg) {
  */
 static inline void tweak_variant_create_sint8(tweak_variant* variant, int8_t arg) {
   variant->type = TWEAK_VARIANT_TYPE_SINT8;
-  variant->sint8 = arg;
+  variant->value.sint8 = arg;
 }
 
 /**
@@ -87,7 +87,7 @@ static inline void tweak_variant_create_sint8(tweak_variant* variant, int8_t arg
  */
 static inline void tweak_variant_create_sint16(tweak_variant* variant, int16_t arg) {
   variant->type = TWEAK_VARIANT_TYPE_SINT16;
-  variant->sint16 = arg;
+  variant->value.sint16 = arg;
 }
 
 /**
@@ -98,7 +98,7 @@ static inline void tweak_variant_create_sint16(tweak_variant* variant, int16_t a
  */
 static inline void tweak_variant_create_sint32(tweak_variant* variant, int32_t arg) {
   variant->type = TWEAK_VARIANT_TYPE_SINT32;
-  variant->sint32 = arg;
+  variant->value.sint32 = arg;
 }
 
 /**
@@ -109,7 +109,7 @@ static inline void tweak_variant_create_sint32(tweak_variant* variant, int32_t a
  */
 static inline void tweak_variant_create_sint64(tweak_variant* variant, int64_t arg) {
   variant->type = TWEAK_VARIANT_TYPE_SINT64;
-  variant->sint64 = arg;
+  variant->value.sint64 = arg;
 }
 
 /**
@@ -120,7 +120,7 @@ static inline void tweak_variant_create_sint64(tweak_variant* variant, int64_t a
  */
 static inline void tweak_variant_create_uint8(tweak_variant* variant, uint8_t arg) {
   variant->type = TWEAK_VARIANT_TYPE_UINT8;
-  variant->uint8 = arg;
+  variant->value.uint8 = arg;
 }
 
 /**
@@ -131,7 +131,7 @@ static inline void tweak_variant_create_uint8(tweak_variant* variant, uint8_t ar
  */
 static inline void tweak_variant_create_uint16(tweak_variant* variant, uint16_t arg) {
   variant->type = TWEAK_VARIANT_TYPE_UINT16;
-  variant->uint16 = arg;
+  variant->value.uint16 = arg;
 }
 
 /**
@@ -142,7 +142,7 @@ static inline void tweak_variant_create_uint16(tweak_variant* variant, uint16_t 
  */
 static inline void tweak_variant_create_uint32(tweak_variant* variant, uint32_t arg) {
   variant->type = TWEAK_VARIANT_TYPE_UINT32;
-  variant->uint32 = arg;
+  variant->value.uint32 = arg;
 }
 
 /**
@@ -153,7 +153,7 @@ static inline void tweak_variant_create_uint32(tweak_variant* variant, uint32_t 
  */
 static inline void tweak_variant_create_uint64(tweak_variant* variant, uint64_t arg) {
   variant->type = TWEAK_VARIANT_TYPE_UINT64;
-  variant->uint64 = arg;
+  variant->value.uint64 = arg;
 }
 
 /**
@@ -164,7 +164,7 @@ static inline void tweak_variant_create_uint64(tweak_variant* variant, uint64_t 
  */
 static inline void tweak_variant_create_float(tweak_variant* variant, float arg) {
   variant->type = TWEAK_VARIANT_TYPE_FLOAT;
-  variant->fp32 = arg;
+  variant->value.fp32 = arg;
 }
 
 /**
@@ -175,7 +175,7 @@ static inline void tweak_variant_create_float(tweak_variant* variant, float arg)
  */
 static inline void tweak_variant_create_double(tweak_variant* variant, double arg) {
   variant->type = TWEAK_VARIANT_TYPE_DOUBLE;
-  variant->fp64 = arg;
+  variant->value.fp64 = arg;
 }
 
 /**
@@ -196,56 +196,14 @@ static inline void tweak_variant_swap(tweak_variant* variant1, tweak_variant* va
  *
  * @param[in] variant pointer to value being coped.
  */
-static inline tweak_variant tweak_variant_copy(const tweak_variant* variant) {
-  switch (variant->type) {
-  case TWEAK_VARIANT_TYPE_IS_NULL:
-  case TWEAK_VARIANT_TYPE_BOOL:
-  case TWEAK_VARIANT_TYPE_SINT8:
-  case TWEAK_VARIANT_TYPE_SINT16:
-  case TWEAK_VARIANT_TYPE_SINT32:
-  case TWEAK_VARIANT_TYPE_SINT64:
-  case TWEAK_VARIANT_TYPE_UINT8:
-  case TWEAK_VARIANT_TYPE_UINT16:
-  case TWEAK_VARIANT_TYPE_UINT32:
-  case TWEAK_VARIANT_TYPE_UINT64:
-  case TWEAK_VARIANT_TYPE_FLOAT:
-  case TWEAK_VARIANT_TYPE_DOUBLE:
-    return *variant;
-  default:
-    break;
-  }
-  tweak_variant null_value = {
-    .type = TWEAK_VARIANT_TYPE_IS_NULL
-  };
-  return null_value;
-}
+tweak_variant tweak_variant_copy(const tweak_variant* variant);
 
 /**
  * @brief Destroys variant instance.
  *
  * @param[in] variant value to deallocate.
  */
-static inline void tweak_variant_destroy(tweak_variant* variant) {
-  switch (variant->type) {
-  case TWEAK_VARIANT_TYPE_IS_NULL:
-  case TWEAK_VARIANT_TYPE_BOOL:
-  case TWEAK_VARIANT_TYPE_SINT8:
-  case TWEAK_VARIANT_TYPE_SINT16:
-  case TWEAK_VARIANT_TYPE_SINT32:
-  case TWEAK_VARIANT_TYPE_SINT64:
-  case TWEAK_VARIANT_TYPE_UINT8:
-  case TWEAK_VARIANT_TYPE_UINT16:
-  case TWEAK_VARIANT_TYPE_UINT32:
-  case TWEAK_VARIANT_TYPE_UINT64:
-  case TWEAK_VARIANT_TYPE_FLOAT:
-  case TWEAK_VARIANT_TYPE_DOUBLE:
-    break;
-  default:
-    break;
-  }
-  memset(variant, 0, sizeof(*variant));
-  variant->type = TWEAK_VARIANT_TYPE_IS_NULL;
-}
+void tweak_variant_destroy(tweak_variant* variant);
 
 /**
  * @brief Result of a type conversion operation.

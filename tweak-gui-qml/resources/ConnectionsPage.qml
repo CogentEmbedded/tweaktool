@@ -6,10 +6,10 @@
  *
  * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool.
+ * This file is a part of Cogent Tweak Tool feature.
  *
  * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via http://cogentembedded.com
+ * directory of this distribution or by request via www.cogentembedded.com
  */
 
 import QtQuick 2.0
@@ -35,56 +35,68 @@ ColumnLayout {
         id: connectionModel
 
         ListElement {
-            name: "dummy"
-            uri: "dummy"
+            name: "default"
+            uriSchema: "tcp"
+            uriHost: "0.0.0.0"
+            uriPort: 7777
             contextType: "nng"
             autoConnect: false
             connectionId: -1
         }
     }
 
+    property var defaultItem: {
+        "name": "default",
+        "autoConnect": false,
+        "uriSchema": "tcp",
+        "uriHost": "127.0.0.1",
+        "uriPort": 7777,
+        "contextType": "nng",
+        "connectionId": -1
+    }
+
     Settings {
         id: settings
         category: "Connections"
 
-        property string list: '[{"name":"default","uri":"tcp://0.0.0.0:7777","contextType":"nng"}]'
+        property string list: JSON.stringify([defaultItem])
+    }
+
+    function combineUri(schema, host, port) {
+        return (schema !== "" ? schema : "?") + "://"
+                + (host !== "" ? host : "?") + ":" + port + "/"
     }
 
     Component.onCompleted: {
-        if (settings.list)
-        {
-            var model = JSON.parse(settings.list);
+        if (settings.list) {
+            var model = JSON.parse(settings.list)
 
-            connectionModel.clear();
-            for (var i = 0; i < model.length; i++)
-            {
-                var item = model[i];
+            connectionModel.clear()
+            for (var i = 0; i < model.length; i++) {
+                var item = model[i]
 
-                if (item.autoConnect)
-                {
+                if (item.autoConnect) {
+                    var uri = combineUri(item.uriSchema, item.uriHost,
+                                         item.uriPort)
                     item.connectionId = tweak.addClient(item.name,
                                                         item.contextType,
-                                                        "role=client",
-                                                        item.uri);
-                }
-                else
-                {
-                    item.connectionId = -1;
+                                                        "role=client", uri)
+                } else {
+                    item.connectionId = -1
                 }
 
-                connectionModel.append(item);
+                connectionModel.append(item)
             }
         }
     }
 
     function saveModel() {
-        var model = [];
-        for (var i = 0; i < connectionModel.count; i++)
-        {
-            var item = connectionModel.get(i);
-            model.push(item);
+        var model = []
+        for (var i = 0; i < connectionModel.count; i++) {
+            var item = connectionModel.get(i)
+            model.push(item)
         }
-        settings.list = JSON.stringify(model);
+        settings.list = JSON.stringify(model)
     }
 
 
@@ -95,24 +107,31 @@ ColumnLayout {
             Layout.fillWidth: true
 
             TweakToolButton {
+                id: addConnectionButton
+                objectName: "addConnectionButton"
                 text: "Add"
                 iconSource: "qrc:/images/button-plus.png"
 
                 onClicked: {
-                    var item = {connectionId: -1,  contextType: "nng"};
-                    connectionModel.append(item);
+                    var item = defaultItem
+                    connectionModel.append(item)
                 }
             }
             ToolSeparator {
                 Layout.fillHeight: true
             }
             TweakToolButton {
+                id: clearConnectionsButton
+                objectName: "clearConnectionsButton"
+
                 text: "Clear"
                 iconSource: "qrc:/images/button-minus.png"
 
+                enabled: connectionModel.count > 0
+
                 onClicked: {
-                    connectionModel.clear();
-                    saveModel();
+                    connectionModel.clear()
+                    saveModel()
                 }
             }
         }
@@ -162,14 +181,21 @@ ColumnLayout {
                         text: "Name"
                     }
 
-                    TextField {
+                    ValidatedTextField {
+                        id: nameField
+                        objectName: "nameField"
+
+                        enabled: connectionId < 0
+
                         text: name
                         Layout.fillWidth: true
 
                         onTextChanged: {
-                            name  = text;
-                            saveModel();
+                            name = text
+                            saveModel()
                         }
+
+                        textInvalidMessage: "Name must not be empty"
                     }
 
                     Label {
@@ -179,8 +205,74 @@ ColumnLayout {
                     CheckBox {
                         checked: autoConnect
                         onCheckedChanged: {
-                            autoConnect = checked;
-                            saveModel();
+                            autoConnect = checked
+                            saveModel()
+                        }
+                    }
+
+                    Label {
+                        text: "URI scheme"
+                        enabled: connectionId < 0
+                    }
+
+                    ComboBox {
+                        id: uriSchemaSelector
+                        objectName: "uriSchemaSelector"
+                        enabled: connectionId < 0
+
+                        model: ["tcp", "udp"]
+
+                        property string uSchema: uriSchema
+                        onUSchemaChanged: {
+                            currentIndex = Math.max(find(uSchema), 0)
+                        }
+
+                        onActivated: {
+                            uSchema = textAt(index)
+                            uriSchema = uSchema
+                            saveModel()
+                        }
+                    }
+
+                    Label {
+                        text: "URI host"
+                        enabled: connectionId < 0
+                    }
+
+                    ValidatedTextField {
+                        id: uriHostField
+                        objectName: "uriHostField"
+                        enabled: connectionId < 0
+
+                        text: uriHost
+
+                        /*.. no whitespaces are allowed and the name shall start with a letter or a digit */
+                        textValidator: /^[a-zA-Z0-9]\S*/
+                        textInvalidMessage: "Enter valid host name or IP address"
+
+                        onTextChanged: {
+                            uriHost = text
+                            saveModel()
+                        }
+                    }
+
+                    Label {
+                        text: "URI port"
+                        enabled: connectionId < 0
+                    }
+
+                    SpinBox {
+                        id: uriPortSelector
+                        enabled: connectionId < 0
+
+                        from: 1
+                        to: 65535
+
+                        value: uriPort
+
+                        onValueModified: {
+                            uriPort = value
+                            saveModel()
                         }
                     }
 
@@ -189,16 +281,13 @@ ColumnLayout {
                         enabled: connectionId < 0
                     }
 
-                    TextField {
-                        text: uri
-                        Layout.fillWidth: true
+                    Label {
+                        id: uriLabel
+                        objectName: "uriLabel"
 
+                        text: combineUri(uriSchema, uriHostField.text,
+                                         uriPortSelector.value)
                         enabled: connectionId < 0
-
-                        onTextChanged: {
-                            uri = text;
-                            saveModel();
-                        }
                     }
 
                     Label {
@@ -218,9 +307,9 @@ ColumnLayout {
                         }
 
                         onActivated: {
-                            cType = textAt(index);
-                            contextType = cType;
-                            saveModel();
+                            cType = textAt(index)
+                            contextType = cType
+                            saveModel()
                         }
                     }
 
@@ -239,15 +328,19 @@ ColumnLayout {
                     RowLayout {
                         Button {
                             id: connectButton
+                            objectName: "connectButton"
 
                             text: "Connect"
-                            enabled: connectionId < 0
+                            enabled: connectionId < 0 && nameField.textIsValid
+                                     && uriHostField.textIsValid
 
                             onClicked: {
+                                var uri = combineUri(uriSchema,
+                                                     uriHost, uriPort)
                                 connectionId = tweak.addClient(name,
                                                                contextType,
                                                                "role=client",
-                                                               uri);
+                                                               uri)
                             }
                         }
 
@@ -258,8 +351,23 @@ ColumnLayout {
                             enabled: connectionId >= 0
 
                             onClicked: {
-                                tweak.removeClient(connectionId);
-                                connectionId = -1;
+                                tweak.removeClient(connectionId)
+                                connectionId = -1
+                            }
+                        }
+
+                        Button {
+                            id: deleteButton
+                            text: "Delete"
+                            onClicked: {
+
+                                if (connectionId >= 0) {
+                                    tweak.removeClient(connectionId)
+                                    connectionId = -1
+                                }
+
+                                connectionModel.remove(index)
+                                saveModel()
                             }
                         }
                     }

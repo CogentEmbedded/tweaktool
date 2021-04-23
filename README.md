@@ -38,8 +38,13 @@ Step 2
 
 Checkout actual tweaktool2 branch.
 
+---
+**NOTE**
+Exact branch name isn't settled for the current release.
+---
+
 ```bash
-git clone git@github.com:CogentEmbedded/tweaktool.git --recursive
+git clone git@bitbucket.org:cogente/tweaktool.git --branch tweak2-qml-gui --recursive
 ```
 
 Step 3
@@ -50,9 +55,9 @@ Option A: Install pre-built NNG packages
 
 ```bash
 sudo apt-get -y install libmbedtls-dev libmbedcrypto3 libmbedtls12 libmbedx509-0
-sudo dpkg -i ./tweaktool/nng-prebuilt/ubuntu_20_04/libnng1_1.4.0-1build1.1_amd64.deb \
-             ./tweaktool/nng-prebuilt/ubuntu_20_04/libnng-dev_1.4.0-1build1.1_amd64.deb \
-             ./tweaktool/nng-prebuilt/ubuntu_20_04/nng-utils_1.4.0-1build1.1_amd64.deb
+sudo dpkg -i ./tweaktool/prebuilt-packages/ubuntu_20_04/libnng1_1.4.0-1build1.1_amd64.deb \
+             ./tweaktool/prebuilt-packages/ubuntu_20_04/libnng-dev_1.4.0-1build1.1_amd64.deb \
+             ./tweaktool/prebuilt-packages/ubuntu_20_04/nng-utils_1.4.0-1build1.1_amd64.deb
 ```
 
 Option B: Build NNG packages manually
@@ -84,6 +89,11 @@ After all these commands user should get all the debs inside ./tweak-build direc
 
 ### Step-by-step guide to build tweaktool2 on Ubuntu 18.04
 
+---
+**NOTE**
+Exact branch name isn't settled for the current release.
+---
+
 Step 1
 
 Install basic Ubuntu build utilities and Qt developer's packages.
@@ -99,9 +109,13 @@ Step 2
 
 Checkout actual tweaktool2 branch.
 
+---
+**NOTE**
+Exact branch name isn't settled for the current release.
+---
 
 ```bash
-git clone git@github.com:CogentEmbedded/tweaktool.git --recursive
+git clone git@bitbucket.org:cogente/tweaktool.git --branch tweak2-qml-gui --recursive
 ```
 
 Step 3
@@ -119,9 +133,9 @@ advanced build recipes.
 
 ```bash
 sudo apt-get -y install libmbedtls-dev libmbedcrypto1 libmbedtls10 libmbedx509-0
-sudo dpkg -i ./tweaktool/nng-prebuilt/ubuntu_18_04/libnng1_1.4.0-1build1.1_amd64.deb \
-             ./tweaktool/nng-prebuilt/ubuntu_18_04/libnng-dev_1.4.0-1build1.1_amd64.deb \
-             ./tweaktool/nng-prebuilt/ubuntu_18_04/nng-utils_1.4.0-1build1.1_amd64.deb
+sudo dpkg -i ./tweaktool/prebuilt-packages/ubuntu_18_04/libnng1_1.4.0-1build1.1_amd64.deb \
+             ./tweaktool/prebuilt-packages/ubuntu_18_04/libnng-dev_1.4.0-1build1.1_amd64.deb \
+             ./tweaktool/prebuilt-packages/ubuntu_18_04/nng-utils_1.4.0-1build1.1_amd64.deb
 ```
 
 Step 4
@@ -130,7 +144,7 @@ Step 4
 **NOTE**
 There's currently a defect not allowing to build tweaktool with cmake provided with Ubuntu 18.04
 
-`build-debs.sh` could fail with error in target "SortFilterProxyModel".
+build-debs.sh could fail with error in target "SortFilterProxyModel".
 
 Until there's a solution, there's no option but to upgrade cmake, as in Step 3/Option B.
 ---
@@ -156,14 +170,14 @@ First, you have to install docker:
 Then, you have to install docker-compose utility:
 <https://docs.docker.com/compose/install/>
 
-Then, start script `build-with-docker.sh --build-images-only` from project root directory.
+Then, start script build-with-docker.sh --build-images-only from project root directory.
 This shall build reproducible build environment. This has to be run only once.
 Since then, existing build environment could be re-used many times.
-When there's build environment available, run `build-with-docker.sh` without arguments.
+When there's build environment available, run build-with-docker.sh without arguments.
 It shall build deb packages in ./docker-build directory.
 
 Note: If your linux user doesn't belong to "docker" users' group,
-the script `build-with-docker.sh` won't work without sudo.
+the script build-with-docker.sh won't work without sudo.
 
 ## Build on local linux installation
 
@@ -225,8 +239,8 @@ sudo make install
 **NOTE**
 
 Another and probably more preferred option is to refer script
-`build-nng-deps.sh` from project directory
-to build proper Ubuntu-styled deb packages.
+[build-nng-deps.sh](build-nng-deps.sh) from project directory 
+to build proper Ubuntu-styled deb packages. 
 
 Pre-conditions for that script are:
 
@@ -255,13 +269,13 @@ sudo apt-get update
 sudo apt-get install cmake
 ```
 
-Other steps are the same as in Ubuntu 20.04 section. The script `build-nng-deps.sh`
+Other steps are the same as in Ubuntu 20.04 section. The script build-nng-deps.sh
 works with this Ubuntu version as well.
 
 ## Fetch tweaktool sources
 
 ```bash
-git clone git@github.com:CogentEmbedded/tweaktool.git --recursive
+git clone git@bitbucket.org:cogente/tweaktool.git --branch tweak2-qml-gui --recursive
 ```
 
 ## Build tweaktool
@@ -316,4 +330,4 @@ see "Build tweaktool" section.
 
 ## License
 
-Tweak Tool is developed under MIT license. For full license text, see [COPYING](LICENSE).
+Tweak Tool is developed under MIT license. For full license text, see [COPYING](COPYING).

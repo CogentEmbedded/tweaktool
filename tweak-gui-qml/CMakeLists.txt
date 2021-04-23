@@ -27,6 +27,7 @@
 # Common settings
 # ------------------------------------------------------------------------------
 
+set(LIBRARY_NAME ${GUI_TOOL_NAME}-lib)
 set(BINARY_NAME ${GUI_TOOL_NAME})
 
 # ------------------------------------------------------------------------------
@@ -39,30 +40,46 @@ find_package(Qt5 REQUIRED COMPONENTS Core Quick QuickControls2)
 # Sources
 # ------------------------------------------------------------------------------
 
-set(${BINARY_NAME}_SOURCES
+set(${LIBRARY_NAME}_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/QTweakVariant.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakComponents.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakComponents.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakMetadataParser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakMetadataParser.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakQmlApp.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakQmlApp.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakMetadataParser.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakMetadataParser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakQmlApp_p.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakQmlApp.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakUriTree.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakUriTree.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/QTweakVariant.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakTreeModel.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakTreeModel.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakTreeModel.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakUriTree.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/TweakUriTree.hpp)
 
-qt5_add_resources(${BINARY_NAME}_RESOURCES
+set(${BINARY_NAME}_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+
+qt5_add_resources(${LIBRARY_NAME}_RESOURCES
                   ${CMAKE_CURRENT_SOURCE_DIR}/resources/main.qrc)
+
+# ------------------------------------------------------------------------------
+# Library
+# ------------------------------------------------------------------------------
+add_library(${LIBRARY_NAME} STATIC ${${LIBRARY_NAME}_SOURCES}
+                                   ${${LIBRARY_NAME}_RESOURCES})
+
+target_link_libraries(${LIBRARY_NAME} Qt5::Core Qt5::Quick Qt5::QuickControls2
+                      ${PROJECT_NAMESPACE}::app SortFilterProxyModel)
+
+set_target_properties(
+  ${LIBRARY_NAME} PROPERTIES AUTOMOC ON AUTORCC ON CXX_STANDARD 11
+                             CXX_STANDARD_REQUIRED YES)
 
 # ------------------------------------------------------------------------------
 # Binary
 # ------------------------------------------------------------------------------
-add_executable(${BINARY_NAME} ${${BINARY_NAME}_SOURCES}
-                              ${${BINARY_NAME}_RESOURCES})
+add_executable(${BINARY_NAME} ${${BINARY_NAME}_SOURCES})
 
-target_link_libraries(${BINARY_NAME} Qt5::Core Qt5::Quick Qt5::QuickControls2
-                      ${PROJECT_NAMESPACE}::app SortFilterProxyModel)
+target_link_libraries(${BINARY_NAME} ${LIBRARY_NAME})
 
 set_target_properties(
   ${BINARY_NAME} PROPERTIES AUTOMOC ON AUTORCC ON CXX_STANDARD 11
@@ -84,4 +101,5 @@ if(BUILD_TESTS)
   add_subdirectory(test/qtweakvariant)
   add_subdirectory(test/tweaknodetree)
   add_subdirectory(test/tweakqmlapp)
+  add_subdirectory(test/tweakguitest)
 endif()

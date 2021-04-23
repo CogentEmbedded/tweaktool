@@ -115,6 +115,7 @@ struct traverse_context {
 };
 
 static bool index_traverse_proc(const char *uri, tweak_id id, void* cookie) {
+  (void) uri;
   TWEAK_LOG_TRACE_ENTRY("uri = %s, id = %" PRIu64 ", cookie= %p", uri, id, cookie);
   struct traverse_context* traverse_context = cookie;
    struct tweak_app_context_base* context = traverse_context->context;
@@ -176,7 +177,7 @@ tweak_app_item_snapshot* tweak_app_item_get_snapshot(tweak_app_context context,
 
 tweak_variant_type tweak_app_item_get_type(tweak_app_context context, tweak_id id) {
   TWEAK_LOG_TRACE_ENTRY("context = %p, id = %" PRIu64 "", context, id);
-  tweak_variant_type result = TWEAK_VARIANT_TYPE_IS_NULL;
+  tweak_variant_type result = TWEAK_VARIANT_TYPE_NULL;
   pthread_rwlock_rdlock(&context->model_impl.model_lock);
   tweak_item* item = tweak_model_find_item_by_id(context->model_impl.model, id);
   if (item != NULL) {
@@ -192,6 +193,7 @@ tweak_variant_type tweak_app_item_get_type(tweak_app_context context, tweak_id i
 void tweak_app_release_snapshot(tweak_app_context context,
   tweak_app_item_snapshot* snapshot)
 {
+  (void) context;
   TWEAK_LOG_TRACE_ENTRY("context = %p, snapshot = %p", context, snapshot);
   tweak_variant_destroy_string(&snapshot->uri);
   tweak_variant_destroy_string(&snapshot->description);

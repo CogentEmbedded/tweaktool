@@ -126,7 +126,7 @@ struct decoded_server_node_message {
     tweak_pickle_change_item change_item;
 
     tweak_pickle_remove_item remove_item;
-  };
+  } body;
 };
 
 static bool decode_server_request(pb_istream_t *stream, const pb_field_t *field,
@@ -142,7 +142,7 @@ static void client_receive_listener(const uint8_t* buffer,
 
   pb_istream_t stream = pb_istream_from_buffer(buffer, size);
 
-  struct decoded_server_node_message decoded_server_node_message = {};
+  struct decoded_server_node_message decoded_server_node_message = { 0 };
 
   tweak_pb_server_node_message message = {
     .cb_request = {
@@ -156,22 +156,22 @@ static void client_receive_listener(const uint8_t* buffer,
   if (pb_decode(&stream, tweak_pb_server_node_message_fields, &message)) {
     switch (decoded_server_node_message.tag) {
     case tweak_pb_server_node_message_add_item_tag:
-      trace_add_item_req("Inbound", &decoded_server_node_message.add_item);
-      TRIGGER_EVENT(endpoint->skeleton.add_item_listener, &decoded_server_node_message.add_item);
-      tweak_variant_destroy_string(&decoded_server_node_message.add_item.uri);
-      tweak_variant_destroy_string(&decoded_server_node_message.add_item.meta);
-      tweak_variant_destroy_string(&decoded_server_node_message.add_item.description);
-      tweak_variant_destroy(&decoded_server_node_message.add_item.default_value);
-      tweak_variant_destroy(&decoded_server_node_message.add_item.current_value);
+      tweak_pickle_trace_add_item_req("Inbound", &decoded_server_node_message.body.add_item);
+      TRIGGER_EVENT(endpoint->skeleton.add_item_listener, &decoded_server_node_message.body.add_item);
+      tweak_variant_destroy_string(&decoded_server_node_message.body.add_item.uri);
+      tweak_variant_destroy_string(&decoded_server_node_message.body.add_item.meta);
+      tweak_variant_destroy_string(&decoded_server_node_message.body.add_item.description);
+      tweak_variant_destroy(&decoded_server_node_message.body.add_item.default_value);
+      tweak_variant_destroy(&decoded_server_node_message.body.add_item.current_value);
       break;
     case tweak_pb_server_node_message_change_item_tag:
-      trace_change_item_req("Inbound", &decoded_server_node_message.change_item);
-      TRIGGER_EVENT(endpoint->skeleton.change_item_listener, &decoded_server_node_message.change_item);
-      tweak_variant_destroy(&decoded_server_node_message.change_item.value);
+      tweak_pickle_trace_change_item_req("Inbound", &decoded_server_node_message.body.change_item);
+      TRIGGER_EVENT(endpoint->skeleton.change_item_listener, &decoded_server_node_message.body.change_item);
+      tweak_variant_destroy(&decoded_server_node_message.body.change_item.value);
       break;
     case tweak_pb_server_node_message_remove_item_tag:
-      trace_remove_item_req("Inbound", &decoded_server_node_message.remove_item);
-      TRIGGER_EVENT(endpoint->skeleton.remove_item_listener, &decoded_server_node_message.remove_item);
+      tweak_pickle_trace_remove_item_req("Inbound", &decoded_server_node_message.body.remove_item);
+      TRIGGER_EVENT(endpoint->skeleton.remove_item_listener, &decoded_server_node_message.body.remove_item);
       break;
     default:
       TWEAK_LOG_WARN("Should never happen.\n"
@@ -190,27 +190,27 @@ static bool decode_server_add_item_request(pb_istream_t *stream,
   TWEAK_LOG_TRACE_ENTRY("stream = %p, add_item = %p, decoded_server_node_message = %p",
     stream, add_item, decoded_server_node_message);
   add_item->uri = make_decode_callback_for_tweak_variant_string(
-    &decoded_server_node_message->add_item.uri
+    &decoded_server_node_message->body.add_item.uri
   );
   add_item->description = make_decode_callback_for_tweak_variant_string(
-    &decoded_server_node_message->add_item.description
+    &decoded_server_node_message->body.add_item.description
   );
   add_item->meta = make_decode_callback_for_tweak_variant_string(
-    &decoded_server_node_message->add_item.meta
+    &decoded_server_node_message->body.add_item.meta
   );
   if (!pb_decode(stream, tweak_pb_add_item_fields, add_item)) {
     TWEAK_LOG_WARN("Can't decode add_item request");
-    tweak_variant_destroy_string(&decoded_server_node_message->add_item.uri);
-    tweak_variant_destroy_string(&decoded_server_node_message->add_item.meta);
-    tweak_variant_destroy_string(&decoded_server_node_message->add_item.description);
-    tweak_variant_destroy(&decoded_server_node_message->add_item.default_value);
-    tweak_variant_destroy(&decoded_server_node_message->add_item.current_value);
+    tweak_variant_destroy_string(&decoded_server_node_message->body.add_item.uri);
+    tweak_variant_destroy_string(&decoded_server_node_message->body.add_item.meta);
+    tweak_variant_destroy_string(&decoded_server_node_message->body.add_item.description);
+    tweak_variant_destroy(&decoded_server_node_message->body.add_item.default_value);
+    tweak_variant_destroy(&decoded_server_node_message->body.add_item.current_value);
     return false;
   }
 
-  decoded_server_node_message->add_item.tweak_id = add_item->tweak_id;
-  decoded_server_node_message->add_item.current_value = tweak_pickle_from_pb_variant(&add_item->current_value);
-  decoded_server_node_message->add_item.default_value = tweak_pickle_from_pb_variant(&add_item->default_value);
+  decoded_server_node_message->body.add_item.tweak_id = add_item->tweak_id;
+  decoded_server_node_message->body.add_item.current_value = tweak_pickle_from_pb_variant(&add_item->current_value);
+  decoded_server_node_message->body.add_item.default_value = tweak_pickle_from_pb_variant(&add_item->default_value);
   return true;
 }
 
@@ -225,8 +225,8 @@ static bool decode_server_change_item_request(pb_istream_t *stream,
     return false;
   }
 
-  decoded_server_node_message->change_item.tweak_id = change_item->tweak_id;
-  decoded_server_node_message->change_item.value = tweak_pickle_from_pb_variant(&change_item->value);
+  decoded_server_node_message->body.change_item.tweak_id = change_item->tweak_id;
+  decoded_server_node_message->body.change_item.value = tweak_pickle_from_pb_variant(&change_item->value);
   return true;
 }
 
@@ -241,7 +241,7 @@ static bool decode_server_remove_item_request(pb_istream_t *stream,
     return false;
   }
 
-  decoded_server_node_message->remove_item.tweak_id = remove_item->tweak_id;
+  decoded_server_node_message->body.remove_item.tweak_id = remove_item->tweak_id;
   return true;
 }
 
@@ -300,7 +300,7 @@ tweak_pickle_call_result
 {
   TWEAK_LOG_TRACE_ENTRY("client_endpoint = %p, subscribe = %p", client_endpoint, subscribe);
 
-  tweak_variant_string uri_patterns = {};
+  tweak_variant_string uri_patterns = TWEAK_VARIANT_STRING_EMPTY;
   tweak_variant_assign_string(&uri_patterns,
     subscribe
       ? tweak_variant_string_c_str(&subscribe->uri_patterns)
@@ -314,7 +314,7 @@ tweak_pickle_call_result
       }
     }
   };
-  trace_subscribe_req("Outbound", subscribe);
+  tweak_pickle_trace_subscribe_req("Outbound", subscribe);
 
   tweak_pickle_call_result result = encode_and_transmit_client_message(client_endpoint, &message);
   tweak_variant_destroy_string(&uri_patterns);
@@ -337,7 +337,7 @@ tweak_pickle_call_result
     return TWEAK_PICKLE_BAD_PARAMETER;
   }
 
-  if (change->value.type == TWEAK_VARIANT_TYPE_IS_NULL) {
+  if (change->value.type == TWEAK_VARIANT_TYPE_NULL) {
     return TWEAK_PICKLE_BAD_PARAMETER;
   }
 
@@ -352,7 +352,7 @@ tweak_pickle_call_result
     }
   };
 
-  trace_change_item_req("Outbound", change);
+  tweak_pickle_trace_change_item_req("Outbound", change);
 
   tweak_pickle_call_result result =
     encode_and_transmit_client_message(client_endpoint, &message);

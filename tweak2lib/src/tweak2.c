@@ -12,7 +12,7 @@
  * directory of this distribution or by request via www.cogentembedded.com
  */
 
-#include <tweak2.h>
+#include <tweak2/tweak2.h>
 #include <tweak2/appserver.h>
 #include <tweak2/log.h>
 #include <tweak2/variant.h>
@@ -31,7 +31,7 @@ static inline bool invalid_context() {
 
 #define MAX_BUFFER_SIZE 256
 
-static pthread_mutex_t s_callback_lock = { };
+static pthread_mutex_t s_callback_lock = { 0 };
 
 static tweak_item_change_listener s_item_change_listener = NULL;
 
@@ -79,6 +79,10 @@ static void on_current_value_changed(tweak_app_context context,
 void tweak_initialize_library(const char *context_type, const char *params,
   const char *uri)
 {
+  if (!context_type) {
+    TWEAK_FATAL("context_type is NULL. Try setting this to \"nng\" on generic POSIX/x86 platform");
+  }
+
   pthread_mutex_init(&s_callback_lock, NULL);
 
   tweak_app_server_callbacks callbacks = {
@@ -98,90 +102,92 @@ void tweak_set_item_change_listener(tweak_item_change_listener item_change_liste
   pthread_mutex_unlock(&s_callback_lock);
 }
 
-#define TWEAK2_IMPLEMENT_SCALAR_TYPE(Suffix, T, VariantTypeDesc, VariantField, Type, DefaultValue)                               \
-  tweak_id tweak_add_##Suffix##_##T##_ex(const struct tweak_add_item_ex_desc* desc, Type initial_value)                          \
-  {                                                                                                                              \
-    if (invalid_context()) {                                                                                                     \
-      TWEAK_LOG_ERROR("%s: Library hasn't been initialized correctly", __func__);                                                \
-      return TWEAK_INVALID_ID;                                                                                                   \
-    }                                                                                                                            \
-                                                                                                                                 \
-    tweak_variant variant_value = {                                                                                              \
-      .type = VariantTypeDesc,                                                                                                   \
-      .VariantField = initial_value                                                                                              \
-    };                                                                                                                           \
-                                                                                                                                 \
-    struct client_item_changed_listener* client_listener = calloc(1, sizeof(*client_listener));                                  \
-    if (!client_listener) {                                                                                                      \
-      TWEAK_FATAL("Can't allocate memory");                                                                                      \
-    }                                                                                                                            \
-                                                                                                                                 \
-    client_listener->client_callback = desc->item_change_listener;                                                               \
-    client_listener->client_cookie = desc->cookie;                                                                               \
-                                                                                                                                 \
-    return tweak_app_server_add_item(s_context, desc->uri, desc->description, desc->meta, &variant_value, client_listener);      \
-  }                                                                                                                              \
-                                                                                                                                 \
-  tweak_id tweak_add_##Suffix##_##T(const char* uri, const char* description, const char* meta, Type initial_value)              \
-  {                                                                                                                              \
-    if (invalid_context()) {                                                                                                     \
-      TWEAK_LOG_ERROR("%s: Library hasn't been initialized correctly", __func__);                                                \
-      return TWEAK_INVALID_ID;                                                                                                   \
-    }                                                                                                                            \
-                                                                                                                                 \
-    tweak_variant variant_value = {                                                                                              \
-      .type = VariantTypeDesc,                                                                                                   \
-      .VariantField = initial_value                                                                                              \
-    };                                                                                                                           \
-                                                                                                                                 \
-    return tweak_app_server_add_item(s_context, uri, description, meta, &variant_value, NULL);                                   \
-  }                                                                                                                              \
-                                                                                                                                 \
-  void tweak_set_##Suffix##_##T(tweak_id id, Type value) {                                                                       \
-    if (invalid_context()) {                                                                                                     \
-      TWEAK_LOG_ERROR("%s : Library hasn't been initialized correctly", __func__);                                               \
-    }                                                                                                                            \
-                                                                                                                                 \
-    tweak_variant variant_value = {                                                                                              \
-      .type = VariantTypeDesc,                                                                                                   \
-      .VariantField = value                                                                                                      \
-    };                                                                                                                           \
-                                                                                                                                 \
-    tweak_app_error_code result = tweak_app_item_replace_current_value((tweak_app_context)s_context, id, &variant_value);        \
-    if (result == TWEAK_APP_SUCCESS) {                                                                                           \
-      tweak_variant_destroy(&variant_value);                                                                                     \
-    } else {                                                                                                                     \
-      TWEAK_LOG_ERROR("%s : tweak_app_item_replace_current_value returned 0x%x", __func__, result);                              \
-    }                                                                                                                            \
-  }                                                                                                                              \
-                                                                                                                                 \
-  Type tweak_get_##Suffix##_##T(tweak_id id) {                                                                                   \
-    if (invalid_context()) {                                                                                                     \
-      TWEAK_LOG_ERROR("%s : Library hasn't been initialized correctly", __func__);                                               \
-      return DefaultValue;                                                                                                       \
-    }                                                                                                                            \
-                                                                                                                                 \
-    tweak_variant variant_value = {                                                                                              \
-      .type = TWEAK_VARIANT_TYPE_IS_NULL                                                                                         \
-    };                                                                                                                           \
-                                                                                                                                 \
-    tweak_app_error_code result = tweak_app_item_clone_current_value((tweak_app_context)s_context, id, &variant_value);          \
-    if (result == TWEAK_APP_SUCCESS) {                                                                                           \
-      if (variant_value.type == VariantTypeDesc) {                                                                               \
-        return variant_value.VariantField;                                                                                       \
-      } else {                                                                                                                   \
-        TWEAK_LOG_ERROR("%s : type mismatch: item has type 0x%x, expected 0x%x", __func__, variant_value.type, VariantTypeDesc); \
-        return DefaultValue;                                                                                                     \
-      }                                                                                                                          \
-    } else {                                                                                                                     \
-      TWEAK_LOG_ERROR("%s : tweak_app_item_clone_current_value returned 0x%x", __func__, result);                                \
-      return DefaultValue;                                                                                                       \
-    }                                                                                                                            \
+#define TWEAK2_IMPLEMENT_SCALAR_TYPE(SUFFIX, T, VARIANT_TYPE_DESC, VARIANT_FIELD, TYPE, DEFAULT_VALUE)                              \
+  tweak_id tweak_add_##SUFFIX##_##T##_ex(const struct tweak_add_item_ex_desc* desc, TYPE initial_value)                             \
+  {                                                                                                                                 \
+    if (invalid_context()) {                                                                                                        \
+      TWEAK_LOG_ERROR("%s: Library hasn't been initialized correctly", __func__);                                                   \
+      return TWEAK_INVALID_ID;                                                                                                      \
+    }                                                                                                                               \
+                                                                                                                                    \
+    tweak_variant variant_value = {                                                                                                 \
+      .type = VARIANT_TYPE_DESC,                                                                                                    \
+      .value = {                                                                                                                    \
+        .VARIANT_FIELD = initial_value                                                                                              \
+      }                                                                                                                             \
+    };                                                                                                                              \
+                                                                                                                                    \
+    struct client_item_changed_listener* client_listener = calloc(1, sizeof(*client_listener));                                     \
+    if (!client_listener) {                                                                                                         \
+      TWEAK_FATAL("Can't allocate memory");                                                                                         \
+    }                                                                                                                               \
+                                                                                                                                    \
+    client_listener->client_callback = desc->item_change_listener;                                                                  \
+    client_listener->client_cookie = desc->cookie;                                                                                  \
+                                                                                                                                    \
+    return tweak_app_server_add_item(s_context, desc->uri, desc->description, desc->meta, &variant_value, client_listener);         \
+  }                                                                                                                                 \
+                                                                                                                                    \
+  tweak_id tweak_add_##SUFFIX##_##T(const char* uri, const char* description, const char* meta, TYPE initial_value)                 \
+  {                                                                                                                                 \
+    if (invalid_context()) {                                                                                                        \
+      TWEAK_LOG_ERROR("%s: Library hasn't been initialized correctly", __func__);                                                   \
+      return TWEAK_INVALID_ID;                                                                                                      \
+    }                                                                                                                               \
+                                                                                                                                    \
+    tweak_variant variant_value = {                                                                                                 \
+      .type = VARIANT_TYPE_DESC,                                                                                                    \
+      .value = {                                                                                                                    \
+        .VARIANT_FIELD = initial_value                                                                                              \
+      }                                                                                                                             \
+    };                                                                                                                              \
+                                                                                                                                    \
+    return tweak_app_server_add_item(s_context, uri, description, meta, &variant_value, NULL);                                      \
+  }                                                                                                                                 \
+                                                                                                                                    \
+  void tweak_set_##SUFFIX##_##T(tweak_id id, TYPE value) {                                                                          \
+    if (invalid_context()) {                                                                                                        \
+      TWEAK_LOG_ERROR("%s : Library hasn't been initialized correctly", __func__);                                                  \
+    }                                                                                                                               \
+                                                                                                                                    \
+    tweak_variant variant_value = {                                                                                                 \
+      .type = VARIANT_TYPE_DESC,                                                                                                    \
+      .value = {                                                                                                                    \
+        .VARIANT_FIELD = value                                                                                                      \
+      }                                                                                                                             \
+    };                                                                                                                              \
+                                                                                                                                    \
+    tweak_app_error_code result = tweak_app_item_replace_current_value((tweak_app_context)s_context, id, &variant_value);           \
+    if (result == TWEAK_APP_SUCCESS) {                                                                                              \
+      tweak_variant_destroy(&variant_value);                                                                                        \
+    } else {                                                                                                                        \
+      TWEAK_LOG_ERROR("%s : tweak_app_item_replace_current_value returned 0x%x", __func__, result);                                 \
+    }                                                                                                                               \
+  }                                                                                                                                 \
+                                                                                                                                    \
+  TYPE tweak_get_##SUFFIX##_##T(tweak_id id) {                                                                                      \
+    if (invalid_context()) {                                                                                                        \
+      TWEAK_LOG_ERROR("%s : Library hasn't been initialized correctly", __func__);                                                  \
+      return DEFAULT_VALUE;                                                                                                         \
+    }                                                                                                                               \
+    tweak_variant variant_value = TWEAK_VARIANT_INIT_EMPTY;                                                                         \
+    tweak_app_error_code result = tweak_app_item_clone_current_value((tweak_app_context)s_context, id, &variant_value);             \
+    if (result == TWEAK_APP_SUCCESS) {                                                                                              \
+      if (variant_value.type == VARIANT_TYPE_DESC) {                                                                                \
+        return variant_value.value.VARIANT_FIELD;                                                                                   \
+      } else {                                                                                                                      \
+        TWEAK_LOG_ERROR("%s : Type mismatch: item has type 0x%x, expected 0x%x", __func__, variant_value.type, VARIANT_TYPE_DESC);  \
+        return DEFAULT_VALUE;                                                                                                       \
+      }                                                                                                                             \
+    } else {                                                                                                                        \
+      TWEAK_LOG_ERROR("%s : tweak_app_item_clone_current_value returned 0x%x", __func__, result);                                   \
+      return DEFAULT_VALUE;                                                                                                         \
+    }                                                                                                                               \
   }
 
 TWEAK2_IMPLEMENT_SCALAR_TYPE(scalar, float, TWEAK_VARIANT_TYPE_FLOAT, fp32, float, NAN)
 TWEAK2_IMPLEMENT_SCALAR_TYPE(scalar, double, TWEAK_VARIANT_TYPE_DOUBLE, fp64, double, NAN)
-TWEAK2_IMPLEMENT_SCALAR_TYPE(scalar, bool, TWEAK_VARIANT_TYPE_BOOL, value_bool, bool, false)
+TWEAK2_IMPLEMENT_SCALAR_TYPE(scalar, bool, TWEAK_VARIANT_TYPE_BOOL, b, bool, false)
 TWEAK2_IMPLEMENT_SCALAR_TYPE(scalar, int8, TWEAK_VARIANT_TYPE_SINT8, sint8, int8_t, 0)
 TWEAK2_IMPLEMENT_SCALAR_TYPE(scalar, int16, TWEAK_VARIANT_TYPE_SINT16, sint16, int16_t, 0)
 TWEAK2_IMPLEMENT_SCALAR_TYPE(scalar, int32, TWEAK_VARIANT_TYPE_SINT32, sint32, int32_t, 0)

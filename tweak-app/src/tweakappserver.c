@@ -48,13 +48,18 @@ struct tweak_app_context_server_impl {
 static void server_destroy_context(struct tweak_app_context_base* context) {
   TWEAK_LOG_TRACE_ENTRY("context = %p", context);
   struct tweak_app_context_server_impl* server_impl = (struct tweak_app_context_server_impl*)context;
-  tweak_app_queue_stop(server_impl->base.job_queue);
-  tweak_pickle_destroy_server_endpoint(server_impl->rpc_endpoint);
+  if (server_impl->base.job_queue) {
+    tweak_app_queue_stop(server_impl->base.job_queue);
+  }
+  if (server_impl->rpc_endpoint) {
+    tweak_pickle_destroy_server_endpoint(server_impl->rpc_endpoint);
+  }
   tweak_app_context_private_destroy_base(&server_impl->base);
   free(context);
 }
 
 static bool subscribe_walk_proc(const char *uri, tweak_id tweak_id, void* cookie) {
+  (void)uri;
   TWEAK_LOG_TRACE_ENTRY("uri = %s, tweak_id = %" PRId64 ", cookie = %p", uri, tweak_id, cookie);
   assert(tweak_id != TWEAK_INVALID_ID);
   struct tweak_app_context_server_impl* server_impl = (struct tweak_app_context_server_impl*) cookie;
@@ -81,6 +86,7 @@ static bool subscribe_walk_proc(const char *uri, tweak_id tweak_id, void* cookie
 }
 
 static void io_loop_subscribe(tweak_id tweak_id, void* cookie) {
+  (void) tweak_id;
   TWEAK_LOG_TRACE_ENTRY("tweak_id = %" PRId64 ", cookie = %p", tweak_id, cookie);
   tweak_app_context context = cookie;
   pthread_rwlock_rdlock(&context->model_impl.model_lock);
@@ -106,6 +112,7 @@ static void push_subscribe(tweak_app_context context) {
 }
 
 static void subscribe_tweak_pickle_impl(tweak_pickle_subscribe* subscribe, void *cookie) {
+  (void)subscribe;
   TWEAK_LOG_TRACE_ENTRY("subscribe = %p, cookie = %p", subscribe, cookie);
   push_subscribe(cookie);
 }
@@ -116,7 +123,7 @@ static void change_item_pickle_impl(tweak_pickle_change_item *change, void *cook
   struct tweak_model_impl* model = &server_impl->base.model_impl;
   bool emit_change_event = false;
   tweak_id id;
-  tweak_variant value = {};
+  tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
   pthread_rwlock_wrlock(&model->model_lock);
   tweak_item* item = tweak_model_find_item_by_id(model->model, change->tweak_id);
   if (item != NULL) {
@@ -164,7 +171,7 @@ static void io_loop_append(tweak_id tweak_id, void* cookie) {
   struct tweak_app_context_server_impl* server_impl = cookie;
   struct tweak_model_impl* model = &server_impl->base.model_impl;
   tweak_item* item;
-  tweak_pickle_add_item pickle_add_item = {};
+  tweak_pickle_add_item pickle_add_item = { 0 };
   pthread_rwlock_wrlock(&model->model_lock);
   item = tweak_model_find_item_by_id(model->model, tweak_id);
   if (item != NULL) {
@@ -203,7 +210,7 @@ static void io_loop_change(tweak_id tweak_id, void* cookie) {
   TWEAK_LOG_TRACE_ENTRY("tweak_id = %" PRIu64 ", cookie = %p", tweak_id, cookie);
   struct tweak_app_context_server_impl* server_impl = cookie;
   struct tweak_model_impl* model = &server_impl->base.model_impl;
-  tweak_variant value = {};
+  tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
   bool should_push_change = false;
   pthread_rwlock_rdlock(&model->model_lock);
   tweak_item* item = tweak_model_find_item_by_id(model->model, tweak_id);
@@ -294,7 +301,7 @@ tweak_app_server_context tweak_app_create_server_context(const char *context_typ
   };
 
   if (!tweak_app_context_private_initialize_base(&server_impl->base, TWEAK_APP_SERVER_QUEUE_SIZE)) {
-    goto free_server_context;
+    goto destroy_context;
   }
 
   server_impl->base.clone_current_value_proc = &tweak_app_context_private_item_clone_current_value;
@@ -314,11 +321,7 @@ tweak_app_server_context tweak_app_create_server_context(const char *context_typ
   return &server_impl->base;
 
 destroy_context:
-   tweak_app_context_private_destroy_base(&server_impl->base);
-
-free_server_context:
-  free(server_impl);
-
+  server_destroy_context(&server_impl->base);
   return NULL;
 }
 
@@ -334,13 +337,13 @@ tweak_id tweak_app_server_add_item(tweak_app_server_context server_context,
     (struct tweak_app_context_server_impl*)server_context;
   struct tweak_model_impl* model = &server_impl->base.model_impl;
 
-  tweak_variant_string uri0 = {};
+  tweak_variant_string uri0 = TWEAK_VARIANT_STRING_EMPTY;
   tweak_variant_assign_string(&uri0, uri);
-  tweak_variant_string description0 = {};
+  tweak_variant_string description0 = TWEAK_VARIANT_STRING_EMPTY;
   tweak_variant_assign_string(&description0, description);
-  tweak_variant_string meta0 = {};
+  tweak_variant_string meta0 = TWEAK_VARIANT_STRING_EMPTY;
   tweak_variant_assign_string(&meta0, meta);
-  tweak_variant default_value = {};
+  tweak_variant default_value = TWEAK_VARIANT_STRING_EMPTY;
   tweak_variant_swap(&default_value, initial_value);
   tweak_variant current_value = tweak_variant_copy(&default_value);
 
@@ -378,6 +381,13 @@ tweak_id tweak_app_server_add_item(tweak_app_server_context server_context,
   should_push_change = tweak_app_context_private_is_connected(server_context);
 error:
   pthread_rwlock_unlock(&model->model_lock);
+
+  tweak_variant_destroy_string(&uri0);
+  tweak_variant_destroy_string(&description0);
+  tweak_variant_destroy_string(&meta0);
+  tweak_variant_destroy(&default_value);
+  tweak_variant_destroy(&current_value);
+
   if (should_push_change) {
     TWEAK_LOG_TRACE("Pushing add_item request to client");
     push_append(server_context, tweak_id);

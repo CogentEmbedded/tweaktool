@@ -82,21 +82,6 @@ static void initialize_client_control(struct client_control* client_control, con
   client_control->pairs_count = 0;
 }
 
-static void request_stop_server_exchange(struct client_control* client_control) {
-  pthread_mutex_lock(&client_control->lock);
-  client_control->stop_server_exchange = true;
-  pthread_cond_broadcast(&client_control->stop_server_exchange_cond);
-  pthread_mutex_unlock(&client_control->lock);
-}
-
-static void wait_stop_server_exchange(struct client_control* client_control, uint64_t millis) {
-  pthread_mutex_lock(&client_control->lock);
-  while (!client_control->stop_server_exchange) {
-    pthread_cond_wait(&client_control->stop_server_exchange_cond, &client_control->lock);
-  }
-  pthread_mutex_unlock(&client_control->lock);
-}
-
 static void request_client_start(struct client_control* client_control) {
   pthread_mutex_lock(&client_control->lock);
   client_control->start_client = true;
@@ -105,6 +90,7 @@ static void request_client_start(struct client_control* client_control) {
 }
 
 static void wait_client_start(struct client_control* client_control, uint64_t millis) {
+  (void) millis;
   pthread_mutex_lock(&client_control->lock);
   while (!client_control->start_client) {
     pthread_cond_wait(&client_control->start_client_cond, &client_control->lock);
@@ -120,6 +106,7 @@ static void request_client_change_items(struct client_control* client_control) {
 }
 
 static void wait_client_change_items(struct client_control* client_control, uint64_t millis) {
+  (void) millis;
   pthread_mutex_lock(&client_control->lock);
   while (!client_control->change_items) {
     pthread_cond_wait(&client_control->change_items_cond, &client_control->lock);
@@ -143,6 +130,7 @@ static void update_client_item_count(struct client_control* client_control, uint
 }
 
 static uint32_t wait_client_item_count(struct client_control* client_control, uint32_t num_tweaks, uint64_t millis) {
+  (void) millis;
   uint32_t result = 0;
   pthread_mutex_lock(&client_control->lock);
   while (client_control->items_count != num_tweaks) {
@@ -163,6 +151,7 @@ static void destroy_client_control(struct client_control* client_control) {
 }
 
 static bool count_item_callback(const tweak_app_item_snapshot* snapshot, void* cookie) {
+  (void)snapshot;
   uint32_t* counter = cookie;
   ++(*counter);
   return true;
@@ -193,7 +182,7 @@ static void generate_tweaks(tweak_app_server_context server_context, uint32_t nu
     char uri[MAX_URI_LENGTH + 1];
     memset(uri, '\0', sizeof(uri));
     generate_random_uri(uri, 10, MAX_URI_LENGTH);
-    tweak_variant value = {};
+    tweak_variant value = TWEAK_VARIANT_INIT_EMPTY ;
     float rand_val = (float)rand() / (RAND_MAX / 2) - 1.f;
     tweak_variant_create_float(&value, rand_val);
     tweak_id tweak_id = tweak_app_server_add_item(server_context, uri, "test", "test", &value,
@@ -220,7 +209,7 @@ static bool tweak_ids_callback(const tweak_app_item_snapshot* snapshot, void* co
 static void enumerate_tweak_ids(tweak_app_server_context server_context,
   tweak_id** p_tweak_ids, uint32_t* num_tweaks)
 {
-  struct tweak_enum_context tweak_enum_context = {};
+  struct tweak_enum_context tweak_enum_context = { 0 };
   tweak_app_traverse_items(server_context, &tweak_ids_callback, &tweak_enum_context);
   *p_tweak_ids = tweak_enum_context.tweak_ids;
   *num_tweaks = tweak_enum_context.num_tweaks;
@@ -286,7 +275,7 @@ bool compare_pairs_set(struct id_value_pair* set1, struct id_value_pair* set2, u
         if (set2[iy].value.type != TWEAK_VARIANT_TYPE_FLOAT)
             return false;
 
-        if (set1[ix].value.fp32 != set2[iy].value.fp32)
+        if (set1[ix].value.value.fp32 != set2[iy].value.value.fp32)
             return false;
       }
     }
@@ -297,6 +286,7 @@ bool compare_pairs_set(struct id_value_pair* set1, struct id_value_pair* set2, u
 static void item_changed_handler(tweak_app_context context,
   tweak_id id, tweak_variant* value, void *cookie)
 {
+  (void)context;
   struct client_control* client_control = cookie;
   pthread_mutex_lock(&client_control->lock);
   client_control->pairs = realloc(client_control->pairs, (client_control->pairs_count + 1) * sizeof(*client_control->pairs));
@@ -307,13 +297,20 @@ static void item_changed_handler(tweak_app_context context,
   pthread_mutex_unlock(&client_control->lock);
 }
 
+void test_invalid_uri() {
+  tweak_app_client_context client_context = tweak_app_create_client_context("nng", "role=client", "tcp://127.0.0.1/", NULL);
+  TEST_CHECK(!client_context);
+  tweak_app_server_context server_context = tweak_app_create_server_context("nng", "role=server", "QQQ", NULL);
+  TEST_CHECK(!server_context);
+}
+
 void test_app() {
   srand(time(NULL));
   int port = 32769 + rand() % 20000;
   char uri0[256];
   snprintf(uri0, sizeof(uri0), "tcp://0.0.0.0:%d/", port);
 
-  struct client_control client_control = {};
+  struct client_control client_control = { 0 };
   initialize_client_control(&client_control, uri0);
 
   tweak_app_server_callbacks server_callbacks = {
@@ -322,6 +319,8 @@ void test_app() {
   };
   tweak_app_server_context server_context = tweak_app_create_server_context("nng", "role=server",
     uri0, &server_callbacks);
+  
+  TEST_CHECK(server_context != NULL);
 
   TWEAK_LOG_TEST("Create thread...");
   pthread_t thread;
@@ -363,7 +362,6 @@ void test_app() {
     populate_random_ids(server_context, tweak_ids, CHANGE_BATCH_SIZE);
     clear_change_counter(&client_control);
     for (uint32_t ix = 0; ix < CHANGE_BATCH_SIZE; ++ix) {
-      tweak_variant value = {};
       float rand_val = (float)rand() / (RAND_MAX / 2) - 1.f;
       tweak_variant_create_float(&pairs[ix].value, rand_val);
       pairs[ix].tweak_id = tweak_ids[ix];
@@ -398,6 +396,8 @@ void test_app() {
 static void client_loop_item_added(tweak_app_context context,
   tweak_id id, void *cookie)
 {
+  (void)context;
+  (void)id;
   struct client_control* client_control = cookie;
   uint32_t c = get_client_item_count(client_control);
   update_client_item_count(client_control, c + 1);
@@ -406,6 +406,8 @@ static void client_loop_item_added(tweak_app_context context,
 static void client_loop_item_removed(tweak_app_context context,
   tweak_id id, void *cookie)
 {
+  (void)context;
+  (void)id;
   struct client_control* client_control = cookie;
   uint32_t c = get_client_item_count(client_control);
   update_client_item_count(client_control, c - 1);
@@ -425,6 +427,7 @@ static void* client_loop(void *arg) {
 
   tweak_app_client_context client_context = tweak_app_create_client_context("nng", "role=client",
     client_control->uri, &client_callbacks);
+  TEST_CHECK(client_context != NULL);
 
   wait_client_change_items(client_control, UINT64_MAX);
 
@@ -435,7 +438,6 @@ static void* client_loop(void *arg) {
     populate_random_ids(client_context, tweak_ids, CHANGE_BATCH_SIZE);
     clear_change_counter(client_control);
     for (uint32_t ix = 0; ix < CHANGE_BATCH_SIZE; ++ix) {
-      tweak_variant value = {};
       float rand_val = (float)rand() / (RAND_MAX / 2) - 1.f;
       tweak_variant_create_float(&pairs[ix].value, rand_val);
       pairs[ix].tweak_id = tweak_ids[ix];
@@ -448,9 +450,11 @@ static void* client_loop(void *arg) {
   }
 
   tweak_app_destroy_context((tweak_app_context)client_context);
+  return NULL;
 }
 
 TEST_LIST = {
+   { "test-invalid-uri", test_invalid_uri },
    { "test-app", test_app },
    { NULL, NULL }     /* zeroed record marking the end of the list */
 };

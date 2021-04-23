@@ -98,13 +98,12 @@ struct tweak_wire_connection_nng
    * specific for client
    * and server nodes.
    */
-    union
-    {
+    union {
         /* Nng acceptor object. */
         nng_listener listener;
         /* Nng connector object. */
         nng_dialer dialer;
-    };
+    } connection_watchdog;
 };
 
 /**
@@ -156,12 +155,24 @@ tweak_wire_connection tweak_wire_create_nng_connection(
 
   bool server_role;
 
-  if (strcmp("role=server", params) == 0) {
-    server_role = true;
-  } else if (strcmp("role=client", params) == 0) {
-    server_role = false;
+  if (params) {
+    if (strcmp("role=server", params) == 0) {  
+      TWEAK_LOG_TRACE("nng set to \"listen\" mode");
+      server_role = true;
+    } else if (strcmp("role=client", params) == 0) {
+      TWEAK_LOG_TRACE("nng set to \"connect\" mode");
+      server_role = false;
+    } else {
+      TWEAK_LOG_ERROR("Can't parse connection params: \"%s\"", params);
+      return TWEAK_WIRE_INVALID_CONNECTION;
+    }
   } else {
-    TWEAK_LOG_ERROR("Can't parse connection params: \"%s\"", params);
+    TWEAK_LOG_ERROR("Connection params is NULL");
+    return TWEAK_WIRE_INVALID_CONNECTION;
+  }
+
+  if (!uri) {
+    TWEAK_LOG_ERROR("uri is NULL");
     return TWEAK_WIRE_INVALID_CONNECTION;
   }
 
@@ -201,6 +212,7 @@ static void finalize_transport(struct transport *transport);
 static tweak_wire_error_code initialize_transport(struct transport* transport,
   const char *uri, void* aio_cookie)
 {
+  (void)uri;
   TWEAK_LOG_TRACE_ENTRY("transport = %p, uri = %s, aio_cookie = %p",
     transport, uri, aio_cookie);
 
@@ -272,7 +284,7 @@ static tweak_wire_error_code
   }
 
   rv = nng_dial(connection_nng->transport.socket, uri,
-                &connection_nng->dialer, NNG_FLAG_NONBLOCK);
+                &connection_nng->connection_watchdog.dialer, NNG_FLAG_NONBLOCK);
   if (rv != 0) {
     TWEAK_LOG_ERROR("nng_dial returned %d", rv);
     finalize_transport(&connection_nng->transport);
@@ -299,7 +311,7 @@ static tweak_wire_error_code
     return rv;
   }
   rv = nng_listen(connection_nng->transport.socket, uri,
-                  &connection_nng->listener, 0);
+                  &connection_nng->connection_watchdog.listener, 0);
   if (rv != 0) {
     TWEAK_LOG_ERROR("nng_listen returned %d", rv);
     finalize_transport(&connection_nng->transport);
@@ -311,6 +323,9 @@ static tweak_wire_error_code
 }
 
 static void on_new_connection(nng_pipe pipe, nng_pipe_ev ev, void* arg) {
+  (void)pipe;
+  (void)ev;
+  (void)arg;
   TWEAK_LOG_TRACE_ENTRY("pipe = 0x%X, ev = 0x%X, arg = %p",
     pipe.id, ev, arg);
   struct tweak_wire_connection_nng *connection_nng = arg;
@@ -323,6 +338,9 @@ static void on_new_connection(nng_pipe pipe, nng_pipe_ev ev, void* arg) {
 }
 
 static void on_connection_lost(nng_pipe pipe, nng_pipe_ev ev, void* arg) {
+  (void)pipe;
+  (void)ev;
+  (void)arg;
   TWEAK_LOG_TRACE_ENTRY("pipe = 0x%X, ev = 0x%X, arg = %p",
     pipe.id, ev, arg);
   struct tweak_wire_connection_nng *connection_nng = arg;
@@ -339,6 +357,7 @@ static void on_connection_lost(nng_pipe pipe, nng_pipe_ev ev, void* arg) {
 }
 
 static void transmit_async_callback(void* arg) {
+  (void)arg;
   TWEAK_LOG_TRACE_ENTRY("arg = %p", arg);
 }
 
@@ -481,11 +500,11 @@ void tweak_wire_destroy_nng_connection(tweak_wire_connection connection) {
   finalize_transport(&connection_nng->transport);
   if (connection_nng->is_server) {
     TWEAK_LOG_TRACE("Before nng_listener_close");
-    nng_listener_close(connection_nng->listener);
+    nng_listener_close(connection_nng->connection_watchdog.listener);
     TWEAK_LOG_TRACE("After nng_listener_close");
   } else {
     TWEAK_LOG_TRACE("Before nng_dialer_close");
-    nng_dialer_close(connection_nng->dialer);
+    nng_dialer_close(connection_nng->connection_watchdog.dialer);
     TWEAK_LOG_TRACE("After nng_dialer_close");
   }
   free(connection_nng);

@@ -32,7 +32,7 @@ static __thread bool s_thread_name_initialized = false;
 
 static __thread char s_thread_name[MAX_LENGTH_PTHREAD_NAME];
 
-static pthread_mutex_t s_log_lock = {};
+static pthread_mutex_t s_log_lock = { 0 };
 
 static tweak_log_level s_log_level;
 

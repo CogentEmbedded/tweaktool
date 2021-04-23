@@ -81,46 +81,47 @@ template<typename T>
     bool checkResult;
     QVariant check = QVariant::fromValue(src);
     switch (dest->type) {
-    case TWEAK_VARIANT_TYPE_IS_NULL:
+    case TWEAK_VARIANT_TYPE_NULL:
         checkResult = true;
         break;
     case TWEAK_VARIANT_TYPE_BOOL:
-        checkResult = check.toBool() == dest->value_bool;
+        checkResult = check.toBool() == dest->value.b;
         break;
     case TWEAK_VARIANT_TYPE_SINT8:
-        checkResult = static_cast<int8_t>(check.toInt()) == dest->sint8;
+        checkResult = static_cast<int8_t>(check.toInt()) == dest->value.sint8;
         break;
     case TWEAK_VARIANT_TYPE_SINT16:
-        checkResult = static_cast<int16_t>(check.toInt()) ==  dest->sint16;
+        checkResult = static_cast<int16_t>(check.toInt()) ==  dest->value.sint16;
         break;
     case TWEAK_VARIANT_TYPE_SINT32:
-        checkResult = static_cast<int32_t>(check.toInt()) ==  dest->sint32;
+        checkResult = static_cast<int32_t>(check.toInt()) ==  dest->value.sint32;
         break;
     case TWEAK_VARIANT_TYPE_SINT64:
-        checkResult = static_cast<int64_t>(check.toLongLong()) ==  dest->sint64;
+        checkResult = static_cast<int64_t>(check.toLongLong()) ==  dest->value.sint64;
         break;
     case TWEAK_VARIANT_TYPE_UINT8:
-        checkResult = static_cast<uint8_t>(check.toUInt()) == dest->uint8;
+        checkResult = static_cast<uint8_t>(check.toUInt()) == dest->value.uint8;
         break;
     case TWEAK_VARIANT_TYPE_UINT16:
-        checkResult = static_cast<uint16_t>(check.toUInt()) == dest->uint16;
+        checkResult = static_cast<uint16_t>(check.toUInt()) == dest->value.uint16;
         break;
     case TWEAK_VARIANT_TYPE_UINT32:
-        checkResult = static_cast<uint32_t>(check.toUInt()) == dest->uint32;
+        checkResult = static_cast<uint32_t>(check.toUInt()) == dest->value.uint32;
         break;
     case TWEAK_VARIANT_TYPE_UINT64:
-        checkResult = static_cast<uint64_t>(check.toULongLong()) == dest->uint64;
+        checkResult = static_cast<uint64_t>(check.toULongLong()) == dest->value.uint64;
         break;
     case TWEAK_VARIANT_TYPE_FLOAT:
-        checkResult = check.toFloat() == dest->fp32;
+        checkResult = check.toFloat() == dest->value.fp32;
         break;
     case TWEAK_VARIANT_TYPE_DOUBLE:
-        checkResult = check.toDouble() == dest->fp64;
+        checkResult = check.toDouble() == dest->value.fp64;
         break;
     default:
         Q_UNREACHABLE();
         break;
     }
+    QVERIFY(checkResult);
 }
 
 void checkConversionValidity(const QVariant &src, tweak_variant* dest) {
@@ -176,9 +177,10 @@ class QTweakVariantTest : public QObject
     void testTweakVariantScalar(F f, T example = 0,
                                 bool need_type_coercion = false)
     {
+        (void)need_type_coercion;
         tweak_variant tv;
         (*f)(&tv, example);
-        QVERIFY(tv.type != TWEAK_VARIANT_TYPE_IS_NULL);
+        QVERIFY(tv.type != TWEAK_VARIANT_TYPE_NULL);
 
         QVariant qv = from_tweak_variant(&tv);
         QVERIFY(qv.isValid());
@@ -227,7 +229,7 @@ class QTweakVariantTest : public QObject
         };
 
         std::vector<tweak_variant_type> tweakVariantTypes {
-            TWEAK_VARIANT_TYPE_IS_NULL,
+            TWEAK_VARIANT_TYPE_NULL,
             TWEAK_VARIANT_TYPE_BOOL,
             TWEAK_VARIANT_TYPE_SINT8,
             TWEAK_VARIANT_TYPE_SINT16,

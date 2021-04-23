@@ -42,7 +42,7 @@ enum {
  * @brief Type discriminator for tweak variant type.
  */
 typedef enum {
-  TWEAK_VARIANT_TYPE_IS_NULL = 0x0,
+  TWEAK_VARIANT_TYPE_NULL = 0x0,
   TWEAK_VARIANT_TYPE_BOOL,
   TWEAK_VARIANT_TYPE_SINT8,
   TWEAK_VARIANT_TYPE_SINT16,

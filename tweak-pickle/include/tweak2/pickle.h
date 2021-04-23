@@ -36,7 +36,13 @@
 /**
  * @brief A superclass for all endpoint types.
  */
-struct tweak_pickle_endpoint_base {};
+struct tweak_pickle_endpoint_base {
+  int dummy; /* Empty structures are implementation specific. */
+             /* ANSI ISO C99 doesn't forbid nor explicitly allow them. */
+             /* GreenHills C compiler, MSVC and GCC in pedantic mode */
+             /* would issue a warning or an error */
+             /* if this dummy placeholder is removed. */
+};
 
 /**
  * @brief This structure contains all fields for add tweak request.

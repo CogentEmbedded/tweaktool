@@ -21,7 +21,7 @@
 #ifndef TWEAKWIRE_RPMSG_TRANSPORT_H_INCLUDED
 #define TWEAKWIRE_RPMSG_TRANSPORT_H_INCLUDED
 
-#include <tweakwire.h>
+#include <tweak2/wire.h>
 
 #include <pthread.h>
 #include <stdbool.h>
