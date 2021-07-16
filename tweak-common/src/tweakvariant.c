@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <math.h>
 
 static tweak_variant_type_conversion_result
   parse_bool(const char* arg, tweak_variant* out);
@@ -255,10 +256,25 @@ static tweak_variant_type_conversion_result
                     tweak_variant_type target_type,
                     tweak_variant* out)
 {
-  int64_t val;
+  int64_t val = 0;
   tweak_variant_type_conversion_result conversion_result;
   tweak_variant result = TWEAK_VARIANT_INIT_EMPTY;
   conversion_result = parse_signed_int64(arg, &val);
+  if (conversion_result != TWEAK_VARIANT_TYPE_CONVERSION_RESULT_SUCCESS) {
+    tweak_variant tmp = TWEAK_VARIANT_INIT_EMPTY;
+    conversion_result = parse_generic_float(arg, TWEAK_VARIANT_TYPE_DOUBLE, &tmp);
+    if (conversion_result == TWEAK_VARIANT_TYPE_CONVERSION_RESULT_SUCCESS) {
+      conversion_result = TWEAK_VARIANT_TYPE_CONVERSION_RESULT_ERROR_TRUNCATED;
+      if (tmp.value.fp64 > (double)INT64_MAX) {
+        val = INT64_MAX;
+      } else if (tmp.value.fp64 < (double)INT64_MIN) {
+        val = INT64_MIN;
+      } else {
+        val = (int64_t)round(tmp.value.fp64);
+      }
+    }
+    tweak_variant_destroy(&tmp);
+  }
   if (conversion_result == TWEAK_VARIANT_TYPE_CONVERSION_RESULT_SUCCESS) {
     switch (target_type) {
     case TWEAK_VARIANT_TYPE_SINT8:
@@ -315,11 +331,26 @@ static tweak_variant_type_conversion_result
                      tweak_variant_type target_type,
                      tweak_variant* out)
 {
-  uint64_t val;
+  uint64_t val = 0;
   tweak_variant_type_conversion_result conversion_result;
   tweak_variant result = TWEAK_VARIANT_INIT_EMPTY;
   conversion_result = parse_unsigned_int64(arg, &val);
-  if (conversion_result == TWEAK_VARIANT_TYPE_CONVERSION_RESULT_SUCCESS) {
+  if (conversion_result != TWEAK_VARIANT_TYPE_CONVERSION_RESULT_SUCCESS) {
+    tweak_variant tmp = TWEAK_VARIANT_INIT_EMPTY;
+    conversion_result = parse_generic_float(arg, TWEAK_VARIANT_TYPE_DOUBLE, &tmp);
+    if (conversion_result == TWEAK_VARIANT_TYPE_CONVERSION_RESULT_SUCCESS) {
+      conversion_result = TWEAK_VARIANT_TYPE_CONVERSION_RESULT_ERROR_TRUNCATED;
+      if (tmp.value.fp64 > (double)UINT64_MAX) {
+        val = UINT64_MAX;
+      } else if (tmp.value.fp64 < 0.) {
+        val = 0;
+      } else {
+        val = (uint64_t)round(tmp.value.fp64);
+      }
+    }
+    tweak_variant_destroy(&tmp);
+  }
+  if (conversion_result != TWEAK_VARIANT_TYPE_CONVERSION_RESULT_ERROR_FAIL) {
     switch (target_type) {
     case TWEAK_VARIANT_TYPE_UINT8:
       result.type = TWEAK_VARIANT_TYPE_UINT8;

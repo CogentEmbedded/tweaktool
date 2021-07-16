@@ -39,7 +39,7 @@ Tweak {
         from: Number(meta.min)
         to: Number(meta.max)
 
-        stepSize: Math.pow(10, -meta.decimals)
+        stepSize: Number(meta.step)
         snapMode: Slider.SnapAlways
     }
 
@@ -58,6 +58,7 @@ Tweak {
         /*.. see https://doc.qt.io/qt-5/qml-int.html for details */
         from: Math.max(-2000000000, meta.min * scaler)
         to: Math.min(2000000000, meta.max * scaler)
+        stepSize: Math.min(1, meta.step * scaler)
 
         validator: DoubleValidator {
             bottom: meta.min * spin.scaler

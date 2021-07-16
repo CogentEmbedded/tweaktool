@@ -56,18 +56,24 @@ message(STATUS "Project description: ${PROJECT_SUMMARY}")
 # <Option name>        <Description/Help>                <Default value>
 option(BUILD_TESTS     "Build tests"                         OFF)
 option(BUILD_GUI       "Build host tools"                    OFF)
+option(BUILD_CLI       "Build command line client"            ON)
 option(WITH_DOXYGEN    "Enable Doxygen-based documentation"  OFF)
-option(WITH_WIRE_NNG   "Build NNG wire backend"              ON)
+option(WITH_WIRE_NNG   "Build NNG wire backend"               ON)
 option(WITH_WIRE_RPMSG "Build RPMSG wire backend"            OFF)
+# cmake-format: on
 
 set(TWEAK_COMMON_LOG_LEVELS Trace Debug Test Warn Error Fatal)
-list(LENGTH TWEAK_COMMON_LOG_LEVELS TWEAK_COMMON_LOG_LEVELS_LENGTH) 
-set(TWEAK_COMMON_LOG_LEVEL Test CACHE STRING "Statically disable log levels less severe than this")
-set_property(CACHE TWEAK_COMMON_LOG_LEVEL PROPERTY STRINGS ${TWEAK_COMMON_LOG_LEVELS})
+list(LENGTH TWEAK_COMMON_LOG_LEVELS TWEAK_COMMON_LOG_LEVELS_LENGTH)
+set(TWEAK_COMMON_LOG_LEVEL
+    Test
+    CACHE STRING "Statically disable log levels less severe than this")
+set_property(CACHE TWEAK_COMMON_LOG_LEVEL PROPERTY STRINGS
+                                                   ${TWEAK_COMMON_LOG_LEVELS})
 
 # ------------------------------------------------------------------------------
 # Global project configuration
 # ------------------------------------------------------------------------------
+
 set(CMAKE_POSITION_INDEPENDENT_CODE YES)
 
 set(PROJECT_VENDOR "Cogent Embedded Inc.")
@@ -78,9 +84,14 @@ add_definitions(-DPROJECT_SUMMARY=\"${PROJECT_SUMMARY}\")
 
 set(PROJECT_NAMESPACE ${CMAKE_PROJECT_NAME})
 
+set(GUI_TOOL_NAME tweak-gui)
+
 # ------------------------------------------------------------------------------
-# Download Acutest framework
+# Dependencies
 # ------------------------------------------------------------------------------
+
+# search for additional CMake modules
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 if(BUILD_TESTS)
 
@@ -102,13 +113,6 @@ if(BUILD_TESTS)
 
 endif()
 
-# ------------------------------------------------------------------------------
-# Dependencies
-# ------------------------------------------------------------------------------
-
-# search for additional CMake modules
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
 # TODO: Reconsider if we still need nanopb in the main CMakeLists.txt
 set(NANOPB_SRC_ROOT_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/extern/nanopb)
 set(NANOPB_GENERATOR_SOURCE_DIR
@@ -121,18 +125,14 @@ include(CMakePackageConfigHelpers)
 include(CMakeDependentOption)
 include(GenerateExportHeader)
 include(AppendToGlobalList)
-include(tweakComponentInstall)
+include(TweakComponentInstall)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Asan")
+if(CMAKE_BUILD_TYPE STREQUAL "Asan")
   find_package(Asan)
 endif()
-
-# cmake-format: on
-
-set(GUI_TOOL_NAME tweak-gui)
 
 if(BUILD_TESTS)
   enable_testing()
@@ -162,7 +162,18 @@ include_directories(${PROJECT_BINARY_DIR}/generated)
 # Compilation flags
 # ------------------------------------------------------------------------------
 
-add_compile_options(-Wall -Wextra -Wno-deprecated-declarations -Wno-deprecated-copy -Werror)
+add_compile_options(
+  -Wall -Wextra -pedantic -Werror
+  $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>
+)
+
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-Wno-deprecated-copy NO_DEPRECATED_COPY_SUPPORTED)
+if (NO_DEPRECATED_COPY_SUPPORTED)
+  add_compile_options(
+    $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy>
+  )
+endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
   include(CheckCXXCompilerFlag)
@@ -192,7 +203,13 @@ add_subdirectory(tweak2lib)
 
 add_subdirectory(tweak-mock-server)
 
-add_subdirectory(tweak-app-cl)
+if(BUILD_CLI)
+  add_subdirectory(tweak-app-cl)
+endif()
+
+add_subdirectory(tweak-json)
+
+add_subdirectory(tweak-metadata)
 
 if(BUILD_GUI)
   add_subdirectory(extern/SortFilterProxyModel)
@@ -217,10 +234,11 @@ write_basic_package_version_file(
 # Install CMake infrastructure
 # ------------------------------------------------------------------------------
 
-install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Version.cmake"
-              "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAMESPACE}
-        COMPONENT dev)
+install(
+  FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Version.cmake"
+        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAMESPACE}
+  COMPONENT dev)
 
 # ------------------------------------------------------------------------------
 # Building docs with collected sets of files

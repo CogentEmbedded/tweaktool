@@ -18,12 +18,9 @@
 
 #include <tweak2/wire.h>
 
-#if defined (__unix__)
 #include <pthread.h>
 #include <sys/time.h>
 #include <unistd.h>
-#endif
-
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -32,8 +29,6 @@
 #include <acutest.h>
 
 #define DEFAULT_ENDPOINT "tcp://0.0.0.0:8888/"
-
-static volatile int s_keep_running = 1;
 
 static pthread_mutex_t s_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t s_cond = PTHREAD_COND_INITIALIZER;

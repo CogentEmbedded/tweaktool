@@ -163,9 +163,20 @@ QVariant TweakApplication::data(const QModelIndex &index, int role) const
             result = from_tweak_string(&sn->description);
             break;
 
-        case MetaRole: 
-            result = QVariant::fromValue(d->metadataParser.parse(from_tweak_string(&sn->meta)));
-            break;
+        case MetaRole:
+            {
+                tweak_variant_type item_type = sn->current_value.type;
+                QString meta = from_tweak_string(&sn->meta);
+                MetadataCacheKey key{item_type, meta};
+                auto itr = metadataCache.find(key);
+                if (itr == metadataCache.end()) {
+                    itr = metadataCache.insert(key,
+                        MetadataCacheItem(d->metadataParser.parse(item_type, meta)));
+                }
+                result = (itr != metadataCache.end())
+                    ? QVariant::fromValue(itr.value().get())
+                    : QVariant();
+            } break;
 
         case isFavoriteRole:
             result = isFavorite(uri);
@@ -420,12 +431,12 @@ ConnectionId TweakApplicationPrivate::addClient(QString name, QString contextTyp
                 && params == arg.getParams()
                 && uri == arg.getUri();
     };
-    
+
     {
         QReadLocker locker(&lock);
         auto connectionIdListItr = std::find_if(connectionIdList.begin(), connectionIdList.end(), predicate);
         if (connectionIdListItr != connectionIdList.end()) {
-            qWarning() << "Attmept to add a connection twice";
+            qWarning() << "Attempt to add a connection twice";
             return connectionIdListItr->getConnectionId();
         }
     }
@@ -458,31 +469,21 @@ ConnectionId TweakApplicationPrivate::addClient(QString name, QString contextTyp
 }
 
 void TweakApplicationPrivate::removeClient(ConnectionId connectionId) {
-    Q_Q(TweakApplication);
-
     auto connectionIdListPredicate = [connectionId](const ConnectionItem& arg) -> bool {
         return connectionId == arg.getConnectionId();
     };
-    tweak_app_client_context clientContext = NULL;
-    {
-        QReadLocker locker(&lock);
-        auto connectionIdListItr = std::find_if(connectionIdList.begin(),
-            connectionIdList.end(), connectionIdListPredicate);
-        if (connectionIdListItr != connectionIdList.end()) {
-            clientContext = connectionIdListItr->releaseClientContext();
-        } else {
-            qWarning() << "Attempt to remove a connection that does not exist";
-        }
-    }
-    if (clientContext) {
-        tweak_app_destroy_context(clientContext);
-        {
-            QWriteLocker locker(&lock);
-            connectionIdList.erase(
-                std::remove_if(connectionIdList.begin(), connectionIdList.end(), connectionIdListPredicate),
-                connectionIdList.end()
-            );
-        }
+    QReadLocker locker(&lock);
+    auto connectionIdListItr = std::find_if(connectionIdList.begin(),
+        connectionIdList.end(), connectionIdListPredicate);
+    if (connectionIdListItr != connectionIdList.end()) {
+        tweak_app_client_context context = connectionIdListItr->getClientContext();
+        lock.unlock();
+        tweak_app_destroy_context(context);
+        QWriteLocker writeLocker(&lock);
+        connectionIdListItr->releaseClientContext();
+        connectionIdList.erase(connectionIdListItr);
+    } else {
+        qWarning() << "Attempt to remove a connection that does not exist";
     }
 }
 

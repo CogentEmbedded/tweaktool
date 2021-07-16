@@ -22,5 +22,9 @@
         <file>images/tree-connection.png</file>
         <file>images/button-clear-all.png</file>
         <file>ValidatedTextField.qml</file>
+        <file>TweakButton.qml</file>
+        <file>images/button-tree-off.png</file>
+        <file>images/button-tree-on.png</file>
+        <file>TweakScrollBar.qml</file>
     </qresource>
 </RCC>

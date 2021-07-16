@@ -48,6 +48,7 @@ void registerQmlTypes()
     qmlRegisterType<TweakApplication>("TweakApplication", 1, 0, "TweakApplication");
     qmlRegisterType<TweakTreeModel>("TweakApplication", 1, 0, "TweakTreeModel");
     qmlRegisterType<TweakMetadata>("TweakApplication", 1, 0, "TweakMetadata");
+    qmlRegisterType<OptionsModel>("TweakApplication", 1, 0, "OptionsModel");
 
     qRegisterMetaType<QImage>();
 }

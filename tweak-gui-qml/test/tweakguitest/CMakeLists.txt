@@ -56,9 +56,10 @@ set(${BINARY_NAME}_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 add_executable(${BINARY_NAME} ${${BINARY_NAME}_SOURCES})
 
 target_link_libraries(${BINARY_NAME} Qt5::QuickTest ${GUI_TOOL_NAME}-lib)
-set_target_properties(
-  ${BINARY_NAME} PROPERTIES AUTOMOC ON AUTORCC ON CXX_STANDARD 11
-                            CXX_STANDARD_REQUIRED YES)
+
+set_target_properties(${BINARY_NAME} PROPERTIES AUTOMOC ON AUTORCC ON)
+
+target_compile_features(${BINARY_NAME} PUBLIC cxx_std_11)
 
 target_include_directories(${BINARY_NAME}
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../src)

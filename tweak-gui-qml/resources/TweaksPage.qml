@@ -11,17 +11,16 @@
  * It is subject to the license terms in the LICENSE file found in the top-level
  * directory of this distribution or by request via http://cogentembedded.com
  */
-
 import QtQuick 2.0
 import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.2
 import QtQuick.Controls.Universal 2.2
+import Qt.labs.settings 1.0
 
 import SortFilterProxyModel 0.2
 
 import TweakApplication 1.0
-
 
 SplitView {
     id: mainSpace
@@ -40,21 +39,28 @@ SplitView {
     property string cutUrl: ""
     property bool favoritesAreSelected: false
 
-    function updateFilter() {
-        var index = tweakTree.currentIndex;
-        var selectionFilter = tweak.tree.selectionToRegExp(index);
+    Settings {
+        id: settings
+        category: "Display"
 
-        if (selectionFilter === "^/Favorites/")
-        {
-            listFilter = favoritesRegEx;
-            cutUrl = "";
-            favoritesAreSelected = true;
-        }
-        else
-        {
-            listFilter = selectionFilter;
-            cutUrl = selectionFilter;
-            favoritesAreSelected = false;
+        /// Show children tweaks in parent nodes, off by default
+        property bool showChildrenInParent: false
+    }
+
+    function updateFilter() {
+        var index = tweakTree.currentIndex
+        var selectionFilter = tweak.tree.selectionToRegExp(index)
+
+        if (selectionFilter === "^/Favorites/") {
+            listFilter = favoritesRegEx
+            cutUrl = ""
+            favoritesAreSelected = true
+        } else {
+            listFilter = selectionFilter
+            if (!settings.showChildrenInParent)
+                listFilter += "[^/]*$"
+            cutUrl = selectionFilter
+            favoritesAreSelected = false
         }
     }
 
@@ -88,17 +94,14 @@ SplitView {
                     spacing: 5
                     Image {
                         function selectIcon(itemType) {
-                            if (itemType == TweakTreeModel.Favorites)
-                            {
-                                return "qrc:/images/tree-favorites.png";
-                            }
-                            else if (itemType == TweakTreeModel.Connection)
-                            {
-                                return "qrc:/images/tree-connection.png";
+                            if (itemType == TweakTreeModel.Favorites) {
+                                return "qrc:/images/tree-favorites.png"
+                            } else if (itemType == TweakTreeModel.Connection) {
+                                return "qrc:/images/tree-connection.png"
                             }
 
                             /*.. normal leaves and root have no icon */
-                            return "";
+                            return ""
                         }
 
                         source: selectIcon(styleData.value.itemType)
@@ -164,6 +167,7 @@ SplitView {
         ToolBar {
             Layout.fillWidth: true
             Layout.minimumHeight: 32
+            z: 1
 
             RowLayout {
                 Layout.fillWidth: true
@@ -173,24 +177,36 @@ SplitView {
                     iconSource: "qrc:/images/button-grid.png"
 
                     onClicked: {
-                        tweakList.columns = 1;
+                        tweakList.columns = 1
                     }
 
                     checkable: true
-                    checked:  tweakList.columns == 1
+                    checked: tweakList.columns == 1
                 }
-                ToolSeparator {
-
-                }
+                ToolSeparator {}
                 TweakToolButton {
                     text: "Grid"
                     iconSource: "qrc:/images/button-list.png"
 
                     onClicked: {
-                        tweakList.columns = 5;
+                        tweakList.columns = 5
                     }
                     checkable: true
-                    checked:  tweakList.columns > 1
+                    checked: tweakList.columns > 1
+                }
+                ToolSeparator {
+                    visible: !favoritesAreSelected
+                }
+                TweakToolButton {
+                    text: "Show children"
+                    visible: !favoritesAreSelected
+                    checkable: true
+                    checked: settings.showChildrenInParent
+                    iconSource: checked ? "qrc:/images/button-tree-on.png" : "qrc:/images/button-tree-off.png"
+                    onClicked: {
+                        settings.showChildrenInParent = checked
+                        mainSpace.updateFilter()
+                    }
                 }
                 ToolSeparator {
                     visible: favoritesAreSelected
@@ -202,28 +218,32 @@ SplitView {
                     iconSource: "qrc:/images/button-clear-all.png"
 
                     onClicked: {
-                        tweak.clearFavorites();
+                        tweak.clearFavorites()
                     }
                 }
             }
         }
 
         GridView {
+            id: tweakList
             Layout.fillHeight: true
             Layout.fillWidth: true
             Layout.minimumWidth: 450
 
-            id: tweakList
+            property int scrollBarThickness: 15
 
             boundsBehavior: Flickable.StopAtBounds
 
             property int columns: 1
             property real minWidth: 700
+            property int workAreaWidth: width - tweakList.scrollBarThickness
 
-            cellWidth: width / Math.min(columns, Math.floor(width / minWidth) + 1)
+            cellWidth: workAreaWidth / Math.min(
+                           columns, Math.floor(workAreaWidth / minWidth) + 1)
             cellHeight: 50
 
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: TweakScrollBar {
+                barThickness: tweakList.scrollBarThickness
                 snapMode: "SnapAlways"
             }
 
@@ -234,6 +254,17 @@ SplitView {
                 width: tweakList.cellWidth
                 height: tweakList.cellHeight
             }
+
+            visible: tweakProxyModel.count > 0
+        }
+
+        Text {
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            Layout.minimumWidth: 450
+
+            text: favoritesAreSelected ? "No favorites are visible." : "No items match selection. Please make different selction to view items."
+            visible: tweakProxyModel.count <= 0
         }
     }
 }

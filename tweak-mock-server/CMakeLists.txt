@@ -43,9 +43,16 @@ set(${BINARY_NAME}_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 # ------------------------------------------------------------------------------
 # Binary
 # ------------------------------------------------------------------------------
+
 add_executable(${BINARY_NAME} ${${BINARY_NAME}_SOURCES})
 
 target_link_libraries(${BINARY_NAME} m ${PROJECT_NAMESPACE}::server
                       ${PROJECT_NAMESPACE}::common)
 
 target_compile_features(${BINARY_NAME} PUBLIC cxx_std_11)
+
+# ------------------------------------------------------------------------------
+# Installation
+# ------------------------------------------------------------------------------
+
+tweak_binary_install(${BINARY_NAME})

@@ -59,5 +59,7 @@ tweak_wire_error_code tweak_wire_transmit(tweak_wire_connection connection,
 }
 
 void tweak_wire_destroy_connection(tweak_wire_connection connection) {
-  connection->destroy_proc(connection);
+  if (connection) {
+    connection->destroy_proc(connection);
+  }
 }

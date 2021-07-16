@@ -67,12 +67,18 @@ qt5_add_resources(${LIBRARY_NAME}_RESOURCES
 add_library(${LIBRARY_NAME} STATIC ${${LIBRARY_NAME}_SOURCES}
                                    ${${LIBRARY_NAME}_RESOURCES})
 
-target_link_libraries(${LIBRARY_NAME} Qt5::Core Qt5::Quick Qt5::QuickControls2
-                      ${PROJECT_NAMESPACE}::app SortFilterProxyModel)
+target_link_libraries(
+  ${LIBRARY_NAME}
+  Qt5::Core
+  Qt5::Quick
+  Qt5::QuickControls2
+  ${PROJECT_NAMESPACE}::app
+  ${PROJECT_NAMESPACE}::metadata
+  SortFilterProxyModel)
 
-set_target_properties(
-  ${LIBRARY_NAME} PROPERTIES AUTOMOC ON AUTORCC ON CXX_STANDARD 11
-                             CXX_STANDARD_REQUIRED YES)
+set_target_properties(${LIBRARY_NAME} PROPERTIES AUTOMOC ON AUTORCC ON)
+
+target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_11)
 
 # ------------------------------------------------------------------------------
 # Binary
@@ -81,17 +87,15 @@ add_executable(${BINARY_NAME} ${${BINARY_NAME}_SOURCES})
 
 target_link_libraries(${BINARY_NAME} ${LIBRARY_NAME})
 
-set_target_properties(
-  ${BINARY_NAME} PROPERTIES AUTOMOC ON AUTORCC ON CXX_STANDARD 11
-                            CXX_STANDARD_REQUIRED YES)
+set_target_properties(${BINARY_NAME} PROPERTIES AUTOMOC ON AUTORCC ON)
 
-           add_definitions(-DQT_QML_DEBUG)
+target_compile_features(${BINARY_NAME} PUBLIC cxx_std_11)
 
 # ------------------------------------------------------------------------------
 # Installation
 # ------------------------------------------------------------------------------
 
-tweakbinaryinstall(${BINARY_NAME})
+tweak_binary_install(${BINARY_NAME})
 
 # ------------------------------------------------------------------------------
 # Automatic tests
@@ -101,5 +105,8 @@ if(BUILD_TESTS)
   add_subdirectory(test/qtweakvariant)
   add_subdirectory(test/tweaknodetree)
   add_subdirectory(test/tweakqmlapp)
-  add_subdirectory(test/tweakguitest)
+  add_subdirectory(test/tweakmetadata)
+  if(QT_VERSION VERSION_GREATER_EQUAL 5.11.0)
+    add_subdirectory(test/tweakguitest)
+  endif()
 endif()

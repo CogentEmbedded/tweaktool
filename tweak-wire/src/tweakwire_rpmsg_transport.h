@@ -52,14 +52,26 @@ enum
      * @brief Maximum rpmsg message size in bytes.
      * Fixed value is used for IPC buffer allocation and also to save one call to malloc on message receive.
      */
-    tweak_wire_rpmsg_max_message_size = 1024,
+    tweak_wire_rpmsg_max_message_size = 512,
+
+    /**
+     * @brief Maximum amount of data that could be sent
+     * is 256 packets having 254 bytes payload each.
+     */
+    tweak_wire_rpmsg_max_packet_size = UINT16_MAX - (2 * UINT8_MAX),
+
+    /**
+     * @brief RPMSG seem to reject datagrams larger that this.
+     * Thus, larger arrays should be split on chunks with this size.
+     */
+    tweak_wire_rpmsg_max_chunk_size = 256,
 
     /**
      * @brief Length of the message queue in maximum-sized messages.
      * RPMsg transport will block after this many maximum-sized messages are in the queue.
      * This will vary depending on the size of messages.
      */
-    tweak_wire_rpmsg_num_buffers_in_flight = 128,
+    tweak_wire_rpmsg_num_buffers_in_flight = 256,
 };
 
 /**
@@ -92,6 +104,10 @@ struct tweak_wire_rpmsg_transport
      * @brief Local endpoint number.
      */
     uint32_t local_endpoint;
+
+    uint8_t recv_buff[tweak_wire_rpmsg_max_message_size];
+
+    uint8_t send_buff[tweak_wire_rpmsg_max_message_size];
 
 #if defined(CPU_mcu2_0)
 

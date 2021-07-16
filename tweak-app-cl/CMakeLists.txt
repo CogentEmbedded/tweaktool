@@ -61,11 +61,13 @@ target_link_libraries(${BINARY_NAME} ${PROJECT_NAMESPACE}::app Readline)
 
 target_compile_options(${BINARY_NAME} PRIVATE -Wall -Wextra -Werror)
 
+target_compile_features(${BINARY_NAME} PUBLIC c_std_99)
+
 # ------------------------------------------------------------------------------
 # Installation
 # ------------------------------------------------------------------------------
 
-tweakbinaryinstall(${BINARY_NAME})
+tweak_binary_install(${BINARY_NAME})
 
 # ------------------------------------------------------------------------------
 # Automatic tests

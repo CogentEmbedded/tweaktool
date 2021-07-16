@@ -28,28 +28,6 @@
 
 using namespace tweak2;
 
-namespace qqsfpm
-{
-extern void registerQQmlSortFilterProxyModelTypes();
-extern void registerFiltersTypes();
-extern void registerProxyRoleTypes();
-extern void registerSorterTypes();
-} // namespace qqsfpm
-
-void registerQmlTypes()
-{
-    qqsfpm::registerQQmlSortFilterProxyModelTypes();
-    qqsfpm::registerFiltersTypes();
-    qqsfpm::registerProxyRoleTypes();
-    qqsfpm::registerSorterTypes();
-
-    qmlRegisterType<TweakApplication>("TweakApplication", 1, 0, "TweakApplication");
-    qmlRegisterType<TweakTreeModel>("TweakApplication", 1, 0, "TweakTreeModel");
-    qmlRegisterType<TweakMetadata>("TweakApplication", 1, 0, "TweakMetadata");
-
-    qRegisterMetaType<QImage>();
-}
-
 tweak2::TweakApplication *initApplication(QGuiApplication &app)
 {
     QCommandLineParser parser;

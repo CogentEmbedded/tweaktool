@@ -16,147 +16,364 @@ toc::[]
 == About
 Tweak Tool is a universal tool for configuring embedded software.
 
-Server side is written in compatrible subset of C99 and requires only POSIX compatible IO and threading primitives from host system.
-It is designed to support multiple transports: TCP/IP, serial ports, CAN bus. Writting of new transport plugins is simple and requires only four
-function implementations. It uses protobuf (https://developers.google.com/protocol-buffers) for
-serealization/deserialization. 
+The tool allows:
 
-There are two client programs in distribution: REPL
-based console client and Qt/QML GUI client. User could write new client software using
-provided client library. 
+* to adjust parameters of your software right from the Tweak Tool in the real time
 
-Current release of tweaktool uses point-to-point full duplex
-connection. Multiple clients can't connect to the same board and work concurrently at
-the moment.
+* to create user's software-specific view of the Tweak Tool
 
-== GUI Client
+=== Terms and definitions
 
-Launch the client:
+*Tweaks* are parameters exported by embedded software for managing by this program using.
 
-....
-tweaktool-gui 
-....
-
-The tool has 3 sections:
-
-* Create new connections in the link:#connections[Connections] tab.
-* Setup parameters in the link:#tweaks[Tweaks] tab.
-* link:#scripts[Scripts.]
-
-=== Connections
-
-image:./images/connections-page.png[width=600] 
-
-GUI client could connect to multiple boards simultaneously.
-
-*To add a new connection:*
-
-* Click *'Add'* button (1).
-
-* Fill out the following fields:
-
-** *Name*
-  
-** *Connect automatically* +
-Set "Connect automatically" checkbox to create respective connection 
-automatically at program startup.
-
-** *URI* +
-URI stands for network interface. Format of this string is defined by pespective 
-transport backend plugin. For Nng + point-to-point + TCP it is a string has format 
-tcp://ip_number:port/.
-
-** *Context type* +
-Context type stands for transport backend plugin, only
-  nng/point-to-point is supported in this release. Nng make use of nng library
-  which is a MIT-licensed portable library for C message passing
-  (https://github.com/nanomsg/nng).
-
-** *Role* +
-Role stands for additional parameters passed to transport backend plugin that
-  could alter its behaviour. For Nng + point-to-point + TCP it is whether client acts
-  as an initiator of connection whilst board listens inbound TCp connections at
-  specified port.
-
-* Click *'Connect'* button (3).
-
-* Check if the indicator *'Disconnected'* changed to *'Connected'*.
-
-image:./images/conn-dis.png[width=600] 
-
-*To disconnect:*
-
-* Click *'Disconnect'* button (5) of the connection you'd like to disconnect.
-
-* Check if the indicator *'Connected'* changed to *'Disconnected'*.
-
-*To remove a connection:*
-
-* Click the *'Cross'* button (4) near *'Connected'*/*'Disconnected'* indicator of the connection you'd like to remove.
-
-*To remove all connections:*
-
-* Click the *'Clear'* button (2).
-
-=== Tweaks
-
-Tweaks are parameters exported by embedded software for managing by this program using.
-
-At this moment, only atomic types for parameters are supported: flags, integers 
-and single and double precision floating point numbers. Vector data types are planned for future
-release. 
-
-Each tweak is internally a structure having these fields:
+Each tweak is a structure having these fields:
 
 * *URI tweak identifier* +
-A unique itenfifier of a tweak within a board.
+A unique identifier of a tweak within a board.
 * *Meta* +
-Internal string describing GUI control to interface with user. Internal, handled by GUI program.
+A string describing GUI control to interface with user. Handled by GUI program.
 * *Description* +
 Textual user readable information describing function of a tweak. It's displayed in the GUI as a hint when mouse float over a URI field.
  * *Default value* +
  Builtin initial value of a tweak. This GUI doesn't expose this value to user.
  * *Current value* +
  The only value that could be changed after tweak has been created by embedded software.
- Both client and server could do that. However, there could be an artifical restriction by the board that prohibits
+ Both client and server could do that. However, there could be an artificial restriction by the board that prohibits
  user from altering some values that are output-only by design.
 
-_Note: only parameters with slider or switch button are changeable, the others are read only._
+=== How it works  
+The Tweak Tool is a client-server tool: 
 
-image:./images/tweaks-page.png[width=600] 
+* Server: link:#custom[a server customized by a user] or link:#mock-server[the Tweak Tool mock-server]. +
++
+On the server-side tweak2::server component: +
 
-Use section *Favorites* for quick access to some of the parameters.
+ ** Create new tweaks
 
-image:./images/empty_favs.png[width=600] 
+ ** Change the tweaks
 
-* Add a parameter to *Favotites* by clicking the *'Star +'* button.
+ ** Remove the tweaks
 
-image:./images/favs.png[width=600] 
+* Client: two client programs with the same functionality: link:#command-line-client[REPL based console client] and link:#gui-client[Qt/QML GUI client]. +
+Moreover, user could write new client software using provided client library. +
+_Note: current Tweak Tool's release does not support multiple clients connection to the same board._ +
++
+On the client-side tweak2::server component (tweak2::compatibility-server component for API versions 1.0 and 1.1): +
 
-* Remove a parameter from the *Favotites* by clicking the *'Star -'* button (1).
+** Change the tweaks (the tweaks should be created by the server beforehand)
 
-* Clear the *Favotites* section by clicking the *'Clear All Favorites'* button (2).
+image:./images/components.png[width=1000] 
 
-=== Scripts
+* Create tweaks on the server (once created, a tweak will be available on both the server and the client)
 
-The feature is not supported in this release.
-In future releases, user would be able
-to run JavaScript batches performing complex operations on large gooups of tweaks.
+* Change tweak's values on the server or/and the client
 
-== Command-line Client
+* Remove tweaks as necessary on the server 
+
+More about the components of the Tweak Tool + installation and build guide  is link:../../README.md[here].
+
+== Server
+
+The Tweak Tool should be customized according to the user's needs: create your tweak's items and tune them.
+
+_Note: if you would like to test the Tweak Tool's functionality before connection/setup to your software, you can go for the link:#mock-server[mock-server]._
+
+=== Custom
+
+==== How to integrate
+
+* Integrate into a user's application CMake +
++
+[source, CMake]
+----
+find_package(tweak2 REQUIRED CONFIG)
+
+target_link_libraries(user-app tweak2::server)
+----
+
+* Create an initialization in the code (more information about available connection type, parameters and uri format is link:../../tweak2lib/include/tweak2/tweak2.h[here]) +
++
+[source,c++]
+----
+#include <tweak2/tweak2.h>
+----
++
+[source,c++]
+----
+std::string connectionType = "nng";
+std::string params = "role=server";
+std::string uri = "tcp://0.0.0.0:7777/";
+
+tweak_initialize_library(connectionType.c_str(), params.c_str(), uri.c_str());
+----
+
+==== How to mange tweaks
+
+===== Create a tweak
+
+* Select a type of control (checkbox, slider, spinbox or combobox) for a tweak, you'd like to tune, and create the metadata (more about the supported types and the Tweak Tool metadata examples are link:../METADATA.md[here]). +
++
+For example, if you'd like to create a slider that could chage from 0.8 to 24.4: +
++
+[source,c++]  
+----
+std::string meta = "{min: 0.8, max: 24.4, decimals: 2, step: 0.2}";
+----
++
+* Select a type (bool, integer or float) of the tuning item (more information is link:../../tweak2lib/include/tweak2/tweak2.h[here]) and create a tweak using the metadata. +
++
+For example, if the tweak's type is float and default value is 4.7: +
++
+[source,c++]
+----
+std::string tweakUri = "/Tweak/1";
+std::string  floatTweakDescription = "float_tweak_description";
+const float defaultValue = 4.7;
+
+tweak_add_scalar_float(tweakUri.c_str(), floatTweakDescription.c_str(), meta.c_str(), defaultValue);
+----
+
+===== Read and write the tweak
+
+* Listen to a tweak's value change to receive their updates. The callback is fired within context of an RPC call coming from tweak client to a tweak server. +
++
+[source,c++]
+----
+static void change_listener(tweak_id tweakId, void* cookie) 
+{
+    std::cout<<"Item "<<tweakId<<" has changed"<<"\n";
+}
+
+tweak_set_item_change_listener(&change_listener, NULL);
+----
++
+Or listen to a specific tweak with the individual tweak listener. For example, for the tweak described in the examples above: +
++
+[source,c++]
+----
+static void individual_change_listener(tweak_id tweak_id, void* cookie)
+{
+  std::cout<<"Item "<<tweak_id<<" has changed"<<"\n";
+}
+
+struct tweak_add_item_ex_desc tweak_desc = {
+  .uri = "/Tweak/1",
+  .description = "Individual tweak listener example",
+  .meta = meta,
+  .item_change_listener = &individual_change_listener,
+  .cookie = NULL
+};
+
+tweak_add_scalar_float_ex(&tweak_desc, defaultValue);
+----
+
+* Every tweak has an ID (assigned automatically when the tweak is created), which is used to set/get the tweak's value or remove the tweak, if you do not need it anymore. Find tweak_id using only the tweak's uri. +
++
+[source,c++]
+----
+tweak_find_id(tweakUri)
+----
+
+* Change tweak's current value. +
++
+For example, if the tweak's type is float: +
++
+[source,c++]
+----
+const float newValue = 9.6;
+
+tweak_set_scalar_float(tweak_find_id(tweakUri), newValue);
+----
+
+* Get current value. +
++
+For example, if the tweak's type is float: +
++
+[source,c++]
+----
+float updatedValue = tweak_get_scalar_float(tweak_find_id(tweakUri));
+----
+
+===== Remove the tweak
+
+If there are active client's subscriptions, item shall disappear after sending remove_item request to client. Otherwise, item shall disappear immediately.
+
+[source,c++]
+----
+tweak_remove(tweakId);
+----
+
+==== How to group tweaks
+
+All tweaks are in a tree (in the GUI, Name is the tree's name). Group your tweaks in branches: tweaks with the same part of the URI belong to the same branch.
+Example (URI are highlighted in bold): 
+
+Tree: 
+
+* /Branch1
+
+** */Branch1/Object1*
+
+** */Branch1/Obect2*
+
+* */Object3*
+ 
+* /Branch2
+
+** */Branch2/Object4*
+
+** /Branch2/Subbranch1
+
+*** */Branch2/Subbranch1/Object5*
+
+*** */Branch2/Subbranch1/Object6*
+
+==== How to finalize
+
+Just before application terminates, cleanup internal resources used by the library (no need to remove items before).
+
+[source,c++]
+----
+tweak_finalize_library()
+----
+
+All tweak ids became invalid and no subsequent calls to any other tweak_* functions are permitted after the finalization the library.
+
+=== Mock-server
+
+Mock-server is an application for the GUI application testing without access to a board exposing server side: the program emulates a user application, creating tweak's items with random types of controls and values. The values are changing while the server is running, so it is possible to get the full experience of using the Tweak Tool.
+
+Build the Tweak Tool with the mock-server: 
+
+[source,sh] 
+----
+cmake -DBUILD_TESTS=ON ..
+----
+Launch the server:
+
+[source,sh] 
+----
+tweak-mock-server
+----
+
+image:./images/mock-server.png[width=600] 
+
+== Client
+
+=== GUI Client
+
+Build the Tweak Tool with the GUI:
+
+[source,sh]
+----
+cmake -DBUILD_GUI=ON ..
+----
 
 Launch the client:
 
-....
+[source,sh]
+----
+tweaktool-gui 
+----
+
+The tool has 3 sections:
+
+* Create new connections in the link:#connections[Connections] tab.
+* Tune parameters in the link:#tweaks[Tweaks] tab.
+* link:#scripts[Scripts.]
+
+==== Connections
+
+image:./images/start.png[width=600] 
+
+GUI client could connect to multiple boards simultaneously.
+
+*To add a new connection:*
+
+* Click image:./images/button-plus.png[width=25] *Add* button.
+
+* Fill out the following fields:
+
+** *Name*
+  
+** *Connect automatically* +
+Set *Connect automatically* checkbox to create respective connection 
+automatically at program startup.
+
+** *URI scheme*
+
+** *URI host* +
+
+** *URI port* +
+
+** *URI* +
+Filled in automatically from *URI scheme*, *URI host* and *URI port*.
+
+** *Context type* +
+Transport backend plugin. +
+_Note: only nng/point-to-point is supported in this release._
+
+** *Role* +
+Additional parameters passed to transport backend plugin that could alter its behaviour. + 
+For Nng + point-to-point + TCP it is whether client acts as an initiator of connection whilst board 
+listens inbound TCP connections at specified port.
+
+* Click *Connect* button.
+
+* Check if the indicator *Disconnected* (next to the Name field) changed to *Connected*.
+
+*To disconnect:*
+
+* Click *Disconnect* button of the connection you'd like to disconnect.
+
+* Check if the indicator *Connected* changed to *Disconnected*.
+
+*To remove a connection:*
+
+* Click *Delete* button.
+
+*To remove all connections:*
+
+* Click the image:./images/button-minus.png[width=25] *Clear* button (in the upper left corner).
+
+==== Tweaks
+
+After creating a connection go to the Tweaks tab to adjust your tweaks (the tweaks should be already created by a server).
+
+image:./images/alltweaks.png[width=600] 
+
+Click to a image:./images/tree-connection.png[width=25] tree branch to choose its items.
+
+image:./images/1branch.png[width=600] 
+
+Use section image:./images/tree-favorites.png[width=25] *Favorites* for quick access to some of the tweaks.
+
+* Add a tweak to image:./images/tree-favorites.png[width=25] *Favotites* by clicking the image:./images/button-favorites-add.png[width=25] button.
+
+image:./images/tofavs.png[width=600] 
+
+* Remove a tweak from the image:./images/tree-favorites.png[width=25] *Favotites* by clicking the image:./images/button-favorites-remove.png[width=25] button.
+
+image:./images/infavs.png[width=600] 
+
+* Clear the image:./images/tree-favorites.png[width=25] *Favotites* section by clicking the image:./images/button-clear-all.png[width=25] *Clear All Favorites* button.
+
+==== Scripts
+
+The feature is not supported in this release.
+In future releases, user would be able
+to run Python scripts performing complex operations on large groups of tweaks.
+
+=== Command-line Client
+
+Launch the client:
+
+[source, sh]
+----
 tweak-app-cl [-u uri]
-....
+----
 
 _Note: by default uri is tcp://0.0.0.0:7777/_
 
 More details are in link:./tweak-app-cl.asciidoc[Tweak Console Client
 document.]
-
-== Troubleshooting
-
-At this moment, there's one known bug when GUI sometimes doesn't restore TCP
-connection after board reboot.

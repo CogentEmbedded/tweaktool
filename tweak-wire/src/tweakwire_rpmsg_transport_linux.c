@@ -29,6 +29,7 @@
 tweak_wire_error_code tweak_wire_rpmsg_init_transport(
     struct tweak_wire_rpmsg_transport *transport, uint32_t endpoint)
 {
+    TWEAK_LOG_TRACE_ENTRY("transport = %p, endpoint = %u", transport, endpoint);
     /*.. Create an eventfd for interrupting receive operation */
     transport->eventfd_unblock = eventfd(0, 0);
     if (transport->eventfd_unblock < 0)
@@ -68,6 +69,8 @@ tweak_wire_error_code tweak_wire_rpmsg_init_transport(
  */
 static tweak_wire_error_code tweak_wire_rpmsg_check_op_possible(struct tweak_wire_rpmsg_transport *transport, int flags)
 {
+    TWEAK_LOG_TRACE_ENTRY("transport = %p, endpoint = %d", transport, flags);
+
     struct pollfd fds[2];
     fds[0].fd = transport->fd;
     fds[0].events = flags;
@@ -77,14 +80,17 @@ static tweak_wire_error_code tweak_wire_rpmsg_check_op_possible(struct tweak_wir
     int rv = poll(fds, 2, TWEAK_WIRE_TIMEOUT);
     if (rv == 0)
     {
+        TWEAK_LOG_TRACE("poll timeout");
         return TWEAK_WIRE_ERROR_TIMEOUT;
     }
     else if (rv > 0 && (fds[1].revents & POLLIN) != 0)
     {
+        TWEAK_LOG_TRACE("closing connection");
         return (tweak_wire_error_code)TWEAK_WIRE_FINALIZING;
     }
     else if (rv > 0 && (fds[0].revents & flags) != 0)
     {
+        TWEAK_LOG_TRACE("poll success");
         return TWEAK_WIRE_SUCCESS;
     }
 
@@ -96,6 +102,8 @@ tweak_wire_error_code
 tweak_wire_rpmsg_transport_send(struct tweak_wire_rpmsg_transport *transport,
                                 const uint8_t *buffer, uint16_t len)
 {
+    TWEAK_LOG_TRACE_ENTRY("transport = %p, buffer = %p, len = %d", transport, buffer, len);
+
     /*.. Wait with timeout until we are ready to write. */
     /*.. TBD not sure if this works on current rpmsg_chardev actually
     tweak_wire_error_code status = tweak_wire_rpmsg_check_op_possible(transport, POLLOUT);
@@ -108,6 +116,7 @@ tweak_wire_rpmsg_transport_send(struct tweak_wire_rpmsg_transport *transport,
     int rv = write(transport->fd, buffer, len);
     if (rv == -EINTR)
     {
+        TWEAK_LOG_TRACE("closing connection");
         return (tweak_wire_error_code)TWEAK_WIRE_FINALIZING;
     }
     else if (rv < 0)
@@ -124,9 +133,12 @@ tweak_wire_rpmsg_transport_send(struct tweak_wire_rpmsg_transport *transport,
 tweak_wire_error_code tweak_wire_rpmsg_transport_receive(struct tweak_wire_rpmsg_transport *transport,
                                                          uint8_t *buffer, uint16_t *len)
 {
+    TWEAK_LOG_TRACE_ENTRY("transport = %p, buffer = %p, len = %d", transport, buffer, len);
+
     tweak_wire_error_code status = tweak_wire_rpmsg_check_op_possible(transport, POLLIN);
     if (status != TWEAK_WIRE_SUCCESS)
     {
+        TWEAK_LOG_TRACE("read() operation isn't possible at the moment");
         return status;
     }
 
@@ -135,6 +147,8 @@ tweak_wire_error_code tweak_wire_rpmsg_transport_receive(struct tweak_wire_rpmsg
     {
         TWEAK_LOG_DEBUG("read() failed: %m");
         return TWEAK_WIRE_ERROR;
+    } else {
+        TWEAK_LOG_TRACE("read() success");
     }
 
     *len = rv;
@@ -145,15 +159,21 @@ tweak_wire_error_code tweak_wire_rpmsg_transport_receive(struct tweak_wire_rpmsg
 
 void tweak_wire_rpmsg_transport_abort(struct tweak_wire_rpmsg_transport *transport)
 {
+    TWEAK_LOG_TRACE_ENTRY("transport = %p", transport);
+
     int rv = write(transport->eventfd_unblock, &(uint64_t){1}, sizeof(uint64_t));
     if (rv < 0)
     {
         TWEAK_LOG_DEBUG("failed to write to eventfd: %m");
+    } else {
+        TWEAK_LOG_TRACE("write() success");
     }
 }
 
 void tweak_wire_rpmsg_transport_close(struct tweak_wire_rpmsg_transport *transport)
 {
+    TWEAK_LOG_TRACE_ENTRY("transport = %p", transport);
+
     appIpcDeleteCh(transport->remote_proc, transport->remote_endpoint, transport->local_endpoint, transport->fd);
     transport->fd = -1;
     transport->remote_endpoint = 0;

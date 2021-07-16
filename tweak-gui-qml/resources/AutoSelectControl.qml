@@ -24,23 +24,24 @@ ColumnLayout {
     property bool isReadonlyControl: meta.readonly
     property var controlType: meta.controlType
     property var options: meta.options
+    property var numericEditor: (meta.controlType == TweakMetadata.Spinbox || meta.controlType == TweakMetadata.Slider) 
 
     TweakScalar {
         id: scalarEditor
 
-        visible: !isReadonlyControl && controlType == TweakMetadata.ControlType.GENERIC
+        visible: numericEditor && !isReadonlyControl 
     }
 
     TweakLabel {
         id: labelEditor
 
-        visible: isReadonlyControl && controlType == TweakMetadata.ControlType.GENERIC
+        visible: numericEditor && isReadonlyControl 
     }
 
     TweakToggle {
         id: toggleEditor
 
-        visible: controlType == TweakMetadata.ControlType.TOGGLE
+        visible: controlType == TweakMetadata.Checkbox
 
         isEnabled: !isReadonlyControl
     }
@@ -48,8 +49,14 @@ ColumnLayout {
     TweakEnum {
         id: enumEditor
 
-        visible: controlType == TweakMetadata.ControlType.ENUM
+        visible: controlType == TweakMetadata.Combobox
 
         isEnabled: !isReadonlyControl
+    }
+
+    TweakButton {
+        id: button
+
+        visible: controlType == TweakMetadata.Button
     }
 }

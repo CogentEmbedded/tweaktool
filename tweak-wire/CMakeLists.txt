@@ -50,9 +50,7 @@ set(${LIBRARY_NAME}_DEPENDENCIES ${PROJECT_NAMESPACE}::common Threads)
 # Source files
 # ------------------------------------------------------------------------------
 
-set(${LIBRARY_NAME}_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire.c
-  )
+set(${LIBRARY_NAME}_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire.c)
 
 if(WITH_WIRE_NNG)
   list(APPEND ${LIBRARY_NAME}_SOURCES
@@ -92,8 +90,7 @@ target_link_libraries(
   PUBLIC ${PROJECT_NAMESPACE}::common
   PRIVATE Threads::Threads $<$<BOOL:${WITH_WIRE_NNG}>:nng::nng>)
 
-set_target_properties(${LIBRARY_NAME} PROPERTIES C_STANDARD 99
-                                                 C_STANDARD_REQUIRED YES)
+target_compile_features(${LIBRARY_NAME} PUBLIC c_std_99)
 
 set_target_properties(
   ${LIBRARY_NAME}
@@ -115,7 +112,7 @@ append_to_global_list(DOCUMENTATION_FILES ${${LIBRARY_NAME}_HEADERS})
 # Installation
 # ------------------------------------------------------------------------------
 
-tweakcomponentinstall(${LIBRARY_NAME})
+tweak_component_install(${LIBRARY_NAME})
 
 # ------------------------------------------------------------------------------
 # Automatic tests

@@ -20,6 +20,8 @@
 #ifndef TWEAK_LOG_H_INCLUDED
 #define TWEAK_LOG_H_INCLUDED
 
+#include <inttypes.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -28,6 +30,21 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#if defined(__clang__)
+#   if __clang_major__ > 3 || (__clang_major__ == 3  && __clang_minor__ >= 4)
+#       if __has_warning("-Wgnu-zero-variadic-macro-arguments")
+#           pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#       endif
+#   endif
+#endif
+
+/**
+ * @brief strings shorter than this constant shouldn't be truncated.
+ * If string is longer that that, it could be truncated depending on
+ * concrete logger backend implementation. Default implementation does truncate.
+ */
+enum { TWEAK_MAX_LOG_ENTRY_STRING_LENGTH = 1024 };
 
 /**
  * @brief Severity of condition being logged.
@@ -42,37 +59,44 @@ typedef enum {
    *
    * Defined as no-op at compile stage for release builds by default.
    */
-  TWEAK_LOG_LEVEL_DEBUG,
+  TWEAK_LOG_LEVEL_DEBUG = 1,
   /**
    * @brief Test messages.
    *
    * Severity is identical to debug level, but isn't disabled for release builds.
    * For use in test scenarios only.
    */
-  TWEAK_LOG_LEVEL_TEST,
+  TWEAK_LOG_LEVEL_TEST = 2,
   /**
    * @brief Invalid configuration.
    *
    * Recovery is possible, but user of the library is supposed to fix this condition.
    * Some library features could be unavailable or not function as expected.
    */
-  TWEAK_LOG_LEVEL_WARN,
+  TWEAK_LOG_LEVEL_WARN = 3,
   /**
    * @brief Expected undesirable situation such as network packet being lost.
    *
    * Recovery is still possible.
    */
-  TWEAK_LOG_LEVEL_ERROR,
+  TWEAK_LOG_LEVEL_ERROR = 4,
   /**
    * @brief Unrecoverable condition in the software, most likely a critical bug.
    *
    * Message with this level of severity causes abnormal program termination.
    */
-  TWEAK_LOG_LEVEL_FATAL
+  TWEAK_LOG_LEVEL_FATAL = 5
 } tweak_log_level;
 
 /**
- * @brief Redirect log output to given file.
+ * @brief Prototype of logging routine.
+ *
+ * @param string Output string. Should not contain trailing endline delimiter.
+ */
+typedef void (*tweak_log_output_proc)(const char* string);
+
+/**
+ * @brief Redirect log output to given handler.
  *
  * @note Independent from tweak library configuration.
  * Could be invoked prior to any call related to tweak library.
@@ -83,9 +107,38 @@ typedef enum {
  * be achieved by using compile options and/or custom logging
  * backend.
  *
- * @param file file to collect log records.
+ * @param log_output_proc handler to collect log records.
+ * @param cookie arbitrary context.
  */
-void tweak_common_set_output_file(FILE* file);
+void tweak_common_set_custom_handler(tweak_log_output_proc log_output_proc);
+
+/**
+ * @brief Default output handler. Unless @see tweak_common_set_custom_handler has been
+ * invoked with alternate log handler, all log records are handled by this routine.
+ * Despite reference implementation sends @p string followed by '\n' char to stderr
+ * with @see fputs, this function may be implemented in a different way on a platform
+ * other than x86/Linux.
+ *
+ * @see tweak_log_output_proc
+ * @see tweak_common_set_custom_handler
+ *
+ * @param string Output string. Should not contain trailing endline delimiter.
+ */
+void tweak_common_stderr_log_handler(const char* string);
+
+/**
+ * @brief thread id provider.
+ *
+ * @see tweak_log_output_proc
+ * @see tweak_common_set_custom_handler
+ *
+ * @return thread id of current thread as string.
+ *
+ * @cond PRIVATE
+ * Platform specific feature. May be unavailable on some platforms.
+ * @endcond
+ */
+const char* tweak_common_log_get_thread_id();
 
 /**
  * @brief Adjusts log granularity at run time.
@@ -119,13 +172,6 @@ void tweak_common_set_log_level(tweak_log_level log_level);
 void tweak_common_log(tweak_log_level log_level, const char * format, ... );
 
 /**
- * @brief Get unique thread name for logging.
- *
- * @return Unique thread name.
- */
-const char* tweak_common_get_current_thread_name();
-
-/**
  * @brief Prints chunk of binary data to logging backend.
  *
  * @param log_level minimal log level for which this hexdump is relevant.
@@ -135,62 +181,86 @@ const char* tweak_common_get_current_thread_name();
  */
 void tweak_common_log_hexdump(tweak_log_level log_level, const char* message, uint8_t* buffer, uint32_t length);
 
+/**
+ * @brief Dummy function to make all variadic arguments used.
+ */
+static inline void tweak_common_log_unused_arguments(int dummy, ...)
+{
+    (void)dummy;
+}
+
+/**
+ * @brief Returns OS-specific thread id for logging.
+ *
+ * @return OS-specific thread id.
+ */
+uint64_t tweak_common_log_get_tid();
+
 #if TWEAK_LOG_LEVEL <= 0
-#define TWEAK_LOG_TRACE(FORMAT, ...) \
-  tweak_common_log(TWEAK_LOG_LEVEL_TRACE, "Trace %s : %s@%d | "FORMAT, \
-  tweak_common_get_current_thread_name(), __func__, __LINE__, ##__VA_ARGS__)
+#define TWEAK_LOG_TRACE_(FORMAT, ...) \
+  tweak_common_log(TWEAK_LOG_LEVEL_TRACE, "Trace %s : %s@%d | " FORMAT, \
+  tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
+#define TWEAK_LOG_TRACE(...) TWEAK_LOG_TRACE_(__VA_ARGS__, 0)
 #else
-#define TWEAK_LOG_TRACE(...)
+#define TWEAK_LOG_TRACE(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
 #endif
 
-#define TWEAK_LOG_TRACE_ENTRY(FORMAT, ...) \
-  TWEAK_LOG_TRACE("Enter "FORMAT, ##__VA_ARGS__)
+#define TWEAK_LOG_TRACE_ENTRY_(FORMAT, ...) \
+  TWEAK_LOG_TRACE("Enter " FORMAT, ##__VA_ARGS__)
+
+#define TWEAK_LOG_TRACE_ENTRY(...) \
+  TWEAK_LOG_TRACE_ENTRY_(__VA_ARGS__, 0)
 
 #if TWEAK_LOG_LEVEL <= 0
 #define TWEAK_LOG_TRACE_HEXDUMP(MESSAGE, BUFFER, LENGTH) \
   tweak_common_log_hexdump(TWEAK_LOG_LEVEL_TRACE, MESSAGE, BUFFER, LENGTH);
 #else
-#define TWEAK_LOG_TRACE_HEXDUMP(...)
+#define TWEAK_LOG_TRACE_HEXDUMP(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
 #endif
 
 #if TWEAK_LOG_LEVEL <= 1
-#define TWEAK_LOG_DEBUG(FORMAT, ...) \
-  tweak_common_log(TWEAK_LOG_LEVEL_DEBUG, "Debug %s : %s@%d | "FORMAT, \
-  tweak_common_get_current_thread_name(), __func__, __LINE__, ##__VA_ARGS__)
+#define TWEAK_LOG_DEBUG_(FORMAT, ...) \
+  tweak_common_log(TWEAK_LOG_LEVEL_DEBUG, "Debug %s : %s@%d | " FORMAT, \
+  tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
+#define TWEAK_LOG_DEBUG(...) TWEAK_LOG_DEBUG_(__VA_ARGS__, 0)
 #else
-#define TWEAK_LOG_DEBUG(...)
+#define TWEAK_LOG_DEBUG(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
 #endif
 
 #if TWEAK_LOG_LEVEL <= 2
-#define TWEAK_LOG_TEST(FORMAT, ...) \
-  tweak_common_log(TWEAK_LOG_LEVEL_TEST, "Test %s : %s@%d | "FORMAT, \
-  tweak_common_get_current_thread_name(), __func__, __LINE__, ##__VA_ARGS__)
+#define TWEAK_LOG_TEST_(FORMAT, ...) \
+  tweak_common_log(TWEAK_LOG_LEVEL_TEST, "Test %s : %s@%d | " FORMAT, \
+  tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
+#define TWEAK_LOG_TEST(...) TWEAK_LOG_TEST_(__VA_ARGS__, 0)
 #else
-#define TWEAK_LOG_TEST(...)
+#define TWEAK_LOG_TEST(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
 #endif
 
 #if TWEAK_LOG_LEVEL <= 3
-#define TWEAK_LOG_WARN(FORMAT, ...) \
-  tweak_common_log(TWEAK_LOG_LEVEL_WARN, "Warning %s : %s@%d | "FORMAT, \
-  tweak_common_get_current_thread_name(), __func__, __LINE__, ##__VA_ARGS__)
+#define TWEAK_LOG_WARN_(FORMAT, ...) \
+  tweak_common_log(TWEAK_LOG_LEVEL_WARN, "Warning %s : %s@%d | " FORMAT, \
+  tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
+#define TWEAK_LOG_WARN(...) TWEAK_LOG_WARN_(__VA_ARGS__, 0)
 #else
-#define TWEAK_LOG_WARN(...)
+#define TWEAK_LOG_WARN(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
 #endif
 
 #if TWEAK_LOG_LEVEL <= 4
-#define TWEAK_LOG_ERROR(FORMAT, ...) \
-  tweak_common_log(TWEAK_LOG_LEVEL_ERROR, "Error %s : %s@%d | "FORMAT, \
-  tweak_common_get_current_thread_name(), __func__, __LINE__, ##__VA_ARGS__)
+#define TWEAK_LOG_ERROR_(FORMAT, ...) \
+  tweak_common_log(TWEAK_LOG_LEVEL_ERROR, "Error %s : %s@%d | " FORMAT, \
+  tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
+#define TWEAK_LOG_ERROR(...) TWEAK_LOG_ERROR_(__VA_ARGS__, 0)
 #else
-#define TWEAK_LOG_ERROR(...)
+#define TWEAK_LOG_ERROR(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
 #endif
 
 #if TWEAK_LOG_LEVEL <= 5
-#define TWEAK_FATAL(FORMAT, ...) \
-  tweak_common_log(TWEAK_LOG_LEVEL_FATAL, "Fatal %s : %s@%d | "FORMAT, \
-  tweak_common_get_current_thread_name(), __func__, __LINE__, ##__VA_ARGS__)
+#define TWEAK_FATAL_(FORMAT, ...) \
+  tweak_common_log(TWEAK_LOG_LEVEL_FATAL, "Fatal %s : %s@%d | " FORMAT, \
+  tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
+#define TWEAK_FATAL(...) TWEAK_FATAL_(__VA_ARGS__, 0)
 #else
-#define TWEAK_FATAL(...)
+#define TWEAK_FATAL(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
 #endif
 
 #ifdef __cplusplus

@@ -23,9 +23,10 @@ Tweak server is being disconnected, program tries to restore connection.
 
 Program is being started with these arguments:
 
-....
+[source, sh]
+----
 tweak-app-cl [-t connection_type] [-p params] [-u uri]
-....
+----
 
 All arguments are optional.
 
@@ -53,7 +54,8 @@ Editing disabled, connection dropped.
 
 == Supported commands
 
-....
+[source, sh]
+----
 list [re][filter]
 select [uri]
 set [uri] [value]
@@ -63,7 +65,7 @@ get
 load filename
 save filename
 exit
-....
+----
 
 * Spaces in arguments
 

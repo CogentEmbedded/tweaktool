@@ -52,11 +52,10 @@ if(NOT UTHASH_INCLUDE_DIR)
   endif()
 endif()
 
-
 set(${LIBRARY_NAME}_HEADERS)
 set(${LIBRARY_NAME}_COMPAT_HEADERS
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/tweak.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/tweakconfig.h)
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/tweak.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/tweakconfig.h)
 
 set(${LIBRARY_NAME}_DEPENDENCIES ${PROJECT_NAMESPACE}::common
                                  ${PROJECT_NAMESPACE}::app)
@@ -79,19 +78,19 @@ add_library(${PROJECT_NAMESPACE}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
 
 target_link_libraries(${LIBRARY_NAME} PRIVATE ${${LIBRARY_NAME}_DEPENDENCIES})
 
-set_target_properties(${LIBRARY_NAME} PROPERTIES C_STANDARD 99
-                                                 C_STANDARD_REQUIRED YES
-                                                 SOVERSION ${LIBRARY_SOVERSION}
-                                                 SONAME ${LIBRARY_NAME}
-                                                 OUTPUT_NAME ${PROJECT_NAME}${LIBRARY_NAME}
-                                                 VERSION "${PROJECT_NUMERIC_VERSION}")
+set_target_properties(
+  ${LIBRARY_NAME}
+  PROPERTIES SOVERSION ${LIBRARY_SOVERSION} SONAME ${LIBRARY_NAME}
+             OUTPUT_NAME ${PROJECT_NAME}${LIBRARY_NAME}
+             VERSION "${PROJECT_NUMERIC_VERSION}")
+
+target_compile_features(${LIBRARY_NAME} PUBLIC c_std_99)
 
 # INSTALL_INTERFACE header path is specified during installation
 target_include_directories(
   ${LIBRARY_NAME}
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    PRIVATE $<BUILD_INTERFACE:${UTHASH_INCLUDE_DIR}>
-)
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  PRIVATE $<BUILD_INTERFACE:${UTHASH_INCLUDE_DIR}>)
 
 # ------------------------------------------------------------------------------
 # Documentation
@@ -103,7 +102,7 @@ append_to_global_list(DOCUMENTATION_FILES ${${LIBRARY_NAME}_HEADERS})
 # Installation
 # ------------------------------------------------------------------------------
 
-tweakcomponentinstall(${LIBRARY_NAME})
+tweak_component_install(${LIBRARY_NAME})
 
 # Manually install old tweak.h into /usr/include or similar path
 install(
@@ -118,4 +117,3 @@ install(
 if(BUILD_TESTS)
   add_subdirectory(test)
 endif()
-

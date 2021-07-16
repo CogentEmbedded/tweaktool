@@ -14,6 +14,7 @@
 
 #include <tweak2/appserver.h>
 #include <tweak2/log.h>
+#include <tweak2/util.h>
 #include <tweak2/pickle_server.h>
 
 #include "tweakappinternal.h"
@@ -22,20 +23,8 @@
 #include "tweakmodel_uri_to_tweak_id_index.h"
 
 #include <inttypes.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
-
-static uint64_t seed __attribute__((aligned(32))) = 1L;
-uint64_t gen_id() {
-#if defined(__GNUC__)
-  return __sync_fetch_and_add(&seed, 1UL);
-#elif defined(__TI_ARM__)
-    return seed++;
-#else
-    #error Atomics must be supported to generate tweak_id safely.
-#endif
-}
 
 enum { TWEAK_APP_SERVER_QUEUE_SIZE = 100 };
 
@@ -343,7 +332,7 @@ tweak_id tweak_app_server_add_item(tweak_app_server_context server_context,
   tweak_variant_assign_string(&description0, description);
   tweak_variant_string meta0 = TWEAK_VARIANT_STRING_EMPTY;
   tweak_variant_assign_string(&meta0, meta);
-  tweak_variant default_value = TWEAK_VARIANT_STRING_EMPTY;
+  tweak_variant default_value = TWEAK_VARIANT_INIT_EMPTY;
   tweak_variant_swap(&default_value, initial_value);
   tweak_variant current_value = tweak_variant_copy(&default_value);
 
@@ -358,7 +347,7 @@ tweak_id tweak_app_server_add_item(tweak_app_server_context server_context,
     goto error;
   }
 
-  tweak_id = gen_id();
+  tweak_id = tweak_common_genid();
   model_error_code = tweak_model_create_item(model->model,
     tweak_id, &uri0, &description0, &meta0, &default_value, &current_value, item_cookie);
   if (model_error_code != TWEAK_MODEL_SUCCESS) {

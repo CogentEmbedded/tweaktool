@@ -19,6 +19,7 @@
 tweak_wire_error_code tweak_wire_rpmsg_init_transport(
     struct tweak_wire_rpmsg_transport *transport, uint32_t endpoint)
 {
+    TWEAK_LOG_TRACE_ENTRY("transport = %p, endpoint = %u", transport, endpoint);
     RPMessage_Params params;
     int32_t status;
 
@@ -51,6 +52,8 @@ tweak_wire_error_code tweak_wire_rpmsg_init_transport(
 tweak_wire_error_code tweak_wire_rpmsg_transport_send(struct tweak_wire_rpmsg_transport *transport,
                                                       const uint8_t *buffer, uint16_t len)
 {
+    TWEAK_LOG_TRACE_ENTRY("transport = %p, buffer = %p, len = %d", transport, buffer, len);
+
     int32_t status;
 
     status = RPMessage_send(transport->rpmsg,
@@ -61,9 +64,11 @@ tweak_wire_error_code tweak_wire_rpmsg_transport_send(struct tweak_wire_rpmsg_tr
     switch (status)
     {
     case IPC_SOK:
+        TWEAK_LOG_TRACE("IPC_SOK");
         break;
 
     case IPC_E_UNBLOCKED:
+        TWEAK_LOG_TRACE("IPC_E_UNBLOCKED");
         return (tweak_wire_error_code)TWEAK_WIRE_FINALIZING;
 
     case IPC_ETIMEOUT:
@@ -83,6 +88,8 @@ tweak_wire_error_code tweak_wire_rpmsg_transport_send(struct tweak_wire_rpmsg_tr
 tweak_wire_error_code tweak_wire_rpmsg_transport_receive(struct tweak_wire_rpmsg_transport *transport,
                                                          uint8_t *buffer, uint16_t *len)
 {
+    TWEAK_LOG_TRACE_ENTRY("transport = %p, buffer = %p, len = %d", transport, buffer, len);
+
     int32_t status;
 
     /* ...wait for input message */
@@ -93,9 +100,11 @@ tweak_wire_error_code tweak_wire_rpmsg_transport_receive(struct tweak_wire_rpmsg
     switch (status)
     {
     case IPC_SOK:
+        TWEAK_LOG_TRACE("IPC_SOK");
         break;
 
     case IPC_E_UNBLOCKED:
+        TWEAK_LOG_TRACE("IPC_E_UNBLOCKED");
         return (tweak_wire_error_code)TWEAK_WIRE_FINALIZING;
 
     case IPC_ETIMEOUT:
@@ -115,11 +124,15 @@ tweak_wire_error_code tweak_wire_rpmsg_transport_receive(struct tweak_wire_rpmsg
 
 void tweak_wire_rpmsg_transport_abort(struct tweak_wire_rpmsg_transport *transport)
 {
+    TWEAK_LOG_TRACE_ENTRY("transport = %p", transport);
+
     RPMessage_unblock(transport->rpmsg);
 }
 
 void tweak_wire_rpmsg_transport_close(struct tweak_wire_rpmsg_transport *transport)
 {
+    TWEAK_LOG_TRACE_ENTRY("transport = %p", transport);
+
     int32_t status;
 
     status = RPMessage_delete(&transport->rpmsg);

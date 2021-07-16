@@ -22,6 +22,9 @@
 #include <QJSEngine>
 #include <QThread>
 
+#include <QHash>
+#include <QSharedPointer>
+
 namespace tweak2
 {
 
@@ -93,6 +96,11 @@ private:
     QJSEngine scriptEngine;
 
     QSet<QString> favorites;
+
+    using MetadataCacheKey = std::pair<tweak_variant_type, QString>;
+    using MetadataCacheItem = QSharedPointer<TweakMetadata>;
+
+    mutable QHash<MetadataCacheKey, MetadataCacheItem> metadataCache;
 };
 
 } // namespace tweak2

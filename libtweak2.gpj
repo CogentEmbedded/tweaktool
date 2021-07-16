@@ -1,0 +1,51 @@
+#!gbuild
+
+# Header section. Define macros (optional) here.
+
+[Library]
+# End of Header section. Last line of section must be project type in '[ ]'.
+
+# Options section. Must be indented. Specifies options that apply to this project and its children.
+    :sourceDir=$(__NNG_ROOT_DIR)
+    -I$(__TWEAK_DIR)/extern/uthash/include
+    -I$(__TWEAK_DIR)/tweak-wire/include
+    -I$(__TWEAK_DIR)/tweak-wire/src
+    -I$(__TWEAK_DIR)/tweak-pickle/include
+    -I$(__TWEAK_DIR)/tweak-pickle/src
+    -I$(__TWEAK_DIR)/tweak-pickle/src/autogen
+    -I$(__TWEAK_DIR)/tweak-common/include
+    -I$(__TWEAK_DIR)/tweak-common/src
+    -I$(__TWEAK_DIR)/tweak-app/include
+    -I$(__TWEAK_DIR)/tweak-app/src
+    -I$(__TWEAK_DIR)/tweak1lib/include
+    -I$(__TWEAK_DIR)/tweak1lib/src
+    -I$(__NNG_ROOT_DIR)/include
+    -DAI_NUMERICSERV=0
+    -DNO_DECLTYPE
+    -DTWEAK_LOG_LEVEL=3
+    -DWITH_WIRE_NNG=1
+    -language=c                         # Required because linking to ESX libs implemented in C++
+    -lposix
+    -lstd
+
+# Children section. Specifies files included by this project, their types and respective options.
+
+$(__TWEAK_DIR)/tweak-wire/src/tweakwire.c
+$(__TWEAK_DIR)/tweak-wire/src/tweakwire_nng.c
+$(__TWEAK_DIR)/tweak-pickle/src/tweakpickle_client_pb.c
+$(__TWEAK_DIR)/tweak-pickle/src/autogen/pb_decode.c
+$(__TWEAK_DIR)/tweak-pickle/src/autogen/pb_common.c
+$(__TWEAK_DIR)/tweak-pickle/src/autogen/pb_encode.c
+$(__TWEAK_DIR)/tweak-pickle/src/autogen/tweak.pb.c
+$(__TWEAK_DIR)/tweak-pickle/src/tweakpickle_pb_util.c
+$(__TWEAK_DIR)/tweak-pickle/src/tweakpickle_server_pb.c
+$(__TWEAK_DIR)/tweak-common/src/tweakstring.c
+$(__TWEAK_DIR)/tweak-common/src/tweakvariant.c
+$(__TWEAK_DIR)/tweak-common/src/tweaklog_unix.c
+$(__TWEAK_DIR)/tweak1lib/src/tweakcompat.c
+$(__TWEAK_DIR)/tweak-app/src/tweakmodel_uri_to_tweak_id_index.c
+$(__TWEAK_DIR)/tweak-app/src/tweakmodel.c
+$(__TWEAK_DIR)/tweak-app/src/tweakappqueue.c
+$(__TWEAK_DIR)/tweak-app/src/tweakappserver.c
+$(__TWEAK_DIR)/tweak-app/src/tweakappcommon.c
+$(__TWEAK_DIR)/tweak-app/src/tweakappclient.c

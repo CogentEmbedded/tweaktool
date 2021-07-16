@@ -1,0 +1,8 @@
+version: "3.3"
+services:
+  nanopb_stubs_20_04:
+    image: tweaktool/build_ubuntu_20_04
+    container_name: container_tweaktool_nanopb_ubuntu_20_04
+    build:
+      context: .
+    tty: true

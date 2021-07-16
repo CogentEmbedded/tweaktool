@@ -53,7 +53,7 @@ void test_model() {
     sprintf(buff, "id_%" PRIu64 "", ids[ix]);
     tweak_variant_assign_string(&uris[ix], buff);
 
-    float val = ((float)rand()) / RAND_MAX;
+    float val = ((float)rand()) / (float)RAND_MAX;
     tweak_variant_create_float(&values[ix], val);
 
     tweak_model_error_code ec = tweak_model_create_item(model, ids[ix],
@@ -95,7 +95,7 @@ void test_model() {
       tweak_variant_string description = tweak_variant_string_copy(&uris[ix]);
       tweak_variant_string meta = tweak_variant_string_copy(&uris[ix]);
 
-      float val = ((float)rand()) / RAND_MAX;
+      float val = ((float)rand()) / (float)RAND_MAX;
       tweak_variant_create_float(&values[ix], val);
 
       tweak_variant default_value = tweak_variant_copy(&values[ix]);

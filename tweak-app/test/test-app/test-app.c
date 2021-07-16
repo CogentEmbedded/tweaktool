@@ -183,7 +183,7 @@ static void generate_tweaks(tweak_app_server_context server_context, uint32_t nu
     memset(uri, '\0', sizeof(uri));
     generate_random_uri(uri, 10, MAX_URI_LENGTH);
     tweak_variant value = TWEAK_VARIANT_INIT_EMPTY ;
-    float rand_val = (float)rand() / (RAND_MAX / 2) - 1.f;
+    float rand_val = (float)rand() / ((float)RAND_MAX / 2.f) - 1.f;
     tweak_variant_create_float(&value, rand_val);
     tweak_id tweak_id = tweak_app_server_add_item(server_context, uri, "test", "test", &value,
       NULL);
@@ -362,7 +362,7 @@ void test_app() {
     populate_random_ids(server_context, tweak_ids, CHANGE_BATCH_SIZE);
     clear_change_counter(&client_control);
     for (uint32_t ix = 0; ix < CHANGE_BATCH_SIZE; ++ix) {
-      float rand_val = (float)rand() / (RAND_MAX / 2) - 1.f;
+      float rand_val = (float)rand() / ((float)RAND_MAX / 2.f) - 1.f;
       tweak_variant_create_float(&pairs[ix].value, rand_val);
       pairs[ix].tweak_id = tweak_ids[ix];
       tweak_variant tmp = tweak_variant_copy(&pairs[ix].value);
@@ -438,7 +438,7 @@ static void* client_loop(void *arg) {
     populate_random_ids(client_context, tweak_ids, CHANGE_BATCH_SIZE);
     clear_change_counter(client_control);
     for (uint32_t ix = 0; ix < CHANGE_BATCH_SIZE; ++ix) {
-      float rand_val = (float)rand() / (RAND_MAX / 2) - 1.f;
+      float rand_val = (float)rand() / ((float)RAND_MAX / 2.f) - 1.f;
       tweak_variant_create_float(&pairs[ix].value, rand_val);
       pairs[ix].tweak_id = tweak_ids[ix];
       tweak_variant tmp = tweak_variant_copy(&pairs[ix].value);

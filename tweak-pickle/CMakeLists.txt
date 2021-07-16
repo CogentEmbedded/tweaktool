@@ -72,8 +72,7 @@ add_library(${LIBRARY_NAME} ${${LIBRARY_NAME}_SOURCES}
 
 add_library(${PROJECT_NAMESPACE}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
 
-set_target_properties(${LIBRARY_NAME} PROPERTIES C_STANDARD 99
-                                                 C_STANDARD_REQUIRED YES)
+target_compile_features(${LIBRARY_NAME} PUBLIC c_std_99)
 
 set_target_properties(
   ${LIBRARY_NAME}
@@ -99,7 +98,7 @@ append_to_global_list(DOCUMENTATION_FILES ${${LIBRARY_NAME}_HEADERS})
 # Installation
 # ------------------------------------------------------------------------------
 
-tweakcomponentinstall(${LIBRARY_NAME})
+tweak_component_install(${LIBRARY_NAME})
 
 # ------------------------------------------------------------------------------
 # Automatic tests

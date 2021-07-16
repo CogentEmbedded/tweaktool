@@ -188,8 +188,6 @@ ColumnLayout {
                         enabled: connectionId < 0
 
                         text: name
-                        Layout.fillWidth: true
-
                         onTextChanged: {
                             name = text
                             saveModel()
@@ -220,16 +218,15 @@ ColumnLayout {
                         objectName: "uriSchemaSelector"
                         enabled: connectionId < 0
 
-                        model: ["tcp", "udp"]
+                        model: ["tcp"]
 
-                        property string uSchema: uriSchema
-                        onUSchemaChanged: {
-                            currentIndex = Math.max(find(uSchema), 0)
+                        currentIndex: Math.max(find(uriSchema), 0)
+                        Component.onCompleted: {
+                            currentIndex = Math.max(find(uriSchema), 0)
                         }
 
                         onActivated: {
-                            uSchema = textAt(index)
-                            uriSchema = uSchema
+                            uriSchema = textAt(index)
                             saveModel()
                         }
                     }
@@ -264,6 +261,7 @@ ColumnLayout {
                     SpinBox {
                         id: uriPortSelector
                         enabled: connectionId < 0
+                        editable: true
 
                         from: 1
                         to: 65535
@@ -296,19 +294,17 @@ ColumnLayout {
                     }
 
                     ComboBox {
-                        property string cType: contextType
-
                         enabled: connectionId < 0
 
                         model: ["nng"]
 
-                        onCTypeChanged: {
-                            currentIndex = Math.max(find(cType), 0)
+                        currentIndex: Math.max(find(contextType), 0)
+                        Component.onCompleted: {
+                            currentIndex = Math.max(find(contextType), 0)
                         }
 
                         onActivated: {
-                            cType = textAt(index)
-                            contextType = cType
+                            contextType = textAt(index)
                             saveModel()
                         }
                     }
@@ -322,7 +318,6 @@ ColumnLayout {
                         text: "client"
                         readOnly: true
                         enabled: connectionId < 0
-
                     }
 
                     RowLayout {
@@ -378,15 +373,6 @@ ColumnLayout {
                     Layout.fillWidth: true
 
                     spacing: 10
-
-                    RoundButton {
-                        text: "x"
-                        onClicked: {
-                            connectionModel.remove(index);
-                            connectionId = -1;
-                            saveModel();
-                        }
-                    }
 
                     Text {
                         text: connectionId < 0 ? "Disconnected" : "Connected"

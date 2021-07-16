@@ -3,17 +3,17 @@
 # CMake build configuration for Cogent Tweak Tool.
 #
 # Copyright (c) 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -36,7 +36,7 @@ set(LIBRARY_SOVERSION 0)
 
 # Prefer system version of uthash packages. Use a submodule if not available.
 find_package(uthash)
-if(NOT UTHASH_INCLUDE_DIR)
+if (NOT UTHASH_INCLUDE_DIR)
   find_path(
     UTHASH_INCLUDE_DIR
     NAMES "uthash.h"
@@ -88,8 +88,7 @@ add_library(${PROJECT_NAMESPACE}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
 target_link_libraries(${LIBRARY_NAME} PUBLIC ${${LIBRARY_NAME}_DEPENDENCIES}
                                              Threads::Threads)
 
-set_target_properties(${LIBRARY_NAME} PROPERTIES C_STANDARD 99
-                                                 C_STANDARD_REQUIRED YES)
+target_compile_features(${LIBRARY_NAME} PUBLIC c_std_99)
 
 set_target_properties(
   ${LIBRARY_NAME}
@@ -113,7 +112,7 @@ append_to_global_list(DOCUMENTATION_FILES ${${LIBRARY_NAME}_HEADERS})
 # Installation
 # ------------------------------------------------------------------------------
 
-tweakcomponentinstall(${LIBRARY_NAME})
+tweak_component_install(${LIBRARY_NAME})
 
 # ------------------------------------------------------------------------------
 # Automatic tests

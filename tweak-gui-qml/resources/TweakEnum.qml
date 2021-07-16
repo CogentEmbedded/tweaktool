@@ -29,12 +29,13 @@ Tweak {
     }
 
     ComboBox {
-        currentIndex: tweakValue
+        model: options
+        currentIndex: model ? model.find(tweakValue) : -1
         Layout.minimumWidth: mainSpace.editorWidth + 80
         Layout.maximumWidth: mainSpace.editorWidth + 80
-        model: options
-        onAccepted: {
-            tweakValue = currentIndex;
+        textRole: "text"
+        onActivated: {
+            tweakValue = model.get(currentIndex)
         }
         enabled: isEnabled
     }

@@ -55,9 +55,9 @@ Option A: Install pre-built NNG packages
 
 ```bash
 sudo apt-get -y install libmbedtls-dev libmbedcrypto3 libmbedtls12 libmbedx509-0
-sudo dpkg -i ./tweaktool/prebuilt-packages/ubuntu_20_04/libnng1_1.4.0-1build1.1_amd64.deb \
-             ./tweaktool/prebuilt-packages/ubuntu_20_04/libnng-dev_1.4.0-1build1.1_amd64.deb \
-             ./tweaktool/prebuilt-packages/ubuntu_20_04/nng-utils_1.4.0-1build1.1_amd64.deb
+sudo dpkg -i ./tweaktool/nng-prebuilt/ubuntu_20_04/libnng1_1.4.0-1build1.1_amd64.deb \
+             ./tweaktool/nng-prebuilt/ubuntu_20_04/libnng-dev_1.4.0-1build1.1_amd64.deb \
+             ./tweaktool/nng-prebuilt/ubuntu_20_04/nng-utils_1.4.0-1build1.1_amd64.deb
 ```
 
 Option B: Build NNG packages manually
@@ -133,9 +133,9 @@ advanced build recipes.
 
 ```bash
 sudo apt-get -y install libmbedtls-dev libmbedcrypto1 libmbedtls10 libmbedx509-0
-sudo dpkg -i ./tweaktool/prebuilt-packages/ubuntu_18_04/libnng1_1.4.0-1build1.1_amd64.deb \
-             ./tweaktool/prebuilt-packages/ubuntu_18_04/libnng-dev_1.4.0-1build1.1_amd64.deb \
-             ./tweaktool/prebuilt-packages/ubuntu_18_04/nng-utils_1.4.0-1build1.1_amd64.deb
+sudo dpkg -i ./tweaktool/nng-prebuilt/ubuntu_18_04/libnng1_1.4.0-1build1.1_amd64.deb \
+             ./tweaktool/nng-prebuilt/ubuntu_18_04/libnng-dev_1.4.0-1build1.1_amd64.deb \
+             ./tweaktool/nng-prebuilt/ubuntu_18_04/nng-utils_1.4.0-1build1.1_amd64.deb
 ```
 
 Step 4

@@ -6,4 +6,4 @@
 	url = https://github.com/CogentEmbedded/uthash.git
 [submodule "extern/SortFilterProxyModel"]
 	path = extern/SortFilterProxyModel
-	url = https://github.com/oKcerG/SortFilterProxyModel.git
+	url = git@github.com:CogentEmbedded/SortFilterProxyModel.git

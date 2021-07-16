@@ -15,10 +15,35 @@
 #ifndef TWEAKMETADATAPARSER_HPP
 #define TWEAKMETADATAPARSER_HPP
 
+#include <tweak2/variant.h>
+
 #include <QObject>
+#include <QVariantMap>
+#include <QAbstractListModel>
+
+#include <tweak2/metadata.h>
 
 namespace tweak2
 {
+
+class OptionsModel : public QAbstractListModel
+{
+    Q_OBJECT
+    tweak_metadata_options m_options;
+public:
+    enum OptionsRoles {
+        ValueRole = Qt::UserRole + 1,
+        TextRole
+    };
+
+    OptionsModel(QObject *parent = nullptr);
+    OptionsModel(tweak_metadata_options options, QObject *parent = nullptr);
+    int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    QVariant data(const QModelIndex &index, int role) const Q_DECL_OVERRIDE;
+    Q_INVOKABLE QVariant get(int index) const;
+    Q_INVOKABLE int find(QVariant value) const;
+    QHash<int, QByteArray> roleNames() const Q_DECL_OVERRIDE;
+};
 
 /**
  * @brief Metadata information about individual tweak control that is used to select
@@ -27,64 +52,51 @@ namespace tweak2
 class TweakMetadata : public QObject
 {
     Q_OBJECT
-
+    tweak_metadata m_metadata;
+    OptionsModel* m_options;
 public:
     enum class ControlType {
-        GENERIC,
-        TOGGLE,
-        ENUM
+        Unknown,
+        Checkbox,
+        Button,
+        Spinbox,
+        Slider,
+        Combobox
     };
-    Q_ENUM(ControlType)
+    Q_ENUM(ControlType);
+    TweakMetadata(QObject *parent = nullptr);
+    TweakMetadata(tweak_metadata metadata, QObject *parent = nullptr);
+    ~TweakMetadata();
 
-    QString m_tweakType;
-    bool m_readonly = false;
+    ControlType getControlType() const;
+    QVariant getMin() const;
+    QVariant getMax() const;
+    bool getReadonly() const;
+    quint32 getDecimals() const;
+    QVariant getStep() const;
+    QString getCaption() const;
+    OptionsModel* getOptions() const;
 
-    double m_min = 0;
-    double m_max = 1;
-    double m_step = 1;
-
-    QString m_raw = "";
-
-    quint32 m_decimals = 3;
-    ControlType m_controlType;
-    QStringList m_options;
-public:
-    Q_PROPERTY(QString tweakType MEMBER m_tweakType CONSTANT)
-    Q_PROPERTY(bool readonly MEMBER m_readonly CONSTANT)
-    Q_PROPERTY(double min MEMBER m_min CONSTANT)
-    Q_PROPERTY(double max MEMBER m_max CONSTANT)
-    Q_PROPERTY(double step MEMBER m_step CONSTANT)
-    Q_PROPERTY(QString raw MEMBER m_raw CONSTANT)
-    Q_PROPERTY(quint32 decimals MEMBER m_decimals CONSTANT)
-    Q_PROPERTY(ControlType controlType MEMBER m_controlType CONSTANT)
-    Q_PROPERTY(QStringList options MEMBER m_options CONSTANT)
+    Q_PROPERTY(ControlType controlType READ getControlType CONSTANT)
+    Q_PROPERTY(QVariant min READ getMin CONSTANT)
+    Q_PROPERTY(QVariant max READ getMax CONSTANT)
+    Q_PROPERTY(bool readonly READ getReadonly CONSTANT)
+    Q_PROPERTY(QVariant step READ getStep CONSTANT)
+    Q_PROPERTY(quint32 decimals READ getDecimals CONSTANT)
+    Q_PROPERTY(QString caption READ getCaption CONSTANT)
+    Q_PROPERTY(OptionsModel* options READ getOptions CONSTANT)
 };
 
-
-/**
- * @brief Parses tweak metadata in various formats.
- *
- * Supported formats include:
- *  - JSON
- *
- * Other formats can be added on request.
- */
 class TweakMetadataParser : public QObject
 {
     Q_OBJECT
-
-private:
-
-
 public slots:
     /**
      * @brief Parser metadata and return standard structure.
      * @param meta
      * @return
      */
-    TweakMetadata* parse(const QString meta) const;
-
-
+    TweakMetadata* parse(tweak_variant_type item_type, QString meta) const;
 public:
     explicit TweakMetadataParser(QObject *parent = Q_NULLPTR);
 

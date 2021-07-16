@@ -40,7 +40,7 @@ run_build() {
         echo "BUILD_TESTS=${BUILD_TESTS}"
         if [ "xON" = "x${BUILD_TESTS}" ]; then
             export CTEST_OUTPUT_ON_FAILURE=1
-            make test ARGS=-j12
+            make test
         fi
 
         WITH_DOXYGEN=$(cmake -LA -N .. | grep WITH_DOXYGEN | cut -d "=" -f2)
@@ -70,10 +70,8 @@ for arg1 in -DCMAKE_BUILD_TYPE={Debug,Release}; do
         for arg3 in -DBUILD_TESTS={ON,OFF}; do
             for arg4 in -DBUILD_GUI={ON,OFF}; do
                 for arg5 in -DWITH_DOXYGEN={ON,OFF}; do
-                    for arg6 in -DWITH_QTCHARTS={ON,OFF}; do
-                        for arg7 in -DTWEAK_COMMON_LOG_LEVEL={Trace,Debug,Test,Warn,Error,Fatal}; do
-                            run_build xxx $arg1 $arg2 $arg3 $arg4 $arg5 $arg6 $arg7 "$@"
-                        done
+                    for arg6 in -DTWEAK_COMMON_LOG_LEVEL={Trace,Debug,Test,Warn,Error,Fatal}; do
+                        run_build xxx $arg1 $arg2 $arg3 $arg4 $arg5 $arg6 "$@"
                     done
                 done
             done

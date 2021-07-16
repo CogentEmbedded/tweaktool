@@ -44,6 +44,8 @@ add_dependencies(${BINARY_NAME} Acutest)
 
 target_link_libraries(${BINARY_NAME} ${PROJECT_NAMESPACE}::wire)
 
+target_compile_features(${BINARY_NAME} PUBLIC c_std_99)
+
 # ------------------------------------------------------------------------------
 # Automatic tests
 # ------------------------------------------------------------------------------
