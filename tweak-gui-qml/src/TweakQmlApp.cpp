@@ -174,7 +174,7 @@ QVariant TweakApplication::data(const QModelIndex &index, int role) const
                         MetadataCacheItem(d->metadataParser.parse(item_type, meta)));
                 }
                 result = (itr != metadataCache.end())
-                    ? QVariant::fromValue(itr.value().get())
+                    ? QVariant::fromValue(&*itr.value())
                     : QVariant();
             } break;
 

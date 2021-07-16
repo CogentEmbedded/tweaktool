@@ -10,7 +10,7 @@ build_images() {
 build_debs() {
     mkdir -p ./docker-build
     docker-compose up --detach
-    for ubuntu_version in 18_04 20_04
+    for ubuntu_version in 18_04 20_04 20_10
     do
         docker cp . container_tweaktool_ubuntu_${ubuntu_version}:/app/tweaktool
         docker exec container_tweaktool_ubuntu_${ubuntu_version} /bin/sh \

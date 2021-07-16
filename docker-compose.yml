@@ -21,3 +21,14 @@ services:
         - WITH_DEFAULT_CMAKE=OFF
         - KITWARE_REPOSITORY=deb https://apt.kitware.com/ubuntu/ focal main
     tty: true
+
+  tweaktool_build_ubuntu_20_10:
+      image: tweaktool/build_ubuntu_20_10
+      container_name: container_tweaktool_ubuntu_20_10
+      build:
+        context: .
+        args:
+          - UBUNTU_VERSION=20.10
+          - WITH_DEFAULT_CMAKE=OFF
+          - KITWARE_REPOSITORY=deb https://apt.kitware.com/ubuntu/ focal main
+      tty: true
