@@ -38,11 +38,6 @@ Step 2
 
 Checkout actual tweaktool2 branch.
 
----
-**NOTE**
-Exact branch name isn't settled for the current release.
----
-
 ```bash
 git clone https://github.com/CogentEmbedded/tweaktool.git --recursive
 ```
@@ -89,11 +84,6 @@ After all these commands user should get all the debs inside ./tweak-build direc
 
 ### Step-by-step guide to build tweaktool2 on Ubuntu 18.04
 
----
-**NOTE**
-Exact branch name isn't settled for the current release.
----
-
 Step 1
 
 Install basic Ubuntu build utilities and Qt developer's packages.
@@ -109,13 +99,8 @@ Step 2
 
 Checkout actual tweaktool2 branch.
 
----
-**NOTE**
-Exact branch name isn't settled for the current release.
----
-
 ```bash
-git clone git@bitbucket.org:cogente/tweaktool.git --branch tweak2-qml-gui --recursive
+git clone https://github.com/CogentEmbedded/tweaktool.git --recursive
 ```
 
 Step 3
@@ -239,8 +224,8 @@ sudo make install
 **NOTE**
 
 Another and probably more preferred option is to refer script
-[build-nng-deps.sh](build-nng-deps.sh) from project directory 
-to build proper Ubuntu-styled deb packages. 
+[build-nng-deps.sh](build-nng-deps.sh) from project directory
+to build proper Ubuntu-styled deb packages.
 
 Pre-conditions for that script are:
 
@@ -275,7 +260,7 @@ works with this Ubuntu version as well.
 ## Fetch tweaktool sources
 
 ```bash
-git clone git@bitbucket.org:cogente/tweaktool.git --branch tweak2-qml-gui --recursive
+git clone https://github.com/CogentEmbedded/tweaktool.git --recursive
 ```
 
 ## Build tweaktool
