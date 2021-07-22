@@ -44,7 +44,7 @@ Exact branch name isn't settled for the current release.
 ---
 
 ```bash
-git clone git@bitbucket.org:cogente/tweaktool.git --branch tweak2-qml-gui --recursive
+git clone https://github.com/CogentEmbedded/tweaktool.git --recursive
 ```
 
 Step 3
@@ -67,7 +67,7 @@ This script installs NNG packages being built, thus it requires sudo.
 
 ```bash
 sudo apt-get -y install fakeroot devscripts equivs dh-python debhelper-compat ubuntu-dev-tools \
-    scons protobuf-compiler libmbedtls-dev libmbedcrypto3 libmbedtls12 libmbedx509-0
+    scons protobuf-compiler libmbedtls-dev libmbedcrypto3 libmbedtls12 libmbedx509-0 python3-protobuf
 sudo ../tweaktool/build-nng-debs.sh
 ```
 
