@@ -10,7 +10,7 @@ build_images() {
 build_debs() {
     mkdir -p ./docker-build
     docker-compose up --detach
-    for ubuntu_version in 18_04 20_04 20_10
+    for ubuntu_version in 18_04 20_04
     do
         docker cp . container_tweaktool_ubuntu_${ubuntu_version}:/app/tweaktool
         docker exec container_tweaktool_ubuntu_${ubuntu_version} /bin/sh \
@@ -23,6 +23,8 @@ build_debs() {
     done
     docker-compose down
 }
+
+git submodule update --init --recursive
 
 if [ "$1" = "--build-images-only" ]; # with --build-images-only this script only creates build environments
 then build_images                    # otherwise it shall build packages.

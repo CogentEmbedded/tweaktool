@@ -18,7 +18,7 @@ RUN apt-get -y install git build-essential fakeroot devscripts equivs \
     dh-python debhelper-compat ubuntu-dev-tools libreadline-dev \
     scons protobuf-compiler python3-protobuf libmbedtls-dev \
     qt5-default qml-module-qtqml-models2 qml-module-qtquick-controls2 \
-    qtdeclarative5-dev qtquickcontrols2-5-dev expect
+    qtdeclarative5-dev qtquickcontrols2-5-dev expect rpm
 
 RUN if [ "${WITH_DEFAULT_CMAKE}" = "ON" ] ; then \
         wget --no-check-certificate -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | apt-key add - ; \
