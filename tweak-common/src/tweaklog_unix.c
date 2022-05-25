@@ -1,24 +1,37 @@
 /**
- * @file tweaklog.c
+ * @file tweaklog_unix.c
  * @ingroup tweak-api
  *
  * @brief Common logging routine, reference POSIX implementation.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <tweak2/log.h>
+#include <tweak2/thread.h>
 
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <ctype.h>
-#include <pthread.h>
 
 #define MAX_LENGTH_PTHREAD_NAME (16)
 
@@ -26,7 +39,7 @@
 #define HEXDUMP_COLS (16)
 #endif
 
-static pthread_mutex_t s_log_lock = { 0 };
+static tweak_common_mutex s_log_lock = {0};
 
 static tweak_log_level s_log_level;
 
@@ -34,24 +47,24 @@ static tweak_log_output_proc s_log_output_proc = NULL;
 
 static char s_string_concat_buffer[TWEAK_MAX_LOG_ENTRY_STRING_LENGTH];
 
-static void tweak_common_log_destroy();
+static void tweak_common_log_destroy(void);
 
 enum { MAX_TRACE_CHUNK_SIZE = 128 };
 
-static void tweak_common_log_init() {
-  pthread_mutex_init(&s_log_lock, NULL);
+static void tweak_common_log_init(void) {
+  tweak_common_mutex_init(&s_log_lock);
   s_log_level = (tweak_log_level)TWEAK_LOG_LEVEL;
   s_log_output_proc = tweak_common_stderr_log_handler;
   atexit(&tweak_common_log_destroy);
 }
 
-static void tweak_common_log_destroy() {
-  pthread_mutex_destroy(&s_log_lock);
+static void tweak_common_log_destroy(void) {
+  tweak_common_mutex_destroy(&s_log_lock);
 }
 
 static volatile bool s_initialized = false;
 
-static void check_initialization() {
+static void check_initialization(void) {
   if (!s_initialized) {
     tweak_common_log_init();
     s_initialized = true;
@@ -60,9 +73,9 @@ static void check_initialization() {
 
 void tweak_common_set_custom_handler(tweak_log_output_proc log_output_proc) {
   check_initialization();
-  pthread_mutex_lock(&s_log_lock);
+  tweak_common_mutex_lock(&s_log_lock);
   s_log_output_proc = log_output_proc;
-  pthread_mutex_unlock(&s_log_lock);
+  tweak_common_mutex_unlock(&s_log_lock);
 }
 
 void tweak_common_log_hexdump(tweak_log_level log_level, const char* message, uint8_t* buffer, uint32_t length) {
@@ -70,7 +83,7 @@ void tweak_common_log_hexdump(tweak_log_level log_level, const char* message, ui
   if (s_log_level > log_level)
     return;
 
-  pthread_mutex_lock(&s_log_lock);
+  tweak_common_mutex_lock(&s_log_lock);
   uint32_t i, j;
   s_log_output_proc(message);
   bool truncate = false;
@@ -119,7 +132,7 @@ void tweak_common_log_hexdump(tweak_log_level log_level, const char* message, ui
     sprintf(buff, "... Truncated %u bytes ...", length - cut_length);
     s_log_output_proc(buff);
   }
-  pthread_mutex_unlock(&s_log_lock);
+  tweak_common_mutex_unlock(&s_log_lock);
 }
 
 void tweak_common_set_log_level(tweak_log_level log_level) {
@@ -131,11 +144,12 @@ void tweak_common_set_log_level(tweak_log_level log_level) {
   }
 }
 
-void tweak_common_log(tweak_log_level log_level, const char * format, ... ) {
+void tweak_common_log(tweak_log_level log_level, const char *format, ...)
+{
   check_initialization();
 
   if (s_log_level <= log_level) {
-    pthread_mutex_lock(&s_log_lock);
+    tweak_common_mutex_lock(&s_log_lock);
     va_list args;
     va_start (args, format);
     int nchars = vsnprintf(s_string_concat_buffer, sizeof(s_string_concat_buffer), format, args);
@@ -149,11 +163,10 @@ void tweak_common_log(tweak_log_level log_level, const char * format, ... ) {
       }
       s_log_output_proc(s_string_concat_buffer);
     }
-    pthread_mutex_unlock(&s_log_lock);
+    tweak_common_mutex_unlock(&s_log_lock);
   }
 
   if (log_level == TWEAK_LOG_LEVEL_FATAL) {
     abort();
   }
 }
-

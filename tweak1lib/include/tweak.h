@@ -4,12 +4,25 @@
  *
  * @brief compatibility library adapting new implementation to legacy API.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
  /**
@@ -38,39 +51,39 @@ extern "C" {
 
 /**
  * @note In Tweak 2 GUI, items are arranged by hierarchy:
- * 
+ *
  * /connection_name/level_1/level_2/item_name where connection_name
  * is being associated in GUI with connection whilst /level_1/level_2/item_name
  * are taken from uri field.
- * 
+ *
  * However, tweak1 had concept of layout and GUI was stateful.
  * Because of that, it is decided to map "name" to URI using following algorithm:
- * 
+ *
  * 1) If current layout name isn't prefixed by slash, this adaptor library does prefix it by slash.
  * Thus, tweak_add_layout(... "foo") is equivalent to tweak_add_layout(... "/foo")
- * 
+ *
  * 2) If item isn't prefixed by slash, this adaptor library does prefix it by slash.
  * Thus, void tweak_add_slider("bar" ...) is equivalent to tweak_add_slider("/bar" ...)
- * 
+ *
  * 3) Adaptor library concatenates latest layout name (prefixed) and item name (prefixed)
  * and uses it as uri on an item. Thus, item uri becomes /foo/bar. Having that connection name
  * in Tweak 2 GUI URI is equal to "conn1", the item shall be accessible as /conn1/foo/bar.
- * 
+ *
  * All the info related to item editor is brought together into meta field of an item.
  * Tweak 2 GUI uses json representation described in docs/METADATA.md
  * For instance, tweak_add_slider creates entry { ... "control": "slider" ...} within meta.
- * 
- * Unlike tweak 2, tweak 1 has layouts. This adaptor adds most recent layout info to item 
+ *
+ * Unlike tweak 2, tweak 1 has layouts. This adaptor adds most recent layout info to item
  * meta as well. Because of that,
- * 
+ *
  * ```
  * tweak_add_layout(300, 0, "/foo");
  * tweak_add_slider("bar", -1., 1., 0., 4);
  * ```
- * Produces item with uri /foo/bar having meta field such as this: 
- * 
+ * Produces item with uri /foo/bar having meta field such as this:
+ *
  * ```
- * { 
+ * {
  *      "control": "slider",
  *      "min": -1,
  *      "max": 1,
@@ -151,7 +164,7 @@ double tweak_get_string(const char* name, double defval);
 /**
  * @note Not Supported.
  */
-void tweak_on_update(const char* name) __attribute__((deprecated));
+void tweak_on_update(const char* name);
 
 /**
  * @note Late binding mechanism. Callback is passed as a pointer.

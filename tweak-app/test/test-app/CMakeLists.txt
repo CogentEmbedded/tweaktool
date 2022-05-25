@@ -1,8 +1,7 @@
-# ##############################################################################
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,14 +20,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# ##############################################################################
-
-# ------------------------------------------------------------------------------
-# Dependencies
-# ------------------------------------------------------------------------------
-
-find_package(Threads REQUIRED)
-
+#
 # ------------------------------------------------------------------------------
 # Common settings
 # ------------------------------------------------------------------------------
@@ -46,11 +38,16 @@ set(${BINARY_NAME}_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/test-app.c)
 # ------------------------------------------------------------------------------
 
 add_executable(${BINARY_NAME} ${${BINARY_NAME}_SOURCES})
+
+if (MSVC)
+  target_compile_options(${BINARY_NAME} PRIVATE /W4 /WX)
+endif()
+
 add_dependencies(${BINARY_NAME} Acutest)
 
 target_compile_features(${BINARY_NAME} PUBLIC c_std_99)
 
-target_link_libraries(${BINARY_NAME} Threads::Threads ${PROJECT_NAMESPACE}::app)
+target_link_libraries(${BINARY_NAME} PRIVATE ${PROJECT_NAMESPACE}::app)
 
 # ------------------------------------------------------------------------------
 # Automatic tests

@@ -1,8 +1,7 @@
-# ##############################################################################
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +20,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# ##############################################################################
-
+#
 # ------------------------------------------------------------------------------
 # Common settings
 # ------------------------------------------------------------------------------
@@ -43,6 +41,11 @@ set(${BINARY_NAME}_SOURCES
 # ------------------------------------------------------------------------------
 
 add_executable(${BINARY_NAME} ${${BINARY_NAME}_SOURCES})
+
+if (MSVC)
+  target_compile_options(${BINARY_NAME} PRIVATE /W4 /WX)
+endif()
+
 add_dependencies(${BINARY_NAME} Acutest)
 
 target_include_directories(

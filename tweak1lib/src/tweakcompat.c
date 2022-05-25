@@ -3,22 +3,35 @@
  * @ingroup tweak-api
  * @brief part of tweak2 - tweak1 compatibility layer implementation.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <tweak.h>
 #include <tweak2/appserver.h>
 #include <tweak2/log.h>
+#include <tweak2/thread.h>
 #include <tweak2/types.h>
 #include <tweak2/variant.h>
 
 #include <math.h>
-#include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <uthash.h>
@@ -26,7 +39,7 @@
 
 static tweak_app_server_context s_context = NULL;
 
-static pthread_mutex_t s_callback_lock = { 0 };
+static tweak_common_mutex s_callback_lock = { 0 };
 
 static tweak_update_handler s_callback = NULL;
 
@@ -52,7 +65,7 @@ struct name_uri_pair {
   UT_hash_handle hh;
 };
 
-static pthread_rwlock_t s_name_uri_lock = { 0 };
+static tweak_common_rwlock s_name_uri_lock = { 0 };
 
 struct name_uri_pair* s_name_uri_pairs = NULL;
 
@@ -115,7 +128,7 @@ static const char* map_uri(const char* layout_name, const char* name) {
   }
 
   const char* uri = NULL;
-  pthread_rwlock_wrlock(&s_name_uri_lock);
+  tweak_common_rwlock_write_lock(&s_name_uri_lock);
   s_uri_concat_buffer[0] = '\0';
   if (layout_name != NULL) {
     if (layout_name[0] != '/') {
@@ -132,7 +145,7 @@ static const char* map_uri(const char* layout_name, const char* name) {
   }
   uri = add_uri_mapping(name, s_uri_concat_buffer);
   add_name_mapping(s_uri_concat_buffer, name);
-  pthread_rwlock_unlock(&s_name_uri_lock);
+  tweak_common_rwlock_write_unlock(&s_name_uri_lock);
   return uri;
 }
 
@@ -141,9 +154,9 @@ static char* get_uri(const char* name) {
     TWEAK_FATAL("name is NULL");
   }
   struct name_uri_pair* pair = NULL;
-  pthread_rwlock_rdlock(&s_name_uri_lock);
+  tweak_common_rwlock_read_lock(&s_name_uri_lock);
   HASH_FIND_STR(s_name_uri_pairs, name, pair);
-  pthread_rwlock_unlock(&s_name_uri_lock);
+  tweak_common_rwlock_write_unlock(&s_name_uri_lock);
   if (pair == NULL) {
     return NULL;
   }
@@ -155,9 +168,9 @@ static char* get_name(const char* uri) {
     TWEAK_FATAL("uri is NULL");
   }
   struct name_uri_pair* pair = NULL;
-  pthread_rwlock_rdlock(&s_name_uri_lock);
+  tweak_common_rwlock_read_lock(&s_name_uri_lock);
   HASH_FIND_STR(s_uri_name_pairs, uri, pair);
-  pthread_rwlock_unlock(&s_name_uri_lock);
+  tweak_common_rwlock_read_unlock(&s_name_uri_lock);
   if (pair == NULL) {
     return NULL;
   }
@@ -178,10 +191,10 @@ static void on_current_value_changed(tweak_app_context context,
   (void)cookie;
   tweak_update_handler callback;
   void* callback_cookie;
-  pthread_mutex_lock(&s_callback_lock);
+  tweak_common_mutex_lock(&s_callback_lock);
   callback = s_callback;
   callback_cookie = s_callback_cookie;
-  pthread_mutex_unlock(&s_callback_lock);
+  tweak_common_mutex_unlock(&s_callback_lock);
   if (callback) {
     tweak_app_item_snapshot* snapshot = tweak_app_item_get_snapshot(s_context, id);
     const char *name = get_name(tweak_variant_string_c_str(&snapshot->uri));
@@ -191,15 +204,15 @@ static void on_current_value_changed(tweak_app_context context,
 }
 
 void tweak_set_update_handler(tweak_update_handler handler, void* cookie) {
-  pthread_mutex_lock(&s_callback_lock);
+  tweak_common_mutex_lock(&s_callback_lock);
   s_callback = handler;
   s_callback_cookie = cookie;
-  pthread_mutex_unlock(&s_callback_lock);
+  tweak_common_mutex_unlock(&s_callback_lock);
 }
 
 int tweak_connect(void) {
-  pthread_mutex_init(&s_callback_lock, NULL);
-  pthread_rwlock_init(&s_name_uri_lock, NULL); 
+  tweak_common_mutex_init(&s_callback_lock);
+  tweak_common_rwlock_init(&s_name_uri_lock);
 
   tweak_app_server_callbacks callbacks = {
     .on_current_value_changed = &on_current_value_changed
@@ -248,8 +261,7 @@ void tweak_close() {
     return;
   }
 
-
-  pthread_rwlock_wrlock(&s_name_uri_lock); 
+  tweak_common_rwlock_write_lock(&s_name_uri_lock);
   struct name_uri_pair *pair = NULL;
   struct name_uri_pair *tmp = NULL;
   HASH_ITER(hh, s_name_uri_pairs, pair, tmp) {
@@ -266,11 +278,11 @@ void tweak_close() {
     free(pair);
   }
   s_uri_name_pairs = NULL;
-  pthread_rwlock_unlock(&s_name_uri_lock); 
+  tweak_common_rwlock_write_unlock(&s_name_uri_lock);
 
   tweak_app_destroy_context(s_context);
-  pthread_rwlock_destroy(&s_name_uri_lock); 
-  pthread_mutex_destroy(&s_callback_lock);
+  tweak_common_rwlock_destroy(&s_name_uri_lock);
+  tweak_common_mutex_destroy(&s_callback_lock);
 
   s_context = NULL;
 
@@ -315,7 +327,7 @@ void tweak_add_slider(const char* name, double minv, double maxv, double def, un
   }
 
   tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
-  tweak_variant_create_double(&value, def);
+  tweak_variant_assign_double(&value, def);
 
   tweak_id id = tweak_app_server_add_item(s_context,
     uri, name, s_buffer, &value, NULL);
@@ -343,7 +355,7 @@ void tweak_add_spinbox(const char* name, double minv, double maxv, double def, u
   }
 
   tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
-  tweak_variant_create_double(&value, def);
+  tweak_variant_assign_double(&value, def);
 
   tweak_id id = tweak_app_server_add_item(s_context,
     uri, name, s_buffer, &value, NULL);
@@ -386,7 +398,7 @@ void tweak_add_checkbox(const char* name, int def_val) {
   }
 
   tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
-  tweak_variant_create_bool(&value, def_val != 0);
+  tweak_variant_assign_bool(&value, def_val != 0);
 
   tweak_id id = tweak_app_server_add_item(s_context,
     uri, name, s_buffer, &value, NULL);
@@ -412,7 +424,7 @@ void tweak_add_button(const char* name) {
   }
 
   tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
-  tweak_variant_create_bool(&value, false);
+  tweak_variant_assign_bool(&value, false);
 
   tweak_id id = tweak_app_server_add_item(s_context,
     uri, name, s_buffer, &value, NULL);
@@ -446,12 +458,12 @@ void tweak_add_groupbox(const char* name, const char* options, unsigned int def)
   char* rest = options_dup;
 
   s_buffer[0] = '\0';
-  token = strtok_r(rest, ";", &rest);
+  token = strtok(rest, ";");
   while (token) {
     strcat(s_buffer, "\"");
     strcat(s_buffer, token);
     strcat(s_buffer, "\"");
-    token = strtok_r(rest, ";", &rest);
+    token = strtok(NULL, ";");
     if (token) {
       strcat(s_buffer, ",");
     }
@@ -473,7 +485,7 @@ void tweak_add_groupbox(const char* name, const char* options, unsigned int def)
   free(options_json);
 
   tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
-  tweak_variant_create_uint32(&value, def);
+  tweak_variant_assign_uint32(&value, def);
 
   tweak_id id = tweak_app_server_add_item(s_context,
     uri, name, s_buffer, &value, NULL);
@@ -517,7 +529,7 @@ double tweak_get(const char* name, double defval) {
       result = variant_value.value.sint32;
       break;
     case TWEAK_VARIANT_TYPE_SINT64:
-      result = variant_value.value.sint64;
+      result = (double)variant_value.value.sint64;
       break;
     case TWEAK_VARIANT_TYPE_UINT8:
       result = variant_value.value.uint8;
@@ -529,7 +541,7 @@ double tweak_get(const char* name, double defval) {
       result = variant_value.value.uint32;
       break;
     case TWEAK_VARIANT_TYPE_UINT64:
-      result = variant_value.value.uint64;
+      result = (double)variant_value.value.uint64;
       break;
     case TWEAK_VARIANT_TYPE_FLOAT:
       result = variant_value.value.fp32;
@@ -559,37 +571,37 @@ void tweak_set(const char* name, double val) {
     tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
     switch (type) {
     case TWEAK_VARIANT_TYPE_BOOL:
-      tweak_variant_create_bool(&value, val != 0);
+      tweak_variant_assign_bool(&value, val != 0);
       break;
     case TWEAK_VARIANT_TYPE_SINT8:
-      tweak_variant_create_sint8(&value, (int8_t) val);
+      tweak_variant_assign_sint8(&value, (int8_t) val);
       break;
     case TWEAK_VARIANT_TYPE_SINT16:
-      tweak_variant_create_sint16(&value, (int16_t) val);
+      tweak_variant_assign_sint16(&value, (int16_t) val);
       break;
     case TWEAK_VARIANT_TYPE_SINT32:
-      tweak_variant_create_sint32(&value, (int32_t) val);
+      tweak_variant_assign_sint32(&value, (int32_t) val);
       break;
     case TWEAK_VARIANT_TYPE_SINT64:
-      tweak_variant_create_sint64(&value, (int64_t) val);
+      tweak_variant_assign_sint64(&value, (int64_t) val);
       break;
     case TWEAK_VARIANT_TYPE_UINT8:
-      tweak_variant_create_uint8(&value, (uint8_t) val);
+      tweak_variant_assign_uint8(&value, (uint8_t) val);
       break;
     case TWEAK_VARIANT_TYPE_UINT16:
-      tweak_variant_create_uint16(&value, (uint16_t) val);
+      tweak_variant_assign_uint16(&value, (uint16_t) val);
       break;
     case TWEAK_VARIANT_TYPE_UINT32:
-      tweak_variant_create_uint32(&value, (uint32_t) val);
+      tweak_variant_assign_uint32(&value, (uint32_t) val);
       break;
     case TWEAK_VARIANT_TYPE_UINT64:
-      tweak_variant_create_uint64(&value, (uint64_t) val);
+      tweak_variant_assign_uint64(&value, (uint64_t) val);
       break;
     case TWEAK_VARIANT_TYPE_FLOAT:
-      tweak_variant_create_float(&value, (float) val);
+      tweak_variant_assign_float(&value, (float) val);
       break;
     case TWEAK_VARIANT_TYPE_DOUBLE:
-      tweak_variant_create_double(&value, val);
+      tweak_variant_assign_double(&value, val);
       break;
     default:
       TWEAK_LOG_ERROR("Unsupported tweak type 0x%x", type);

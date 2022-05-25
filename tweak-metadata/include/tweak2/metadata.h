@@ -4,12 +4,25 @@
  *
  * @brief Metadata instance factory.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
@@ -49,6 +62,16 @@ struct tweak_metadata_options_base;
 typedef struct tweak_metadata_options_base *tweak_metadata_options;
 
 /**
+ * @brief forward declaration for enum class.
+ */
+struct tweak_metadata_layout_base;
+
+/**
+ * @brief handle for options enum class.
+ */
+typedef struct tweak_metadata_layout_base *tweak_metadata_layout;
+
+/**
  * @brief Known control types.
  */
 typedef enum {
@@ -57,8 +80,18 @@ typedef enum {
     TWEAK_METADATA_CONTROL_SPINBOX,
     TWEAK_METADATA_CONTROL_SLIDER,
     TWEAK_METADATA_CONTROL_COMBOBOX,
-    TWEAK_METADATA_CONTROL_BUTTON
+    TWEAK_METADATA_CONTROL_BUTTON,
+    TWEAK_METADATA_CONTROL_EDIT,
+    TWEAK_METADATA_CONTROL_TABLE
 } tweak_metadata_control_type;
+
+/**
+ * @brief Known layouts.
+ */
+typedef enum {
+    TWEAK_METADATA_LAYOUT_ORDER_ROW_MAJOR = 0,
+    TWEAK_METADATA_LAYOUT_ORDER_COLUMN_MAJOR
+} tweak_metadata_layout_order;
 
 /**
  * @brief Constructor for metadata instance.
@@ -75,6 +108,9 @@ typedef enum {
  * even though default control type for integer values is
  * TWEAK_METADATA_CONTROL_SPINBOX.
  *
+ * @param item_count Number of elements in vector data type.
+ * Ignored for scalar types and is expected to be 1.
+ *
  * @note When @p json_snippet is NULL or a single value json an empty string,
  * it's assumed to be equal to "{}". That would mean that metadata constructor
  * shall compose metadata instance from default values implied by @p item_type
@@ -82,7 +118,7 @@ typedef enum {
  *
  * @return New metadata instance.
  */
-tweak_metadata tweak_metadata_create(tweak_variant_type item_type, const char* json_snippet);
+tweak_metadata tweak_metadata_create(tweak_variant_type item_type, size_t item_count, const char* json_snippet);
 
 /**
  * @brief Accessor method for control_type field. Control type describes
@@ -128,6 +164,16 @@ const tweak_variant* tweak_metadata_get_max(tweak_metadata metadata);
  * @return true if chosen editor shouldn't allow user to edit value.
  */
 bool tweak_metadata_get_readonly(tweak_metadata metadata);
+
+/**
+ * @brief Accessor method for unit field.
+ *
+ * Measurement unit of a value.
+ *
+ * @param metadata instance returned by @see tweak_metadata_create.
+ * @return GUI control's "unit" hint.
+ */
+const tweak_variant_string* tweak_metadata_get_unit(tweak_metadata metadata);
 
 /**
  * @brief Accessor method for decimals field.
@@ -207,6 +253,50 @@ const tweak_variant_string* tweak_metadata_get_enum_text(tweak_metadata_options 
  * with @p options as an argument.
  */
 const tweak_variant* tweak_metadata_get_enum_value(tweak_metadata_options options, size_t index);
+
+/**
+ * @brief Accessor method for layout field.
+ *
+ * @param metadata instance returned by @see tweak_metadata_create.
+ * @return layout instance.
+ *
+ * - Always NULL for scalar types
+ * - Always non-NULL for vector types
+ */
+tweak_metadata_layout tweak_metadata_get_layout(tweak_metadata metadata);
+
+/**
+ * @brief Access number of dimensions in an array.
+ * @param layout Instance returned by @see tweak_metadata_get_layout.
+ *
+ * @return number of dimensions in an array.
+ */
+size_t tweak_metadata_layout_get_number_of_dimensions(tweak_metadata_layout layout);
+
+/**
+ * @brief Access size of specific dimension.
+ * @param layout Instance returned by @see tweak_metadata_get_layout.
+ * @param dimension dimension index.
+ *
+ * @return number of dimensions in a matrix.
+ */
+size_t tweak_metadata_layout_get_dimension(tweak_metadata_layout layout, size_t dimension);
+
+/**
+ * @brief Access memory order of a matrix.
+ *
+ * @param layout Instance returned by @see tweak_metadata_get_layout.
+ *
+ * @return enumeration describing whether matrix is row major or column major.
+ */
+tweak_metadata_layout_order tweak_metadata_layout_get_order(tweak_metadata_layout layout);
+
+/**
+ * @brief Copy metadata instance.
+ *
+ * @param metadata value returned by @see tweak_metadata_create.
+ */
+tweak_metadata tweak_metadata_copy(tweak_metadata metadata);
 
 /**
  * @brief Destroy metadata instance.

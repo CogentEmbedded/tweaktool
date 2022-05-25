@@ -4,12 +4,25 @@
  *
  * @brief part of test suite to test tweak2 application implementation.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
@@ -29,7 +42,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 enum { NUM_TWEAKS = 10000 };
 enum { NUM_ITERATIONS = 100 };
@@ -44,17 +56,17 @@ tweak_id ids[NUM_TWEAKS];
 tweak_variant_string uris[NUM_TWEAKS];
 tweak_variant values[NUM_TWEAKS];
 
-void test_model() {
-  srand(time(0));
+void test_model(void) {
+  srand((unsigned)time(0));
   tweak_model model = tweak_model_create();
   for (size_t ix = 0; ix < NUM_TWEAKS; ix++) {
     ids[ix] = gen_id();
     char buff[128] = { 0 };
     sprintf(buff, "id_%" PRIu64 "", ids[ix]);
-    tweak_variant_assign_string(&uris[ix], buff);
+    tweak_assign_string(&uris[ix], buff);
 
     float val = ((float)rand()) / (float)RAND_MAX;
-    tweak_variant_create_float(&values[ix], val);
+    tweak_variant_assign_float(&values[ix], val);
 
     tweak_model_error_code ec = tweak_model_create_item(model, ids[ix],
       &uris[ix], &uris[ix], &uris[ix], &values[ix], &values[ix], NULL);
@@ -89,14 +101,14 @@ void test_model() {
       char buff[128] = { 0 };
       sprintf(buff, "id_%" PRIu64 "", ids[ix]);
 
-      tweak_variant_assign_string(&uris[ix], buff);
+      tweak_assign_string(&uris[ix], buff);
 
       tweak_variant_string uri = tweak_variant_string_copy(&uris[ix]);
       tweak_variant_string description = tweak_variant_string_copy(&uris[ix]);
       tweak_variant_string meta = tweak_variant_string_copy(&uris[ix]);
 
       float val = ((float)rand()) / (float)RAND_MAX;
-      tweak_variant_create_float(&values[ix], val);
+      tweak_variant_assign_float(&values[ix], val);
 
       tweak_variant default_value = tweak_variant_copy(&values[ix]);
       tweak_variant current_value = tweak_variant_copy(&values[ix]);

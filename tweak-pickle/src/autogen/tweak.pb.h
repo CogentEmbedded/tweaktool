@@ -10,6 +10,52 @@
 #endif
 
 /* Struct definitions */
+/* Body of "announce_features" request. */
+typedef struct _tweak_pb_announce_features { 
+    /* Comma separated list of features */
+    pb_callback_t features; 
+} tweak_pb_announce_features;
+
+typedef struct _tweak_pb_buffer_double { 
+    pb_callback_t buffer; 
+} tweak_pb_buffer_double;
+
+typedef struct _tweak_pb_buffer_float { 
+    pb_callback_t buffer; 
+} tweak_pb_buffer_float;
+
+typedef struct _tweak_pb_buffer_raw { 
+    pb_callback_t data; 
+} tweak_pb_buffer_raw;
+
+typedef struct _tweak_pb_buffer_sint16 { 
+    pb_callback_t buffer; 
+} tweak_pb_buffer_sint16;
+
+typedef struct _tweak_pb_buffer_sint32 { 
+    pb_callback_t buffer; 
+} tweak_pb_buffer_sint32;
+
+typedef struct _tweak_pb_buffer_sint64 { 
+    pb_callback_t buffer; 
+} tweak_pb_buffer_sint64;
+
+typedef struct _tweak_pb_buffer_string { 
+    pb_callback_t data; 
+} tweak_pb_buffer_string;
+
+typedef struct _tweak_pb_buffer_uint16 { 
+    pb_callback_t buffer; 
+} tweak_pb_buffer_uint16;
+
+typedef struct _tweak_pb_buffer_uint32 { 
+    pb_callback_t buffer; 
+} tweak_pb_buffer_uint32;
+
+typedef struct _tweak_pb_buffer_uint64 { 
+    pb_callback_t buffer; 
+} tweak_pb_buffer_uint64;
+
 /* Body of "subscribe" request. */
 typedef struct _tweak_pb_subscribe { 
     pb_callback_t uri_patterns; 
@@ -23,6 +69,7 @@ typedef struct _tweak_pb_remove_item {
 
 /* Variant value for transmission. */
 typedef struct _tweak_pb_value { 
+    pb_callback_t cb_values;
     pb_size_t which_values;
     union {
         bool is_null;
@@ -37,6 +84,17 @@ typedef struct _tweak_pb_value {
         uint64_t scalar_uint64;
         float scalar_float;
         double scalar_double;
+        tweak_pb_buffer_string string;
+        tweak_pb_buffer_raw sint8_buffer;
+        tweak_pb_buffer_sint16 sint16_buffer;
+        tweak_pb_buffer_sint32 sint32_buffer;
+        tweak_pb_buffer_sint64 sint64_buffer;
+        tweak_pb_buffer_raw uint8_buffer;
+        tweak_pb_buffer_uint16 uint16_buffer;
+        tweak_pb_buffer_uint32 uint32_buffer;
+        tweak_pb_buffer_uint64 uint64_buffer;
+        tweak_pb_buffer_float fp32_buffer;
+        tweak_pb_buffer_double fp64_buffer;
     } values; 
 } tweak_pb_value;
 
@@ -77,6 +135,7 @@ typedef struct _tweak_pb_client_node_message {
     union {
         tweak_pb_subscribe subscribe;
         tweak_pb_change_item change_item;
+        tweak_pb_announce_features announce_features;
     } request; 
 } tweak_pb_client_node_message;
 
@@ -89,6 +148,7 @@ typedef struct _tweak_pb_server_node_message {
         tweak_pb_add_item add_item;
         tweak_pb_change_item change_item;
         tweak_pb_remove_item remove_item;
+        tweak_pb_announce_features announce_features;
     } request; 
 } tweak_pb_server_node_message;
 
@@ -98,22 +158,55 @@ extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define tweak_pb_value_init_default              {0, {0}}
+#define tweak_pb_value_init_default              {{{NULL}, NULL}, 0, {0}}
+#define tweak_pb_buffer_string_init_default      {{{NULL}, NULL}}
+#define tweak_pb_buffer_raw_init_default         {{{NULL}, NULL}}
+#define tweak_pb_buffer_sint16_init_default      {{{NULL}, NULL}}
+#define tweak_pb_buffer_sint32_init_default      {{{NULL}, NULL}}
+#define tweak_pb_buffer_sint64_init_default      {{{NULL}, NULL}}
+#define tweak_pb_buffer_uint16_init_default      {{{NULL}, NULL}}
+#define tweak_pb_buffer_uint32_init_default      {{{NULL}, NULL}}
+#define tweak_pb_buffer_uint64_init_default      {{{NULL}, NULL}}
+#define tweak_pb_buffer_float_init_default       {{{NULL}, NULL}}
+#define tweak_pb_buffer_double_init_default      {{{NULL}, NULL}}
 #define tweak_pb_add_item_init_default           {0, {{NULL}, NULL}, false, tweak_pb_value_init_default, {{NULL}, NULL}, {{NULL}, NULL}, false, tweak_pb_value_init_default}
 #define tweak_pb_subscribe_init_default          {{{NULL}, NULL}}
 #define tweak_pb_change_item_init_default        {0, false, tweak_pb_value_init_default}
 #define tweak_pb_remove_item_init_default        {0}
+#define tweak_pb_announce_features_init_default  {{{NULL}, NULL}}
 #define tweak_pb_client_node_message_init_default {{{NULL}, NULL}, 0, {tweak_pb_subscribe_init_default}}
 #define tweak_pb_server_node_message_init_default {{{NULL}, NULL}, 0, {tweak_pb_add_item_init_default}}
-#define tweak_pb_value_init_zero                 {0, {0}}
+#define tweak_pb_value_init_zero                 {{{NULL}, NULL}, 0, {0}}
+#define tweak_pb_buffer_string_init_zero         {{{NULL}, NULL}}
+#define tweak_pb_buffer_raw_init_zero            {{{NULL}, NULL}}
+#define tweak_pb_buffer_sint16_init_zero         {{{NULL}, NULL}}
+#define tweak_pb_buffer_sint32_init_zero         {{{NULL}, NULL}}
+#define tweak_pb_buffer_sint64_init_zero         {{{NULL}, NULL}}
+#define tweak_pb_buffer_uint16_init_zero         {{{NULL}, NULL}}
+#define tweak_pb_buffer_uint32_init_zero         {{{NULL}, NULL}}
+#define tweak_pb_buffer_uint64_init_zero         {{{NULL}, NULL}}
+#define tweak_pb_buffer_float_init_zero          {{{NULL}, NULL}}
+#define tweak_pb_buffer_double_init_zero         {{{NULL}, NULL}}
 #define tweak_pb_add_item_init_zero              {0, {{NULL}, NULL}, false, tweak_pb_value_init_zero, {{NULL}, NULL}, {{NULL}, NULL}, false, tweak_pb_value_init_zero}
 #define tweak_pb_subscribe_init_zero             {{{NULL}, NULL}}
 #define tweak_pb_change_item_init_zero           {0, false, tweak_pb_value_init_zero}
 #define tweak_pb_remove_item_init_zero           {0}
+#define tweak_pb_announce_features_init_zero     {{{NULL}, NULL}}
 #define tweak_pb_client_node_message_init_zero   {{{NULL}, NULL}, 0, {tweak_pb_subscribe_init_zero}}
 #define tweak_pb_server_node_message_init_zero   {{{NULL}, NULL}, 0, {tweak_pb_add_item_init_zero}}
 
 /* Field tags (for use in manual encoding/decoding) */
+#define tweak_pb_announce_features_features_tag  1
+#define tweak_pb_buffer_double_buffer_tag        2
+#define tweak_pb_buffer_float_buffer_tag         2
+#define tweak_pb_buffer_raw_data_tag             1
+#define tweak_pb_buffer_sint16_buffer_tag        2
+#define tweak_pb_buffer_sint32_buffer_tag        2
+#define tweak_pb_buffer_sint64_buffer_tag        2
+#define tweak_pb_buffer_string_data_tag          1
+#define tweak_pb_buffer_uint16_buffer_tag        2
+#define tweak_pb_buffer_uint32_buffer_tag        2
+#define tweak_pb_buffer_uint64_buffer_tag        2
 #define tweak_pb_subscribe_uri_patterns_tag      1
 #define tweak_pb_remove_item_tweak_id_tag        1
 #define tweak_pb_value_is_null_tag               1
@@ -128,6 +221,17 @@ extern "C" {
 #define tweak_pb_value_scalar_uint64_tag         10
 #define tweak_pb_value_scalar_float_tag          11
 #define tweak_pb_value_scalar_double_tag         12
+#define tweak_pb_value_string_tag                13
+#define tweak_pb_value_sint8_buffer_tag          14
+#define tweak_pb_value_sint16_buffer_tag         15
+#define tweak_pb_value_sint32_buffer_tag         16
+#define tweak_pb_value_sint64_buffer_tag         17
+#define tweak_pb_value_uint8_buffer_tag          18
+#define tweak_pb_value_uint16_buffer_tag         19
+#define tweak_pb_value_uint32_buffer_tag         20
+#define tweak_pb_value_uint64_buffer_tag         21
+#define tweak_pb_value_fp32_buffer_tag           22
+#define tweak_pb_value_fp64_buffer_tag           23
 #define tweak_pb_add_item_tweak_id_tag           1
 #define tweak_pb_add_item_uri_tag                2
 #define tweak_pb_add_item_current_value_tag      3
@@ -138,9 +242,11 @@ extern "C" {
 #define tweak_pb_change_item_value_tag           2
 #define tweak_pb_client_node_message_subscribe_tag 1
 #define tweak_pb_client_node_message_change_item_tag 2
+#define tweak_pb_client_node_message_announce_features_tag 3
 #define tweak_pb_server_node_message_add_item_tag 1
 #define tweak_pb_server_node_message_change_item_tag 2
 #define tweak_pb_server_node_message_remove_item_tag 3
+#define tweak_pb_server_node_message_announce_features_tag 4
 
 /* Struct field encoding specification for nanopb */
 #define tweak_pb_value_FIELDLIST(X, a) \
@@ -155,9 +261,81 @@ X(a, STATIC,   ONEOF,    UINT32,   (values,scalar_uint16,values.scalar_uint16), 
 X(a, STATIC,   ONEOF,    UINT32,   (values,scalar_uint32,values.scalar_uint32),   9) \
 X(a, STATIC,   ONEOF,    UINT64,   (values,scalar_uint64,values.scalar_uint64),  10) \
 X(a, STATIC,   ONEOF,    FLOAT,    (values,scalar_float,values.scalar_float),  11) \
-X(a, STATIC,   ONEOF,    DOUBLE,   (values,scalar_double,values.scalar_double),  12)
+X(a, STATIC,   ONEOF,    DOUBLE,   (values,scalar_double,values.scalar_double),  12) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (values,string,values.string),  13) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (values,sint8_buffer,values.sint8_buffer),  14) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (values,sint16_buffer,values.sint16_buffer),  15) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (values,sint32_buffer,values.sint32_buffer),  16) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (values,sint64_buffer,values.sint64_buffer),  17) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (values,uint8_buffer,values.uint8_buffer),  18) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (values,uint16_buffer,values.uint16_buffer),  19) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (values,uint32_buffer,values.uint32_buffer),  20) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (values,uint64_buffer,values.uint64_buffer),  21) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (values,fp32_buffer,values.fp32_buffer),  22) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (values,fp64_buffer,values.fp64_buffer),  23)
 #define tweak_pb_value_CALLBACK NULL
 #define tweak_pb_value_DEFAULT NULL
+#define tweak_pb_value_values_string_MSGTYPE tweak_pb_buffer_string
+#define tweak_pb_value_values_sint8_buffer_MSGTYPE tweak_pb_buffer_raw
+#define tweak_pb_value_values_sint16_buffer_MSGTYPE tweak_pb_buffer_sint16
+#define tweak_pb_value_values_sint32_buffer_MSGTYPE tweak_pb_buffer_sint32
+#define tweak_pb_value_values_sint64_buffer_MSGTYPE tweak_pb_buffer_sint64
+#define tweak_pb_value_values_uint8_buffer_MSGTYPE tweak_pb_buffer_raw
+#define tweak_pb_value_values_uint16_buffer_MSGTYPE tweak_pb_buffer_uint16
+#define tweak_pb_value_values_uint32_buffer_MSGTYPE tweak_pb_buffer_uint32
+#define tweak_pb_value_values_uint64_buffer_MSGTYPE tweak_pb_buffer_uint64
+#define tweak_pb_value_values_fp32_buffer_MSGTYPE tweak_pb_buffer_float
+#define tweak_pb_value_values_fp64_buffer_MSGTYPE tweak_pb_buffer_double
+
+#define tweak_pb_buffer_string_FIELDLIST(X, a) \
+X(a, CALLBACK, SINGULAR, STRING,   data,              1)
+#define tweak_pb_buffer_string_CALLBACK pb_default_field_callback
+#define tweak_pb_buffer_string_DEFAULT NULL
+
+#define tweak_pb_buffer_raw_FIELDLIST(X, a) \
+X(a, CALLBACK, SINGULAR, BYTES,    data,              1)
+#define tweak_pb_buffer_raw_CALLBACK pb_default_field_callback
+#define tweak_pb_buffer_raw_DEFAULT NULL
+
+#define tweak_pb_buffer_sint16_FIELDLIST(X, a) \
+X(a, CALLBACK, REPEATED, SINT32,   buffer,            2)
+#define tweak_pb_buffer_sint16_CALLBACK pb_default_field_callback
+#define tweak_pb_buffer_sint16_DEFAULT NULL
+
+#define tweak_pb_buffer_sint32_FIELDLIST(X, a) \
+X(a, CALLBACK, REPEATED, SINT32,   buffer,            2)
+#define tweak_pb_buffer_sint32_CALLBACK pb_default_field_callback
+#define tweak_pb_buffer_sint32_DEFAULT NULL
+
+#define tweak_pb_buffer_sint64_FIELDLIST(X, a) \
+X(a, CALLBACK, REPEATED, SINT64,   buffer,            2)
+#define tweak_pb_buffer_sint64_CALLBACK pb_default_field_callback
+#define tweak_pb_buffer_sint64_DEFAULT NULL
+
+#define tweak_pb_buffer_uint16_FIELDLIST(X, a) \
+X(a, CALLBACK, REPEATED, UINT32,   buffer,            2)
+#define tweak_pb_buffer_uint16_CALLBACK pb_default_field_callback
+#define tweak_pb_buffer_uint16_DEFAULT NULL
+
+#define tweak_pb_buffer_uint32_FIELDLIST(X, a) \
+X(a, CALLBACK, REPEATED, UINT32,   buffer,            2)
+#define tweak_pb_buffer_uint32_CALLBACK pb_default_field_callback
+#define tweak_pb_buffer_uint32_DEFAULT NULL
+
+#define tweak_pb_buffer_uint64_FIELDLIST(X, a) \
+X(a, CALLBACK, REPEATED, UINT64,   buffer,            2)
+#define tweak_pb_buffer_uint64_CALLBACK pb_default_field_callback
+#define tweak_pb_buffer_uint64_DEFAULT NULL
+
+#define tweak_pb_buffer_float_FIELDLIST(X, a) \
+X(a, CALLBACK, REPEATED, FLOAT,    buffer,            2)
+#define tweak_pb_buffer_float_CALLBACK pb_default_field_callback
+#define tweak_pb_buffer_float_DEFAULT NULL
+
+#define tweak_pb_buffer_double_FIELDLIST(X, a) \
+X(a, CALLBACK, REPEATED, DOUBLE,   buffer,            2)
+#define tweak_pb_buffer_double_CALLBACK pb_default_field_callback
+#define tweak_pb_buffer_double_DEFAULT NULL
 
 #define tweak_pb_add_item_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT64,   tweak_id,          1) \
@@ -188,49 +366,91 @@ X(a, STATIC,   SINGULAR, UINT64,   tweak_id,          1)
 #define tweak_pb_remove_item_CALLBACK NULL
 #define tweak_pb_remove_item_DEFAULT NULL
 
+#define tweak_pb_announce_features_FIELDLIST(X, a) \
+X(a, CALLBACK, SINGULAR, STRING,   features,          1)
+#define tweak_pb_announce_features_CALLBACK pb_default_field_callback
+#define tweak_pb_announce_features_DEFAULT NULL
+
 #define tweak_pb_client_node_message_FIELDLIST(X, a) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (request,subscribe,request.subscribe),   1) \
-X(a, STATIC,   ONEOF,    MSG_W_CB, (request,change_item,request.change_item),   2)
+X(a, STATIC,   ONEOF,    MSG_W_CB, (request,change_item,request.change_item),   2) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (request,announce_features,request.announce_features),   3)
 #define tweak_pb_client_node_message_CALLBACK NULL
 #define tweak_pb_client_node_message_DEFAULT NULL
 #define tweak_pb_client_node_message_request_subscribe_MSGTYPE tweak_pb_subscribe
 #define tweak_pb_client_node_message_request_change_item_MSGTYPE tweak_pb_change_item
+#define tweak_pb_client_node_message_request_announce_features_MSGTYPE tweak_pb_announce_features
 
 #define tweak_pb_server_node_message_FIELDLIST(X, a) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (request,add_item,request.add_item),   1) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (request,change_item,request.change_item),   2) \
-X(a, STATIC,   ONEOF,    MSG_W_CB, (request,remove_item,request.remove_item),   3)
+X(a, STATIC,   ONEOF,    MSG_W_CB, (request,remove_item,request.remove_item),   3) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (request,announce_features,request.announce_features),   4)
 #define tweak_pb_server_node_message_CALLBACK NULL
 #define tweak_pb_server_node_message_DEFAULT NULL
 #define tweak_pb_server_node_message_request_add_item_MSGTYPE tweak_pb_add_item
 #define tweak_pb_server_node_message_request_change_item_MSGTYPE tweak_pb_change_item
 #define tweak_pb_server_node_message_request_remove_item_MSGTYPE tweak_pb_remove_item
+#define tweak_pb_server_node_message_request_announce_features_MSGTYPE tweak_pb_announce_features
 
 extern const pb_msgdesc_t tweak_pb_value_msg;
+extern const pb_msgdesc_t tweak_pb_buffer_string_msg;
+extern const pb_msgdesc_t tweak_pb_buffer_raw_msg;
+extern const pb_msgdesc_t tweak_pb_buffer_sint16_msg;
+extern const pb_msgdesc_t tweak_pb_buffer_sint32_msg;
+extern const pb_msgdesc_t tweak_pb_buffer_sint64_msg;
+extern const pb_msgdesc_t tweak_pb_buffer_uint16_msg;
+extern const pb_msgdesc_t tweak_pb_buffer_uint32_msg;
+extern const pb_msgdesc_t tweak_pb_buffer_uint64_msg;
+extern const pb_msgdesc_t tweak_pb_buffer_float_msg;
+extern const pb_msgdesc_t tweak_pb_buffer_double_msg;
 extern const pb_msgdesc_t tweak_pb_add_item_msg;
 extern const pb_msgdesc_t tweak_pb_subscribe_msg;
 extern const pb_msgdesc_t tweak_pb_change_item_msg;
 extern const pb_msgdesc_t tweak_pb_remove_item_msg;
+extern const pb_msgdesc_t tweak_pb_announce_features_msg;
 extern const pb_msgdesc_t tweak_pb_client_node_message_msg;
 extern const pb_msgdesc_t tweak_pb_server_node_message_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define tweak_pb_value_fields &tweak_pb_value_msg
+#define tweak_pb_buffer_string_fields &tweak_pb_buffer_string_msg
+#define tweak_pb_buffer_raw_fields &tweak_pb_buffer_raw_msg
+#define tweak_pb_buffer_sint16_fields &tweak_pb_buffer_sint16_msg
+#define tweak_pb_buffer_sint32_fields &tweak_pb_buffer_sint32_msg
+#define tweak_pb_buffer_sint64_fields &tweak_pb_buffer_sint64_msg
+#define tweak_pb_buffer_uint16_fields &tweak_pb_buffer_uint16_msg
+#define tweak_pb_buffer_uint32_fields &tweak_pb_buffer_uint32_msg
+#define tweak_pb_buffer_uint64_fields &tweak_pb_buffer_uint64_msg
+#define tweak_pb_buffer_float_fields &tweak_pb_buffer_float_msg
+#define tweak_pb_buffer_double_fields &tweak_pb_buffer_double_msg
 #define tweak_pb_add_item_fields &tweak_pb_add_item_msg
 #define tweak_pb_subscribe_fields &tweak_pb_subscribe_msg
 #define tweak_pb_change_item_fields &tweak_pb_change_item_msg
 #define tweak_pb_remove_item_fields &tweak_pb_remove_item_msg
+#define tweak_pb_announce_features_fields &tweak_pb_announce_features_msg
 #define tweak_pb_client_node_message_fields &tweak_pb_client_node_message_msg
 #define tweak_pb_server_node_message_fields &tweak_pb_server_node_message_msg
 
 /* Maximum encoded size of messages (where known) */
+/* tweak_pb_value_size depends on runtime parameters */
+/* tweak_pb_buffer_string_size depends on runtime parameters */
+/* tweak_pb_buffer_raw_size depends on runtime parameters */
+/* tweak_pb_buffer_sint16_size depends on runtime parameters */
+/* tweak_pb_buffer_sint32_size depends on runtime parameters */
+/* tweak_pb_buffer_sint64_size depends on runtime parameters */
+/* tweak_pb_buffer_uint16_size depends on runtime parameters */
+/* tweak_pb_buffer_uint32_size depends on runtime parameters */
+/* tweak_pb_buffer_uint64_size depends on runtime parameters */
+/* tweak_pb_buffer_float_size depends on runtime parameters */
+/* tweak_pb_buffer_double_size depends on runtime parameters */
 /* tweak_pb_add_item_size depends on runtime parameters */
 /* tweak_pb_subscribe_size depends on runtime parameters */
+/* tweak_pb_change_item_size depends on runtime parameters */
+/* tweak_pb_announce_features_size depends on runtime parameters */
 /* tweak_pb_client_node_message_size depends on runtime parameters */
 /* tweak_pb_server_node_message_size depends on runtime parameters */
-#define tweak_pb_change_item_size                24
 #define tweak_pb_remove_item_size                11
-#define tweak_pb_value_size                      11
 
 #ifdef __cplusplus
 } /* extern "C" */

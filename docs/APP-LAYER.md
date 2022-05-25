@@ -1,20 +1,20 @@
 <!--
-Copyright (c) 2018-2020 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+Copyright (c) 2018-2020 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 
 The source code contained or described herein and all documents related to the
 # source code("Software") or their modified versions are owned by
-# Cogent Embedded Inc. or its affiliates.
+# Cogent Embedded, Inc. or its affiliates.
 #
 # No part of the Software may be used, copied, reproduced, modified, published,
 # uploaded, posted, transmitted, distributed, or disclosed in any way without
-# prior express written permission from Cogent Embedded Inc.
+# prior express written permission from Cogent Embedded, Inc.
 #
-# Cogent Embedded Inc. grants a nonexclusive, non-transferable, royalty-free
+# Cogent Embedded, Inc. grants a nonexclusive, non-transferable, royalty-free
 # license to use the Software to Licensee without the right to sublicense.
 # Licensee agrees not to distribute the Software to any third-party without
-# the prior written permission of Cogent Embedded Inc.
+# the prior written permission of Cogent Embedded, Inc.
 #
-# Unless otherwise agreed by Cogent Embedded Inc. in writing, you may not remove
+# Unless otherwise agreed by Cogent Embedded, Inc. in writing, you may not remove
 # or alter this notice or any other notice embedded in Software in any way.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -58,7 +58,7 @@ note right of "Model-Controller": add requests aren't\npropagated to Queue unles
 
 "API" -> "Model-Controller": replace_item
 "Model-Controller"->"Item indices": Acquire read lock
-"Model-Controller"->"Model-Controller": Lookup index, find item 
+"Model-Controller"->"Model-Controller": Lookup index, find item
 "Model-Controller"->"Item storage": Acquire lock
 "Model-Controller"->"Item storage": Replace item value
 "Model-Controller"->"Item storage": Release lock
@@ -100,7 +100,7 @@ activate "Worker"
 ...
 "API" -> "Model-Controller": replace_item
 "Model-Controller"->"Item indices": Acquire read lock
-"Model-Controller"->"Model-Controller": Lookup index, find item 
+"Model-Controller"->"Model-Controller": Lookup index, find item
 "Model-Controller"->"Item storage": Acquire lock
 "Model-Controller"->"Item storage": Replace item value
 "Model-Controller"->"Item storage": Release lock
@@ -127,7 +127,7 @@ deactivate "Worker"
 "Worker"->"Queue"++: Wait job
 "Item indices"->"Model-Controller": Got write access to model data
 deactivate "Item indices"
-"Model-Controller"->"Model-Controller": Create new item, update indices 
+"Model-Controller"->"Model-Controller": Create new item, update indices
 "Model-Controller"->"Model-Controller": Check connected status
 note right of "Model-Controller": Add/Remove requests aren't\npropagated to Queue unless connected == true
 "Model-Controller"->"Item indices": Release write lock
@@ -156,7 +156,7 @@ activate "Worker"
 ...
 "API" -> "Model-Controller": replace_item
 "Model-Controller"->"Item indices": Acquire read lock
-"Model-Controller"->"Model-Controller": Lookup index, find item 
+"Model-Controller"->"Model-Controller": Lookup index, find item
 "Model-Controller"->"Item storage": Acquire lock
 "Model-Controller"->"Item storage": Replace item value
 "Model-Controller"->"Item storage": Release lock
@@ -174,13 +174,13 @@ deactivate "Worker"
 "Worker"->"Item indices": Release read lock
 "Item indices" -> "Model-Controller"
 deactivate "Item indices"
-"Model-Controller"->"Model-Controller": Create new item, update indices 
+"Model-Controller"->"Model-Controller": Create new item, update indices
 "Model-Controller"->"Model-Controller": Check connected status
 "Model-Controller"->"Queue": Post add_item job
 "Model-Controller"->"Item indices": Release write lock
 "Model-Controller"->"API"
 == Client subscribed ==
-"Worker"->"Queue" ++: Fetch jobs 
+"Worker"->"Queue" ++: Fetch jobs
 "API" -> "Model-Controller": add_item
 "Model-Controller"->"Item indices": Acquire write lock
 "Model-Controller"->"Queue": Post add item job
@@ -189,7 +189,7 @@ deactivate "Item indices"
 
 "API" -> "Model-Controller": replace_item
 "Model-Controller"->"Item indices": Acquire read lock
-"Model-Controller"->"Model-Controller": Lookup index, find item 
+"Model-Controller"->"Model-Controller": Lookup index, find item
 "Model-Controller"->"Item storage": Acquire lock
 "Model-Controller"->"Item storage": Replace item value
 "Model-Controller"->"Item storage": Release lock
@@ -198,13 +198,13 @@ deactivate "Item indices"
 "Model-Controller"->"Model-Controller": Release previous item value
 "API" <- "Model-Controller"
 
-"Queue"->"Worker"--: Job batch 
+"Queue"->"Worker"--: Job batch
 activate "Worker"
 "Worker"->"Worker": Prepare pickle requests
 "Worker"->"Pickle": Perform requests
 deactivate "Worker"
 
-"Worker"->"Queue" ++: Fetch jobs 
+"Worker"->"Queue" ++: Fetch jobs
 "API" -> "Model-Controller": remove_item
 "Model-Controller"->"Item indices": Acquire write lock
 "Model-Controller"->"Model-Controller": remove item, free memory and update indices
@@ -348,9 +348,9 @@ note right of "Model-Data": All tweak_model_*\nrequests will block\nuntil client
 "Queue" -> "Worker\nThread" -- : fetch_task()
 "Worker\nThread"->"Model-Data"  : Access items 1..n
 activate "Worker\nThread"
-note left of "Worker\nThread": Model is locked when worker\nconverts items to pickle format 
+note left of "Worker\nThread": Model is locked when worker\nconverts items to pickle format
 "Worker\nThread"->"Worker\nThread": Convert items to pickle format
-"Model-Data"->"Worker\nThread"  : 
+"Model-Data"->"Worker\nThread"  :
 "Worker\nThread"->"Pickle" : Propagate requests to pickle
 deactivate "Worker\nThread"
 "Worker\nThread"->"Queue" ++ : wait_task()
@@ -362,7 +362,7 @@ deactivate "Worker\nThread"
 "Worker\nThread"->"Model-Data" : Access item
 activate "Worker\nThread"
 "Worker\nThread"->"Worker\nThread": Convert items to pickle format
-"Model-Data"->"Worker\nThread"  : 
+"Model-Data"->"Worker\nThread"  :
 "Worker\nThread"->"Pickle" : Propagate requests to pickle
 deactivate "Worker\nThread"
 
@@ -377,7 +377,7 @@ deactivate "Worker\nThread"
 "Worker\nThread"->"Model-Data"  : Access item
 activate "Worker\nThread"
 "Worker\nThread"->"Worker\nThread": Convert items to pickle format
-"Model-Data"->"Worker\nThread" : 
+"Model-Data"->"Worker\nThread" :
 "Worker\nThread"->"Pickle" : Propagate requests to pickle
 deactivate "Worker\nThread"
 
@@ -501,7 +501,7 @@ participant "Pickle"
 "Worker\nThread"->"Model-Data" : Access item
 activate "Worker\nThread"
 "Worker\nThread"->"Worker\nThread": Convert items to pickle format
-"Model-Data"->"Worker\nThread" : 
+"Model-Data"->"Worker\nThread" :
 "Worker\nThread"->"Pickle" : Propagate requests to pickle
 deactivate "Worker\nThread"
 "Worker\nThread"->"Queue" ++ : wait_task()

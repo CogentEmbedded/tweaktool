@@ -9,6 +9,36 @@
 PB_BIND(tweak_pb_value, tweak_pb_value, AUTO)
 
 
+PB_BIND(tweak_pb_buffer_string, tweak_pb_buffer_string, AUTO)
+
+
+PB_BIND(tweak_pb_buffer_raw, tweak_pb_buffer_raw, AUTO)
+
+
+PB_BIND(tweak_pb_buffer_sint16, tweak_pb_buffer_sint16, AUTO)
+
+
+PB_BIND(tweak_pb_buffer_sint32, tweak_pb_buffer_sint32, AUTO)
+
+
+PB_BIND(tweak_pb_buffer_sint64, tweak_pb_buffer_sint64, AUTO)
+
+
+PB_BIND(tweak_pb_buffer_uint16, tweak_pb_buffer_uint16, AUTO)
+
+
+PB_BIND(tweak_pb_buffer_uint32, tweak_pb_buffer_uint32, AUTO)
+
+
+PB_BIND(tweak_pb_buffer_uint64, tweak_pb_buffer_uint64, AUTO)
+
+
+PB_BIND(tweak_pb_buffer_float, tweak_pb_buffer_float, AUTO)
+
+
+PB_BIND(tweak_pb_buffer_double, tweak_pb_buffer_double, AUTO)
+
+
 PB_BIND(tweak_pb_add_item, tweak_pb_add_item, AUTO)
 
 
@@ -19,6 +49,9 @@ PB_BIND(tweak_pb_change_item, tweak_pb_change_item, AUTO)
 
 
 PB_BIND(tweak_pb_remove_item, tweak_pb_remove_item, AUTO)
+
+
+PB_BIND(tweak_pb_announce_features, tweak_pb_announce_features, AUTO)
 
 
 PB_BIND(tweak_pb_client_node_message, tweak_pb_client_node_message, AUTO)

@@ -2,7 +2,7 @@
  *
  * Custom CSS for Doxygen-based documentation
  *
- * Copyright: Cogent Embedded Inc. 2016-2020
+ * Copyright: Cogent Embedded, Inc. 2016-2020
  * All Rights Reserved.
  *
  * This file is part of Algorithms Interface library
@@ -25,9 +25,9 @@ p.reference, p.definition {
 .title {
   font: 400 14px/28px Raleway,sans-serif;
   color: #1675a9;
-  -webkit-font-feature-settings: "lnum"; 
-  -moz-font-feature-settings: "lnum"; 
-  font-feature-settings: "lnum"; 
+  -webkit-font-feature-settings: "lnum";
+  -moz-font-feature-settings: "lnum";
+  font-feature-settings: "lnum";
   font-size: 200%;
   font-weight: 600;
   padding-top: 20px;
@@ -38,9 +38,9 @@ h1, h2, h3, h4, h5, h6 {
   color:#161616;
   font-weight: 600;
   font-family: 'Raleway';
-  -webkit-font-feature-settings: "lnum"; 
-  -moz-font-feature-settings: "lnum"; 
-  font-feature-settings: "lnum"; 
+  -webkit-font-feature-settings: "lnum";
+  -moz-font-feature-settings: "lnum";
+  font-feature-settings: "lnum";
   -webkit-transition: text-shadow 0.5s linear;
   -moz-transition: text-shadow 0.5s linear;
   -ms-transition: text-shadow 0.5s linear;
@@ -160,8 +160,8 @@ div.line.glow {
 
 .memdoc, dl.reflist dd {
   border:1px solid #e6e6e6;
-/*        border-bottom: 1px solid #e6e6e6;      
-  border-left: 1px solid #e6e6e6;      
+/*        border-bottom: 1px solid #e6e6e6;
+  border-left: 1px solid #e6e6e6;
   border-right: 1px solid #e6e6e6; */
   padding: 6px 10px 2px 10px;
   background-color: #fafafa;
@@ -239,7 +239,7 @@ div.line.glow {
   color: #343434;
   font-family: 'Open Sans',sans-serif;
   text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.9);
-  text-decoration: none;        
+  text-decoration: none;
 }
 
 .navpath li.footer
@@ -503,8 +503,8 @@ div.toc h3 {
   -webkit-border-radius: none;
   border-radius: none !important;
   -moz-box-shadow: none;
-  -webkit-box-shadow: none; 
-  box-shadow: none; 
+  -webkit-box-shadow: none;
+  box-shadow: none;
 }
 /*=============================SEARCH.CSS Updates===============================================*/
 #MSearchBox {
@@ -634,7 +634,7 @@ a.SelectItem:hover {
 }
 
 .SRSymbol {
-  font-weight: bold; 
+  font-weight: bold;
   color: #425E97;
   font-family: Open-Sans, sans-serif;
   text-decoration: none;
@@ -643,7 +643,7 @@ a.SelectItem:hover {
 
 a.SRScope {
   display: block;
-  color: #425E97; 
+  color: #425E97;
   font-family: Open-Sans, sans-serif;
   text-decoration: none;
   outline: none;

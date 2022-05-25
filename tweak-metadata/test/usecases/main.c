@@ -3,12 +3,25 @@
  * @ingroup tweak-api
  * @brief test suite for tweak metadata library.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <tweak2/metadata.h>
@@ -21,7 +34,7 @@
 #include <limits.h>
 
 void test_1() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, NULL);
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, 1, NULL);
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_CHECKBOX);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -35,7 +48,7 @@ void test_1() {
 }
 
 void test_1e_1() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, "");
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, 1, "");
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_CHECKBOX);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -49,7 +62,7 @@ void test_1e_1() {
 }
 
 void test_1e_2() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, "\"BoZo");
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, 1, "\"BoZo");
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_CHECKBOX);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -63,7 +76,7 @@ void test_1e_2() {
 }
 
 void test_2() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, "{ \"readonly\": true }");
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, 1, "{ \"readonly\": true }");
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_CHECKBOX);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -77,7 +90,7 @@ void test_2() {
 }
 
 void test_2_btn() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, "{ \"control\": \"button\" }");
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, 1, "{ \"control\": \"button\" }");
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_BUTTON);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -90,7 +103,7 @@ void test_2_btn() {
 }
 
 void test_2e_1() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, "{ \"BoZo\": true, \"readonly\": true }");
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, 1, "{ \"BoZo\": true, \"readonly\": true }");
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_CHECKBOX);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -104,7 +117,7 @@ void test_2e_1() {
 }
 
 void test_2e_2() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, "{ \"BoZo\": true, \"readonly\": true }");
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, 1, "{ \"BoZo\": true, \"readonly\": true }");
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_CHECKBOX);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -127,7 +140,7 @@ void check_nth_option(tweak_metadata_options options, size_t index, int value, c
 }
 
 void test_3() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, "{ \"options\": [\"True\", \"False\"] }");
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, 1, "{ \"options\": [\"True\", \"False\"] }");
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_COMBOBOX);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -143,9 +156,9 @@ void test_3() {
   tweak_metadata_destroy(metadata);
 }
 
-void test_3e_1() {
+void test_3e_1(void) {
   /* Missing closing curly bracket for doc object */
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, "{ \"options\": [\"True\", \"False\"]");
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_BOOL, 1, "{ \"options\": [\"True\", \"False\"]");
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_CHECKBOX);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -159,7 +172,7 @@ void test_3e_1() {
 }
 
 void test_5() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_FLOAT, NULL);
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_FLOAT, 1, NULL);
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_SLIDER);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -174,13 +187,13 @@ void test_5() {
   const tweak_variant* step = tweak_metadata_get_step(metadata);
   TEST_CHECK(step->type == TWEAK_VARIANT_TYPE_FLOAT);
   float step0 = step->value.fp32;
-  float err = fabs(step0 - .0001f); /* derived from decimals == 4*/
-  TEST_CHECK(err < powf(10, -(decimals + 2)));
+  float err = fabsf(step0 - .0001f); /* derived from decimals == 4*/
+  TEST_CHECK(err < powf(10, -((float)decimals + 2.f)));
   tweak_metadata_destroy(metadata);
 }
 
 void test_6() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_FLOAT, "{ \"min\": -1, \"max\": 1, \"decimals\": 6 }");
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_FLOAT, 1, "{ \"min\": -1, \"max\": 1, \"decimals\": 6 }");
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_SLIDER);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -195,13 +208,13 @@ void test_6() {
   const tweak_variant* step = tweak_metadata_get_step(metadata);
   TEST_CHECK(step->type == TWEAK_VARIANT_TYPE_FLOAT);
   float step0 = step->value.fp32;
-  float err = fabs(step0 - .0001f); /* derived from decimals == 4*/
-  TEST_CHECK(err < powf(10, -(decimals + 2)));
+  float err = fabsf(step0 - .0001f); /* derived from decimals == 4*/
+  TEST_CHECK(err < powf(10, -((float)decimals + 2.0f)));
   tweak_metadata_destroy(metadata);
 }
 
 void test_7() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_UINT32, "{ \"min\": 0, \"max\": 512 }");
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_UINT32, 1, "{ \"min\": 0, \"max\": 512 }");
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_SPINBOX);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -215,7 +228,7 @@ void test_7() {
 }
 
 void test_8() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_SINT32, "{ \"min\": -128, \"max\": 127 }");
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_SINT32, 1, "{ \"min\": -128, \"max\": 127, \"unit\": \"counter\" }");
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_SPINBOX);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -225,11 +238,12 @@ void test_8() {
   TEST_CHECK(max->type == TWEAK_VARIANT_TYPE_SINT32);
   TEST_CHECK(max->value.sint32 == 127);
   TEST_CHECK(tweak_metadata_get_readonly(metadata) == false);
+  TEST_CHECK(strcmp(tweak_variant_string_c_str(tweak_metadata_get_unit(metadata)), "counter") == 0);
   tweak_metadata_destroy(metadata);
 }
 
 void test_9() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_SINT32, NULL);
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_SINT32, 1, NULL);
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_SPINBOX);
   const tweak_variant* min = tweak_metadata_get_min(metadata);
@@ -243,7 +257,7 @@ void test_9() {
 }
 
 void test_10() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_SINT32, "{\"options\": "
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_SINT32, 1, "{\"options\": "
       "[{\"value\": 100, \"text\": \"Foo\"},"
       " {\"value\": 110, \"text\": \"Bar\"},"
       " {\"value\": 120, \"text\": \"Baz\"},"
@@ -263,7 +277,7 @@ void test_10() {
 }
 
 void test_11() {
-  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_SINT32, "{\"options\": [\"Single element\"]}");
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_SINT32, 1, "{\"options\": [\"Single element\"]}");
   tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
   TEST_CHECK(control == TWEAK_METADATA_CONTROL_COMBOBOX);
   TEST_CHECK(tweak_metadata_get_readonly(metadata) == false);
@@ -272,6 +286,124 @@ void test_11() {
   TEST_CHECK(tweak_metadata_get_enum_size(options) == 1);
   check_nth_option(options, 0, 0, "Single element");
   tweak_metadata_destroy(metadata);
+}
+
+void test_12() {
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_VECTOR_FLOAT, 10, "{}");
+  tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
+  TEST_CHECK(control == TWEAK_METADATA_CONTROL_TABLE);
+  TEST_CHECK(tweak_metadata_get_readonly(metadata) == false);
+  tweak_metadata_layout layout = tweak_metadata_get_layout(metadata);
+  TEST_CHECK(layout != NULL);
+  TEST_CHECK(tweak_metadata_layout_get_number_of_dimensions(layout) == 1);
+  TEST_CHECK(tweak_metadata_layout_get_dimension(layout, 0) == 10);
+  tweak_metadata_destroy(metadata);
+}
+
+void test_13() {
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_VECTOR_FLOAT, 10, "{\"layout\":{\"dimensions\":[5, 2]}}");
+  tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
+  TEST_CHECK(control == TWEAK_METADATA_CONTROL_TABLE);
+  TEST_CHECK(tweak_metadata_get_readonly(metadata) == false);
+  tweak_metadata_layout layout = tweak_metadata_get_layout(metadata);
+  TEST_CHECK(layout != NULL);
+  TEST_CHECK(tweak_metadata_layout_get_number_of_dimensions(layout) == 2);
+  TEST_CHECK(tweak_metadata_layout_get_dimension(layout, 0) == 5);
+  TEST_CHECK(tweak_metadata_layout_get_dimension(layout, 1) == 2);
+  tweak_metadata_destroy(metadata);
+}
+
+void test_14() {
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_VECTOR_FLOAT, 10,
+    "{\"layout\":{\"order\": \"column-major\", \"dimensions\": [5, 2]}}");
+  tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata);
+  TEST_CHECK(control == TWEAK_METADATA_CONTROL_TABLE);
+  TEST_CHECK(tweak_metadata_get_readonly(metadata) == false);
+  tweak_metadata_layout layout = tweak_metadata_get_layout(metadata);
+  TEST_CHECK(layout != NULL);
+  TEST_CHECK(tweak_metadata_layout_get_order(layout) == TWEAK_METADATA_LAYOUT_ORDER_COLUMN_MAJOR);
+  TEST_CHECK(tweak_metadata_layout_get_number_of_dimensions(layout) == 2);
+  TEST_CHECK(tweak_metadata_layout_get_dimension(layout, 0) == 5);
+  TEST_CHECK(tweak_metadata_layout_get_dimension(layout, 1) == 2);
+  tweak_metadata_destroy(metadata);
+}
+
+void test_15() {
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_VECTOR_FLOAT, 10,
+    "{\"layout\":{\"order\": \"column-major\", \"dimensions\": [5, 2]}}");
+
+  tweak_metadata metadata_copy = tweak_metadata_copy(metadata);
+  tweak_metadata_destroy(metadata);
+
+  tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata_copy);
+  TEST_CHECK(control == TWEAK_METADATA_CONTROL_TABLE);
+  TEST_CHECK(tweak_metadata_get_readonly(metadata_copy) == false);
+  tweak_metadata_layout layout = tweak_metadata_get_layout(metadata_copy);
+  TEST_CHECK(layout != NULL);
+  TEST_CHECK(tweak_metadata_layout_get_order(layout) == TWEAK_METADATA_LAYOUT_ORDER_COLUMN_MAJOR);
+  TEST_CHECK(tweak_metadata_layout_get_number_of_dimensions(layout) == 2);
+  TEST_CHECK(tweak_metadata_layout_get_dimension(layout, 0) == 5);
+  TEST_CHECK(tweak_metadata_layout_get_dimension(layout, 1) == 2);
+
+  tweak_metadata_destroy(metadata_copy);
+}
+
+void test_16() {
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_SINT32, 1, "{\"options\": "
+      "[{\"value\": 100, \"text\": \"Foo\"},"
+      " {\"value\": 110, \"text\": \"Bar\"},"
+      " {\"value\": 120, \"text\": \"Baz\"},"
+      " \"Buff\"]}");
+  tweak_metadata metadata_copy = tweak_metadata_copy(metadata);
+  tweak_metadata_destroy(metadata);
+
+  tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata_copy);
+  TEST_CHECK(control == TWEAK_METADATA_CONTROL_COMBOBOX);
+
+  TEST_CHECK(tweak_metadata_get_readonly(metadata_copy) == false);
+  tweak_metadata_options options = tweak_metadata_get_options(metadata_copy);
+  TEST_CHECK(options != NULL);
+  TEST_CHECK(tweak_metadata_get_enum_size(options) == 4);
+  check_nth_option(options, 0, 100, "Foo");
+  check_nth_option(options, 1, 110, "Bar");
+  check_nth_option(options, 2, 120, "Baz");
+  check_nth_option(options, 3, 121, "Buff");
+  tweak_metadata_destroy(metadata_copy);
+}
+
+void test_17() {
+  tweak_metadata metadata = tweak_metadata_create(TWEAK_VARIANT_TYPE_UINT8, 1,
+  "{\"max\":7,\"options\":["
+    "{\"value\": 0, \"text\": \"Error\"},"
+    "{\"value\": 1, \"text\": \"Warning\"},"
+    "{\"value\": 2, \"text\": \"Info\"},"
+    "{\"value\": 3, \"text\": \"Performance\"},"
+    "{\"value\": 4, \"text\": \"Event\"},"
+    "{\"value\": 5, \"text\": \"Debug\"},"
+    "{\"value\": 6, \"text\": \"Trace\"},"
+    "{\"value\": 7, \"text\": \"Dump\"}"
+  "]}");
+  tweak_metadata metadata_copy = tweak_metadata_copy(metadata);
+  tweak_metadata_destroy(metadata);
+
+  tweak_metadata_control_type control = tweak_metadata_get_control_type(metadata_copy);
+  TEST_CHECK(control == TWEAK_METADATA_CONTROL_COMBOBOX); /* Options are present */
+
+  TEST_CHECK(tweak_metadata_get_readonly(metadata_copy) == false);
+  const tweak_variant *max = tweak_metadata_get_max(metadata_copy);
+  TEST_CHECK(max->type == TWEAK_VARIANT_TYPE_NULL);
+  tweak_metadata_options options = tweak_metadata_get_options(metadata_copy);
+  TEST_CHECK(options != NULL);
+  TEST_CHECK(tweak_metadata_get_enum_size(options) == 8);
+  check_nth_option(options, 0, 0, "Error");
+  check_nth_option(options, 1, 1, "Warning");
+  check_nth_option(options, 2, 2, "Info");
+  check_nth_option(options, 3, 3, "Performance");
+  check_nth_option(options, 4, 4, "Event");
+  check_nth_option(options, 5, 5, "Debug");
+  check_nth_option(options, 6, 6, "Trace");
+  check_nth_option(options, 7, 7, "Dump");
+  tweak_metadata_destroy(metadata_copy);
 }
 
 TEST_LIST = {
@@ -291,6 +423,12 @@ TEST_LIST = {
   { "test_9", test_9 },
   { "test_10", test_10 },
   { "test_11", test_11 },
+  { "test_12", test_12 },
+  { "test_13", test_13 },
+  { "test_14", test_14 },
+  { "test_15", test_15 },
+  { "test_16", test_16 },
+  { "test_17", test_17 },
   { NULL, NULL }     /* zeroed record marking the end of the list */
 };
 

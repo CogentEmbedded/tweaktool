@@ -4,12 +4,25 @@
  *
  * @brief test suite for tweak wire library.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
@@ -17,27 +30,23 @@
  */
 
 #include <tweak2/wire.h>
+#include <tweak2/thread.h>
+#include <tweak2/defaults.h>
 
-#include <pthread.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <acutest.h>
 
-#define DEFAULT_ENDPOINT "tcp://0.0.0.0:8888/"
-
-static pthread_mutex_t s_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t s_cond = PTHREAD_COND_INITIALIZER;
+static tweak_common_mutex s_lock = { 0 };
+static tweak_common_cond s_cond = { 0 };
 static tweak_wire_connection_state s_server_conn_state = TWEAK_WIRE_DISCONNECTED;
 static tweak_wire_connection_state s_client_conn_state = TWEAK_WIRE_DISCONNECTED;
 
 struct receive_buff {
-  pthread_mutex_t lock;
-  pthread_cond_t cond;
+  tweak_common_mutex lock;
+  tweak_common_cond cond;
   bool has_value;
   uint8_t* buffer;
   size_t size;
@@ -45,30 +54,30 @@ struct receive_buff {
 
 static void test_receive_listener(const uint8_t* buffer, size_t size, void * cookie) {
   struct receive_buff* q = cookie;
-  pthread_mutex_lock(&q->lock);
+  tweak_common_mutex_lock(&q->lock);
   q->has_value = true;
   q->buffer = calloc(1, size);
   memcpy(q->buffer, buffer, size);
   q->size = size;
-  pthread_cond_signal(&q->cond);
-  pthread_mutex_unlock(&q->lock);
+  tweak_common_cond_signal(&q->cond);
+  tweak_common_mutex_unlock(&q->lock);
 }
 
 static void wait_buffer(struct receive_buff* q) {
-  pthread_mutex_lock(&q->lock);
+  tweak_common_mutex_lock(&q->lock);
   while (!q->has_value) {
-    pthread_cond_wait(&q->cond, &q->lock);
+    tweak_common_cond_wait(&q->cond, &q->lock);
   }
-  pthread_mutex_unlock(&q->lock);
+  tweak_common_mutex_unlock(&q->lock);
 }
 
 static void clear_wait_buffer(struct receive_buff* q) {
-  pthread_mutex_lock(&q->lock);
+  tweak_common_mutex_lock(&q->lock);
   free(q->buffer);
   q->buffer = NULL;
   q->size = 0;
   q->has_value = false;
-  pthread_mutex_unlock(&q->lock);
+  tweak_common_mutex_unlock(&q->lock);
 }
 
 static void server_connection_state_listener(tweak_wire_connection connection,
@@ -77,18 +86,18 @@ static void server_connection_state_listener(tweak_wire_connection connection,
 {
   (void) connection;
   (void) cookie;
-  pthread_mutex_lock(&s_lock);
+  tweak_common_mutex_lock(&s_lock);
   s_server_conn_state = conn_state;
-  pthread_cond_broadcast(&s_cond);
-  pthread_mutex_unlock(&s_lock);
+  tweak_common_cond_broadcast(&s_cond);
+  tweak_common_mutex_unlock(&s_lock);
 }
 
-static void server_wait_connection() {
-  pthread_mutex_lock(&s_lock);
+static void server_wait_connection(void) {
+  tweak_common_mutex_lock(&s_lock);
   while (s_server_conn_state != TWEAK_WIRE_CONNECTED) {
-    pthread_cond_wait(&s_cond, &s_lock);
+    tweak_common_cond_wait(&s_cond, &s_lock);
   }
-  pthread_mutex_unlock(&s_lock);
+  tweak_common_mutex_unlock(&s_lock);
 }
 
 static void client_connection_state_listener(tweak_wire_connection connection,
@@ -97,41 +106,53 @@ static void client_connection_state_listener(tweak_wire_connection connection,
 {
   (void) connection;
   (void) cookie;
-  pthread_mutex_lock(&s_lock);
+  tweak_common_mutex_lock(&s_lock);
   s_client_conn_state = conn_state;
-  pthread_cond_broadcast(&s_cond);
-  pthread_mutex_unlock(&s_lock);
+  tweak_common_cond_broadcast(&s_cond);
+  tweak_common_mutex_unlock(&s_lock);
 }
 
-static void client_wait_connection() {
-  pthread_mutex_lock(&s_lock);
+static void client_wait_connection(void) {
+  tweak_common_mutex_lock(&s_lock);
   while (s_client_conn_state != TWEAK_WIRE_CONNECTED) {
-    pthread_cond_wait(&s_cond, &s_lock);
+    tweak_common_cond_wait(&s_cond, &s_lock);
   }
-  pthread_mutex_unlock(&s_lock);
+  tweak_common_mutex_unlock(&s_lock);
 }
 
-void test_wire() {
+static void initialize(void) {
+  tweak_common_mutex_init(&s_lock);
+  tweak_common_cond_init(&s_cond);
+}
+
+static void finalize(void) {
+  tweak_common_cond_destroy(&s_cond);
+  tweak_common_mutex_destroy(&s_lock);
+}
+
+void test_wire(void) {
+  initialize();
   tweak_wire_connection server_context = NULL, client_context = NULL;
   struct receive_buff server_buff = {
-    .cond = PTHREAD_COND_INITIALIZER,
-    .lock = PTHREAD_MUTEX_INITIALIZER,
     .has_value = false
   };
   struct receive_buff client_buff = {
-    .cond = PTHREAD_COND_INITIALIZER,
-    .lock = PTHREAD_MUTEX_INITIALIZER,
     .has_value = false
   };
 
+  tweak_common_cond_init(&server_buff.cond);
+  tweak_common_mutex_init(&server_buff.lock);
+  tweak_common_cond_init(&client_buff.cond);
+  tweak_common_mutex_init(&client_buff.lock);
+
   tweak_wire_connection_state server_conn_state;
-  pthread_mutex_lock(&s_lock);
+  tweak_common_mutex_lock(&s_lock);
   server_conn_state = s_server_conn_state;
-  pthread_mutex_unlock(&s_lock);
+  tweak_common_mutex_unlock(&s_lock);
 
   puts("Create listener node...");
   server_context = tweak_wire_create_connection("nng", "role=server",
-    DEFAULT_ENDPOINT, &server_connection_state_listener,
+    TWEAK_DEFAULT_ENDPOINT, &server_connection_state_listener,
     NULL, &test_receive_listener, &server_buff);
 
   TEST_CHECK(server_context != TWEAK_WIRE_INVALID_CONNECTION);
@@ -145,7 +166,7 @@ void test_wire() {
 
   puts("Create connector node...");
   client_context = tweak_wire_create_connection("nng", "role=client",
-    DEFAULT_ENDPOINT, &client_connection_state_listener,
+    TWEAK_DEFAULT_ENDPOINT, &client_connection_state_listener,
     NULL, &test_receive_listener, &client_buff);
   TEST_CHECK(client_context != TWEAK_WIRE_INVALID_CONNECTION);
   puts("SUCCESS");
@@ -155,9 +176,9 @@ void test_wire() {
   client_wait_connection();
   puts("Connection established");
 
-  pthread_mutex_lock(&s_lock);
+  tweak_common_mutex_lock(&s_lock);
   server_conn_state = s_server_conn_state;
-  pthread_mutex_unlock(&s_lock);
+  tweak_common_mutex_unlock(&s_lock);
 
   TEST_CHECK(server_conn_state == TWEAK_WIRE_CONNECTED);
 
@@ -184,16 +205,22 @@ void test_wire() {
   puts("Shut down replica node...");
   tweak_wire_destroy_connection(client_context);
   puts("SUCCESS");
-  sleep(1);
+  tweak_common_sleep(1000);
 
-  pthread_mutex_lock(&s_lock);
+  tweak_common_mutex_lock(&s_lock);
   server_conn_state = s_server_conn_state;
-  pthread_mutex_unlock(&s_lock);
+  tweak_common_mutex_unlock(&s_lock);
 
   puts("Shut down master node...");
   TEST_CHECK(server_conn_state == TWEAK_WIRE_DISCONNECTED);
   tweak_wire_destroy_connection(server_context);
   puts("SUCCESS");
+
+  tweak_common_mutex_destroy(&server_buff.lock);
+  tweak_common_cond_destroy(&server_buff.cond);
+  tweak_common_mutex_destroy(&client_buff.lock);
+  tweak_common_cond_destroy(&client_buff.cond);
+  finalize();
 }
 
 TEST_LIST = {

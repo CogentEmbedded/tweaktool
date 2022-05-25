@@ -10,7 +10,7 @@ The idea resembles Windows registry or gconf: user creates configurable values (
 that can be updated using remote GUI or a command line client.
 
 The protocol is reactive and full duplex by design, so both sides are kept in sync
-an get live updates.
+and get live updates.
 
 ## Installation and Configuration
 
@@ -62,7 +62,7 @@ This script installs NNG packages being built, thus it requires sudo.
 
 ```bash
 sudo apt-get -y install fakeroot devscripts equivs dh-python debhelper-compat ubuntu-dev-tools \
-    scons protobuf-compiler libmbedtls-dev libmbedcrypto3 libmbedtls12 libmbedx509-0 python3-protobuf
+    scons protobuf-compiler libmbedtls-dev libmbedcrypto3 libmbedtls12 libmbedx509-0
 sudo ../tweaktool/build-nng-debs.sh
 ```
 
@@ -271,7 +271,7 @@ mkdir ./build
 cd ./build
 cmake -DBUILD_GUI=ON -DBUILD_TESTS=ON ..
 make -j
-make package
+cpack -G DEB
 ```
 
 User could provide additional flags to CMake:
@@ -281,6 +281,48 @@ User could provide additional flags to CMake:
  - WITH_DOXYGEN Run doxygen on source code. Default: OFF.
  - WITH_WIRE_NNG Adds NNG support to connection factory. Default: ON.
  - WITH_WIRE_RPMSG Adds RPMSG support to connection factory. Default: OFF.
+
+# Building on Visual Studio
+
+## Preconditions
+
+- Microsoft Visual Studio Community 2019 or later
+- Integrated vcpkg
+- Installed vcpkg packages: nng, getopt
+- Installed external Qt5
+
+At this moment, Qt5 from vcpkg is broken and its install target doesn't compile all
+the necessary files.
+
+https://github.com/microsoft/vcpkg/issues/16983
+
+Here, we assume that Qt was installed to C:\Qt\5.15.2 and its bin directory is
+C:\Qt\5.15.2\msvc2019_64
+
+## Compilation
+
+In MSVC++ IDE, open tweak2 directory with `File/Open folder...` menu, adjust options
+in `Project/CMake` settings, set Qt directories in `Project/CMake` settings for tweak2
+to ones placed in `C:/Qt/5.15.2/msvc2019_64/lib/cmake/`.
+
+There are Qt libraries used:
+
+ - Qt5_DIR: C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5
+ - Qt5Core_DIR: C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Core
+ - Qt5Gui_DIR: C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Gui
+ - Qt5Network_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Network
+ - Qt5Qml_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Qml
+ - Qt5QmlModels_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmakeQt5QmlModels
+ - Qt5Quick_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Quick
+ - Qt5QuickControls2_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5QuickControls2
+
+Adjust project settings, then build and install via `Build` menu in Visual Studio.
+
+Copy Qt files using following command from project root folder from project root, assuming current configuration is `x64-Release`
+
+`C:\Qt\5.15.2\msvc2019_64\bin\windeployqt.exe --qmldir .\tweak-gui-qml\resources .\out\install\x64-Release\bin\tweak-gui.exe`
+
+After this, package is ready in `.\out\install\x64-Release` directory.
 
 ## Components
 

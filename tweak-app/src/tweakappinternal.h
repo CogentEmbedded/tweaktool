@@ -4,24 +4,39 @@
  *
  * @brief part of tweak2 application implementation.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #ifndef TWEAK_APP_INTERNAL_H_INCLUDED
 #define TWEAK_APP_INTERNAL_H_INCLUDED
 
 #include <tweak2/appcommon.h>
+#include <tweak2/thread.h>
+#include <tweak2/pickle.h>
+#include <tweak2/variant.h>
 
 #include "tweakappqueue.h"
 #include "tweakmodel.h"
+#include "tweakappfeatures.h"
 #include "tweakmodel_uri_to_tweak_id_index.h"
-
-#include <pthread.h>
 
 /**
  * @brief Prototype for virtual method pushing change request to io queue.
@@ -66,7 +81,7 @@ struct tweak_model_impl {
   /**
    * @brief Synchronization primitive to access model data.
    */
-  pthread_rwlock_t model_lock;
+  tweak_common_rwlock model_lock;
   /**
    * @brief Item storage.
    */
@@ -87,7 +102,7 @@ struct tweak_app_context_base {
   /**
    * @brief Synchronization primitive to access connected status.
    */
-  pthread_mutex_t conn_state_lock;
+  tweak_common_mutex conn_state_lock;
   /**
    * @brief True if remote peer is connected to the context.
    */
@@ -95,7 +110,7 @@ struct tweak_app_context_base {
   /**
    * @brief Asynchronous I/O routine.
    */
-  pthread_t worker_thread;
+  tweak_common_thread worker_thread;
   /**
    * @brief Queue of jobs to run by worker_thread.
    */
@@ -120,6 +135,10 @@ struct tweak_app_context_base {
    * @brief Virtual destructor.
    */
   tweak_app_destroy_context_proc destroy_context;
+  /**
+   * @brief Features supported by current connected peer.
+   */
+  struct tweak_app_features remote_peer_features;
 };
 
 /**
@@ -197,5 +216,15 @@ void tweak_app_context_private_set_connected(struct tweak_app_context_base* app_
  * @return true if remote peer is connected to the context.
  */
 bool tweak_app_context_private_is_connected(struct tweak_app_context_base* app_context);
+
+/**
+ * @brief Checks whether @p value might occupy model slot currently occupied by @p sample.
+ *
+ * @param sample current value stored in model slot.
+ * @param value value to check.
+ *
+ * @return true if described condition is true.
+ */
+bool tweak_app_context_private_check_value_compatibility(const tweak_variant* sample, const tweak_variant* value);
 
 #endif

@@ -3,12 +3,25 @@
  * @ingroup tweak-compatibility-implementation-test
  * @brief part of tweak2 - tweak1 compatibility layer test suite.
  *
- * @copyright 2020-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
@@ -18,8 +31,8 @@
 #include <tweak.h>
 #include <tweak2/appclient.h>
 #include <tweak2/log.h>
+#include <tweak2/thread.h>
 
-#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +59,7 @@ int main(int argc, const char** argv) {
     tweak_add_checkbox("SHADER_HV", 0);
     tweak_add_spinbox("routine_id", 0, 65535, 0, 0);
     tweak_add_spinbox("routine_val", 0, 10, 0, 0);
- 
+
     tweak_add_layout(300, 1, "/1");
     tweak_add_checkbox("patch BFS dump", 0);
     tweak_add_checkbox("patch current dump", 0);
@@ -98,7 +111,7 @@ int main(int argc, const char** argv) {
     tweak_add_slider("shadow_sz", 16.0, 64.0, tweak_get_def_val("shadow_sz"), 0);
     tweak_add_slider("shadow_max", 2.0, 64.0, tweak_get_def_val("shadow_max"), 0);
     tweak_add_slider("shadow_color", 2.0, 64.0, tweak_get_def_val("shadow_color"), 0);
- 
+
     tweak_add_slider("color_rear_left_near_sz", 5.0, 40.0, tweak_get_def_val("color_rear_left_near_sz"), 0);
     tweak_add_slider("color_rear_left_far_sz", 5.0, 40.0, tweak_get_def_val("color_rear_left_far_sz"), 0);
     tweak_add_slider("color_rear_right_near_sz", 5.0, 40.0, tweak_get_def_val("color_rear_right_near_sz"), 0);
@@ -123,7 +136,7 @@ int main(int argc, const char** argv) {
     tweak_add_slider("horizont_shift", -1.0, 1.0, tweak_get_def_val("horizont_shift"), 2);
     tweak_add_slider("z_distortion", 0.0, 1.0, tweak_get_def_val("z_distortion"), 2);
 
- 
+
     tweak_add_widget("/state_machine");
     tweak_add_layout(150, 0, "/state_machine");
 

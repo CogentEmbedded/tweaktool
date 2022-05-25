@@ -4,17 +4,75 @@
  *
  * @brief string utilities to handle user unput in tweak-app-cl program.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "stringutil.h"
+
+char* tweak_app_cl_merge_tokens(const char** tokens, const char* separator) {
+  bool first;
+  const char **p;
+
+  size_t separator_length = strlen(separator);
+  size_t pos = 0;
+
+  first = true;
+  p = tokens;
+  while (*p) {
+    if (!first) {
+      pos += separator_length;
+    } else {
+      first = false;
+    }
+    pos += strlen(*p);
+    ++p;
+  }
+  ++pos;
+
+  char* result = malloc(pos);
+  if (!result) {
+    return NULL;
+  }
+
+  pos = 0;
+  first = true;
+  p = tokens;
+  while (*p) {
+    if (!first) {
+      memcpy(result + pos, separator, separator_length);
+      pos += separator_length;
+    } else {
+      first = false;
+    }
+    size_t token_size = strlen(*p);
+    memcpy(result + pos, *p, token_size);
+    pos += token_size;
+    ++p;
+  }
+  result[pos] = '\0';
+  return result;
+}
 
 char** tweak_app_cl_tokenize(const char* line, char escape, const char* separators) {
   char** result = NULL;
@@ -34,7 +92,7 @@ char** tweak_app_cl_tokenize(const char* line, char escape, const char* separato
     prev_p = tweak_app_cl_trimleft(p, separators);
     p = tweak_app_cl_strpbrk_unescaped_no_null(prev_p, escape, separators);
   }
-  
+
   result = realloc(result, sizeof(result) * (count + 1));
   if (!result)
     return NULL;
@@ -124,7 +182,7 @@ char* tweak_app_cl_strpbrk_no_null(const char* arg, const char* seps) {
     return NULL;
 
   if (!seps)
-    return (char*)arg; 
+    return (char*)arg;
 
   char* result;
   result = strpbrk(arg, seps);
@@ -138,7 +196,7 @@ int tweak_app_cl_find_first_incomplete_token(const char* line, char escape, cons
   int incomplete_token_found = 0;
   char* token_pos;
   char* separator_pos;
-  
+
   token_pos = tweak_app_cl_trimleft(line, separators);
   separator_pos = tweak_app_cl_strpbrk_unescaped_no_null(token_pos, escape, TWEAK_APP_CL_SEPARATORS);
   while (*separator_pos) {
@@ -146,6 +204,6 @@ int tweak_app_cl_find_first_incomplete_token(const char* line, char escape, cons
     token_pos = tweak_app_cl_trimleft(separator_pos, separators);
     separator_pos = tweak_app_cl_strpbrk_unescaped_no_null(token_pos, escape, TWEAK_APP_CL_SEPARATORS);
   }
-  
+
   return incomplete_token_found;
 }

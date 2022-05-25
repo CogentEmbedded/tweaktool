@@ -1,15 +1,28 @@
 /**
- * @file qtweakvariant.hpp
+ * @file QTweakVariant.hpp
  * @ingroup GUI
  *
  * @brief Qt binding for Tweak Variant.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via http://cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #ifndef QTWEAKVARIANT_H
@@ -17,6 +30,8 @@
 
 #include <QString>
 #include <QVariant>
+#include <QByteArray>
+#include <QJsonDocument>
 
 #include <tweak2/string.h>
 #include <tweak2/variant.h>
@@ -32,7 +47,22 @@ static inline QString from_tweak_string(const tweak_variant_string *arg)
 static inline void to_tweak_string(tweak_variant_string *dest, QString src)
 {
     QByteArray src0 = src.toUtf8();
-    tweak_variant_assign_string(dest, src0.constData());
+    tweak_assign_string(dest, src0.constData());
+}
+
+static inline QVariant to_json_node(const tweak_variant *arg)
+{
+    tweak_variant_string tmp = tweak_variant_to_string(arg);
+    QByteArray documentSource(tweak_variant_string_c_str(&tmp));
+    tweak_variant_destroy_string(&tmp);
+    return QVariant::fromValue(QJsonDocument::fromJson(documentSource));
+}
+
+static inline tweak_variant from_json_node(const QVariant& arg, tweak_variant_type dest_type)
+{
+    (void)arg;
+    (void)dest_type;
+    Q_UNREACHABLE(); // Not implemented
 }
 
 static inline QVariant from_tweak_variant(const tweak_variant *arg)
@@ -65,6 +95,19 @@ static inline QVariant from_tweak_variant(const tweak_variant *arg)
         return QVariant(arg->value.fp32);
     case TWEAK_VARIANT_TYPE_DOUBLE:
         return QVariant(arg->value.fp64);
+    case TWEAK_VARIANT_TYPE_STRING:
+        return QVariant(QString(tweak_variant_string_c_str(&arg->value.string)));
+    case TWEAK_VARIANT_TYPE_VECTOR_SINT8:
+    case TWEAK_VARIANT_TYPE_VECTOR_SINT16:
+    case TWEAK_VARIANT_TYPE_VECTOR_SINT32:
+    case TWEAK_VARIANT_TYPE_VECTOR_SINT64:
+    case TWEAK_VARIANT_TYPE_VECTOR_UINT8:
+    case TWEAK_VARIANT_TYPE_VECTOR_UINT16:
+    case TWEAK_VARIANT_TYPE_VECTOR_UINT32:
+    case TWEAK_VARIANT_TYPE_VECTOR_UINT64:
+    case TWEAK_VARIANT_TYPE_VECTOR_FLOAT:
+    case TWEAK_VARIANT_TYPE_VECTOR_DOUBLE:
+        return to_json_node(arg);
     default:
         Q_UNREACHABLE();
         break;
@@ -111,6 +154,17 @@ static inline void to_tweak_variant(tweak_variant *dest, tweak_variant_type dest
     case TWEAK_VARIANT_TYPE_DOUBLE:
         dest->value.fp64 = static_cast<double>(src.toDouble());
         break;
+    case TWEAK_VARIANT_TYPE_VECTOR_SINT8:
+    case TWEAK_VARIANT_TYPE_VECTOR_SINT16:
+    case TWEAK_VARIANT_TYPE_VECTOR_SINT32:
+    case TWEAK_VARIANT_TYPE_VECTOR_SINT64:
+    case TWEAK_VARIANT_TYPE_VECTOR_UINT8:
+    case TWEAK_VARIANT_TYPE_VECTOR_UINT16:
+    case TWEAK_VARIANT_TYPE_VECTOR_UINT32:
+    case TWEAK_VARIANT_TYPE_VECTOR_UINT64:
+    case TWEAK_VARIANT_TYPE_VECTOR_FLOAT:
+    case TWEAK_VARIANT_TYPE_VECTOR_DOUBLE:
+        *dest = from_json_node(src, dest_type);
     default:
         Q_UNREACHABLE();
         break;

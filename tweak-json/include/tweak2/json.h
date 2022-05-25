@@ -4,12 +4,25 @@
  *
  * @brief Simple json parser.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
@@ -21,7 +34,9 @@
 #ifndef TWEAK_JSON_H_INCLUDED
 #define TWEAK_JSON_H_INCLUDED
 
-#include <stdbool.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief JSON node types.
@@ -190,7 +205,7 @@ const struct tweak_json_node* tweak_json_get_object_field(const struct tweak_jso
  * Parsing is up to user. Can return NULL if:
  *  - @p node is NULL
  *  - (tweak_json_get_type(node) & TWEAK_JSON_NODE_TYPE_VALUE) == TWEAK_JSON_NODE_TYPE_INVALID
- * Second case is a particular instance of the first one since 
+ * Second case is a particular instance of the first one since
  * tweak_json_get_type(NULL) == TWEAK_JSON_NODE_TYPE_INVALID.
  *
  * @note Pointer to memory buffer retrieved by this method is bound to root document
@@ -205,5 +220,10 @@ const char* tweak_json_node_as_c_str(const struct tweak_json_node* node);
  * @param node root node returned by @see tweak_json_parse call.
  */
 void tweak_json_destroy(struct tweak_json_node* node);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* TWEAK_JSON_H_INCLUDED */

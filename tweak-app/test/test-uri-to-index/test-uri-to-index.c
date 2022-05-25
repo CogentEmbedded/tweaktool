@@ -4,12 +4,25 @@
  *
  * @brief part of test suite to test tweak2 application implementation.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <tweak2/string.h>
@@ -25,7 +38,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 enum { NUM_ENTRIES = 10000 };
 enum { NUM_ITERATIONS = 10 };
@@ -63,8 +75,8 @@ static uint32_t generate_random_uri(char *uri, uint32_t min, uint32_t max) {
 
 enum { MAX_URI_LENGTH = 500 };
 
-void test_uri_to_index() {
-  srand(time(NULL));
+void test_uri_to_index(void) {
+  srand((unsigned)time(NULL));
   tweak_model_uri_to_tweak_id_index index = tweak_model_uri_to_tweak_id_index_create();
   for (uint32_t itr_no = 0; itr_no < NUM_ITERATIONS; ++itr_no) {
     TWEAK_LOG_TEST("Iteration %d of %d\n", itr_no + 1, NUM_ITERATIONS);
@@ -75,7 +87,7 @@ void test_uri_to_index() {
       tweak_id id = gen_id();
       index_result = tweak_model_uri_to_tweak_id_index_insert(index, uri, id);
       TEST_CHECK(index_result == TWEAK_MODEL_INDEX_SUCCESS);
-      tweak_variant_assign_string(&uris[tweak_no], uri);
+      tweak_assign_string(&uris[tweak_no], uri);
       ids[tweak_no] = id;
     }
 
@@ -101,7 +113,7 @@ void test_uri_to_index() {
       tweak_model_index_result index_result;
       index_result = tweak_model_uri_to_tweak_id_index_remove(index, tweak_variant_string_c_str(&uris[tweak_no]));
       TEST_CHECK(index_result == TWEAK_MODEL_INDEX_SUCCESS);
-      tweak_variant_assign_string(&uris[tweak_no], NULL);
+      tweak_assign_string(&uris[tweak_no], NULL);
       ids[tweak_no] = TWEAK_INVALID_ID;
     }
   }

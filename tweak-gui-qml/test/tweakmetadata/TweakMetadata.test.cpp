@@ -1,15 +1,28 @@
 /**
- * @file QTweakVariant.test.cpp
+ * @file TweakMetadata.test.cpp
  * @ingroup GUI
  *
- * @brief test suite for TweakQml component.
+ * @brief test suite for Qt binding for tweak metadata.
  *
- * @copyright 2020-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via http://cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <QtTest/QtTest>
@@ -39,6 +52,7 @@ class QMetadataTest : public QObject
       QVERIFY(metadata->getMax() == true);
       QVERIFY(metadata->getReadonly() == false);
       delete metadata;
+      delete parser;
    }
 
    void Test2() {
@@ -49,6 +63,7 @@ class QMetadataTest : public QObject
       QVERIFY(metadata->getMax() == true);
       QVERIFY(metadata->getReadonly() == true);
       delete metadata;
+      delete parser;
    }
 
 
@@ -76,6 +91,7 @@ class QMetadataTest : public QObject
       QVERIFY(getOptionText(metadata, 1) == "False");
       QVERIFY(metadata->getReadonly() == false);
       delete metadata;
+      delete parser;
    }
 
    void Test5() {
@@ -86,6 +102,7 @@ class QMetadataTest : public QObject
       QVERIFY(getOptionText(metadata, 1) == "False");
       QVERIFY(metadata->getReadonly() == false);
       delete metadata;
+      delete parser;
    }
 
    void Test6() {
@@ -101,6 +118,7 @@ class QMetadataTest : public QObject
       float err = std::abs(step - .0001f); /* derived from decimals == 4*/
       QVERIFY(err < pow(10, -(decimals + 2)));
       delete metadata;
+      delete parser;
    }
 
    void Test7() {
@@ -113,6 +131,7 @@ class QMetadataTest : public QObject
       QVERIFY(decimals == 6);
       QVERIFY(metadata->getReadonly() == false);
       delete metadata;
+      delete parser;
    }
 
    void Test8() {
@@ -123,6 +142,7 @@ class QMetadataTest : public QObject
       QVERIFY(metadata->getMax().value<uint32_t>() == 512L);
       QVERIFY(metadata->getReadonly() == false);
       delete metadata;
+      delete parser;
    }
 
    void Test9() {
@@ -133,6 +153,7 @@ class QMetadataTest : public QObject
       QVERIFY(metadata->getMax().value<int32_t>() == 127);
       QVERIFY(metadata->getReadonly() == false);
       delete metadata;
+      delete parser;
    }
 
    void Test13() {
@@ -147,6 +168,7 @@ class QMetadataTest : public QObject
       QVERIFY(metadata->getDecimals() == 2);
       QVERIFY(metadata->getReadonly() == false);
       delete metadata;
+      delete parser;
    }
 };
 

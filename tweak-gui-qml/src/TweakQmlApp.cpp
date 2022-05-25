@@ -1,15 +1,28 @@
 /**
- * @file tweakqmlapp.cpp
+ * @file TweakQmlApp.cpp
  * @ingroup GUI
  *
  * @brief Tweak QML Application Model.
  *
- * @copyright 2020-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via http://cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include "TweakQmlApp.hpp"
@@ -66,11 +79,11 @@ QString ConnectionItem::getContextType() const {
 }
 
 QString ConnectionItem::getParams() const {
-    return params;    
+    return params;
 }
 
 QString ConnectionItem::getUri() const {
-    return uri;    
+    return uri;
 }
 
 tweak_app_client_context ConnectionItem::getClientContext() const {
@@ -353,7 +366,7 @@ TweakApplicationPrivate::TweakApplicationPrivate(TweakApplication *application, 
 
 QModelIndex TweakApplicationPrivate::indexByUri(ConnectionId connectionId, QString uri) const {
     Q_Q(const TweakApplication);
-    
+
     tweak_app_client_context clientContext;
     {
         QReadLocker locker(&lock);
@@ -551,7 +564,7 @@ void TweakApplicationPrivate::newItemImpl(quint64 connection_id, quint64 tweak_i
 
     path = "/" + name + uri;
 
-    size_t pos = tweakControlIdList.size();
+    int pos = static_cast<int>(tweakControlIdList.size());
 
     tweakControlIdList.push_back(tweakControlId);
     /*.. no cache cleaning is needed because new item index is always greater
@@ -575,9 +588,9 @@ void TweakApplicationPrivate::currentValueChangedImpl(quint64 connection_id, qui
         list_pos = *itr;
         emitEvent = true;
     } else {
-        auto itr = std::find(tweakControlIdList.begin(), tweakControlIdList.end(), tweakControlId);
-        if (itr != tweakControlIdList.end()) {
-            list_pos = std::distance(tweakControlIdList.begin(), itr);
+        auto itr0 = std::find(tweakControlIdList.begin(), tweakControlIdList.end(), tweakControlId);
+        if (itr0 != tweakControlIdList.end()) {
+            list_pos = std::distance(tweakControlIdList.begin(), itr0);
             tweakControlIdCache[tweakControlId] = list_pos;
             emitEvent = true;
         }
@@ -601,7 +614,7 @@ void TweakApplicationPrivate::itemRemovedImpl(quint64 connection_id, quint64 twe
 
     auto itr = std::find(tweakControlIdList.begin(), tweakControlIdList.end(), tweakControlId);
     if (itr != tweakControlIdList.end()) {
-        size_t pos = itr - tweakControlIdList.begin();
+        int pos = static_cast<int>(itr - tweakControlIdList.begin());
         tweakControlIdCache.clear();
         tweakControlIdList.erase(itr);
         treeModel.itemRemoved(tweakControlId);

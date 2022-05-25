@@ -1,5 +1,5 @@
 ifeq ($(TARGET_CPU),A72)
-ifeq ($(TARGET_OS), LINUX)
+ifeq ($(TARGET_OS), $(filter $(TARGET_OS), LINUX QNX))
 
 include $(PRELUDE)
 
@@ -10,11 +10,18 @@ CSOURCES    := main.c
 STATIC_LIBS += cogent_tweaktool
 STATIC_LIBS += nng
 
-IDIRS       += $(TIOVX_PATH)/source/tweaktool/v2/tweak-app/include
-IDIRS       += $(TIOVX_PATH)/source/tweaktool/v2/tweak-common/include
-IDIRS       += $(TIOVX_PATH)/source/tweaktool/v2/tweak-pickle/include
-IDIRS       += $(TIOVX_PATH)/source/tweaktool/v2/tweak-wire/include
-IDIRS       += $(TIOVX_PATH)/source/tweaktool/v2/tweak2lib/include
+ifeq ($(TARGET_OS),$(filter $(TARGET_OS), QNX))
+SYS_SHARED_LIBS += socket
+endif
+
+ifeq ($(TARGET_OS),$(filter $(TARGET_OS), LINUX))
+SYS_SHARED_LIBS += pthread
+endif
+
+TWEAK_PATH  := $(VISION_APPS_PATH)/utils/cogent_tweaktool
+
+IDIRS       += $(TWEAK_PATH)/tweak-common/include
+IDIRS       += $(TWEAK_PATH)/tweak-wire/include
 
 IDIRS       += $(VISION_APPS_PATH)/
 

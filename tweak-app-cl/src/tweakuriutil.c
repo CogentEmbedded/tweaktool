@@ -4,12 +4,25 @@
  *
  * @brief populate/filter/sort utilities for collections of tweak uris.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <regex.h>
@@ -68,9 +81,9 @@ struct tweak_app_cl_tweak_uris_list* tweak_app_cl_create_sorted_tweak_uris_list_
     .substring = filter
   };
 
-  bool success = tweak_app_traverse_items(context, &enumerate_traverse_strstr, &enumerate_context) 
+  bool success = tweak_app_traverse_items(context, &enumerate_traverse_strstr, &enumerate_context)
     && ensure_capacity(&enumerate_context, enumerate_context.size + 1);
-  
+
   if (success)
     enumerate_context.uris[enumerate_context.size] = NULL;
 
@@ -120,9 +133,9 @@ struct tweak_app_cl_tweak_uris_list* tweak_app_cl_create_sorted_tweak_uris_list_
     return NULL;
   }
 
-  bool success = tweak_app_traverse_items(context, &enumerate_traverse_regex, &enumerate_context) 
+  bool success = tweak_app_traverse_items(context, &enumerate_traverse_regex, &enumerate_context)
     && ensure_capacity(&enumerate_context, enumerate_context.size + 1);
-  
+
   if (success)
     enumerate_context.uris[enumerate_context.size] = NULL;
 
@@ -149,7 +162,7 @@ struct tweak_app_cl_tweak_uris_list* tweak_app_cl_create_sorted_tweak_uris_list_
 
 typedef int (*comparator_proc)(const void *, const void *);
 
-static size_t lower_bound(const void *needle, 
+static size_t lower_bound(const void *needle,
                           const void *haystack,
                           size_t tweak_id_count,
                           size_t tweak_id_size,
@@ -194,7 +207,7 @@ const char* tweak_app_cl_tweak_uris_list_pick_nth_match(struct tweak_app_cl_twea
   if (pos >= uris_list->size)
     return NULL;
 
-  const char *result = NULL; 
+  const char *result = NULL;
   if (startswith(prefix, uris_list->uris[pos]))
     result = uris_list->uris[pos];
 

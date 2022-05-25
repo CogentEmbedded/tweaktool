@@ -4,12 +4,25 @@
  *
  * @brief part of tweak2 application implementation.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <tweak2/appserver.h>
@@ -21,6 +34,7 @@
 #include "tweakappqueue.h"
 #include "tweakmodel.h"
 #include "tweakmodel_uri_to_tweak_id_index.h"
+#include "tweakappfeatures.h"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -32,7 +46,26 @@ struct tweak_app_context_server_impl {
   struct tweak_app_context_base base;
   tweak_app_server_callbacks server_callbacks;
   tweak_pickle_server_endpoint rpc_endpoint;
+  bool features_announced;
 };
+
+static bool check_value_allowed(struct tweak_app_features* features, const tweak_variant* value) {
+  switch (value->type) {
+  case TWEAK_VARIANT_TYPE_VECTOR_SINT8:
+  case TWEAK_VARIANT_TYPE_VECTOR_SINT16:
+  case TWEAK_VARIANT_TYPE_VECTOR_SINT32:
+  case TWEAK_VARIANT_TYPE_VECTOR_SINT64:
+  case TWEAK_VARIANT_TYPE_VECTOR_UINT8:
+  case TWEAK_VARIANT_TYPE_VECTOR_UINT16:
+  case TWEAK_VARIANT_TYPE_VECTOR_UINT32:
+  case TWEAK_VARIANT_TYPE_VECTOR_UINT64:
+  case TWEAK_VARIANT_TYPE_VECTOR_FLOAT:
+  case TWEAK_VARIANT_TYPE_VECTOR_DOUBLE:
+    return features->vectors;
+  default:
+    return true;
+  }
+}
 
 static void server_destroy_context(struct tweak_app_context_base* context) {
   TWEAK_LOG_TRACE_ENTRY("context = %p", context);
@@ -53,21 +86,33 @@ static bool subscribe_walk_proc(const char *uri, tweak_id tweak_id, void* cookie
   assert(tweak_id != TWEAK_INVALID_ID);
   struct tweak_app_context_server_impl* server_impl = (struct tweak_app_context_server_impl*) cookie;
   tweak_item* item = tweak_model_find_item_by_id(server_impl->base.model_impl.model, tweak_id);
+  bool value_allowed = check_value_allowed(&server_impl->base.remote_peer_features, &item->current_value);
+  if (!value_allowed) {
+    TWEAK_LOG_WARN("Remote endpoint doesn't support item : \"%s\"", tweak_variant_string_c_str(&item->uri));
+  }
   if (item != NULL) {
-    tweak_pickle_add_item pickle_add_item = {
-      .tweak_id = item->id,
-      .uri = item->uri,
-      .meta = item->meta,
-      .description = item->description,
-      .default_value = item->default_value,
-      .current_value = item->current_value,
-    };
-    tweak_pickle_call_result call_result =
-      tweak_pickle_server_add_item(server_impl->rpc_endpoint, &pickle_add_item);
-    if (call_result == TWEAK_PICKLE_SUCCESS) {
+    bool item_is_compatible =
+      tweak_app_features_check_type_compatibility(&server_impl->base.remote_peer_features, item->variant_type);
+    if (item_is_compatible) {
+      tweak_pickle_add_item pickle_add_item = {
+        .id = item->id,
+        .uri = item->uri,
+        .meta = item->meta,
+        .description = item->description,
+        .default_value = item->default_value,
+        .current_value = item->current_value,
+      };
+      tweak_pickle_call_result call_result =
+        tweak_pickle_server_add_item(server_impl->rpc_endpoint, &pickle_add_item);
+      if (call_result == TWEAK_PICKLE_SUCCESS) {
+        return true;
+      }
+      TWEAK_LOG_WARN("tweak_pickle_server_add_item: RPC call failed with code %d", call_result);
+    } else {
+      TWEAK_LOG_WARN("Skipping item with uri = \"%s\" with type %d not supported by remote peer",
+        tweak_variant_string_c_str(&item->uri), item->variant_type);
       return true;
     }
-    TWEAK_LOG_WARN("tweak_pickle_server_add_item: RPC call failed with code %d", call_result);
   } else {
     TWEAK_LOG_WARN("model index is inconsistent, Unknown tweak_id = %" PRIu64 "", tweak_id);
   }
@@ -77,8 +122,26 @@ static bool subscribe_walk_proc(const char *uri, tweak_id tweak_id, void* cookie
 static void io_loop_subscribe(tweak_id tweak_id, void* cookie) {
   (void) tweak_id;
   TWEAK_LOG_TRACE_ENTRY("tweak_id = %" PRId64 ", cookie = %p", tweak_id, cookie);
-  tweak_app_context context = cookie;
-  pthread_rwlock_rdlock(&context->model_impl.model_lock);
+  struct tweak_app_context_server_impl* server_impl = cookie;
+  if (server_impl->features_announced) {
+    struct tweak_app_features default_features = { 0 };
+    tweak_app_features_init_default(&default_features);
+
+    tweak_variant_string session_features = tweak_app_features_to_json(&default_features);
+    tweak_pickle_features features = { .features = session_features };
+
+    tweak_pickle_call_result call_result =
+      tweak_pickle_server_announce_features(server_impl->rpc_endpoint, &features);
+
+    tweak_variant_destroy_string(&session_features);
+    if (call_result != TWEAK_PICKLE_SUCCESS) {
+      TWEAK_LOG_WARN("tweak_pickle_server_announce_features() returned error %d", call_result);
+      return;
+    }
+  }
+
+  tweak_app_context context = &server_impl->base;
+  tweak_common_rwlock_read_lock(&context->model_impl.model_lock);
   bool walk_success = tweak_model_uri_to_tweak_id_index_walk(context->model_impl.index,
     &subscribe_walk_proc, context);
   if (walk_success) {
@@ -87,7 +150,7 @@ static void io_loop_subscribe(tweak_id tweak_id, void* cookie) {
   } else {
     TWEAK_LOG_WARN("Can't handle subscribe request, status is still offline");
   }
-  pthread_rwlock_unlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_read_unlock(&context->model_impl.model_lock);
 }
 
 static void push_subscribe(tweak_app_context context) {
@@ -98,6 +161,25 @@ static void push_subscribe(tweak_app_context context) {
     .cookie = context
   };
   tweak_app_queue_push(context->job_queue, &job);
+}
+
+static void announce_features_impl(tweak_pickle_features* announce_features,
+  void *cookie)
+{
+  TWEAK_LOG_TRACE_ENTRY("announce_features = \"%s\", cookie = %p",
+    tweak_variant_string_c_str(&announce_features->features), cookie);
+  struct tweak_app_context_server_impl* server_impl = cookie;
+
+  struct tweak_app_features features = { 0 };
+  bool parse_success = tweak_app_features_from_json(&announce_features->features, &features);
+  tweak_common_mutex_lock(&server_impl->base.conn_state_lock);
+  if (!parse_success) {
+    tweak_app_features_init_default(&features);
+    TWEAK_LOG_WARN("Can't parse server features, using scalar tweaks only");
+  }
+  server_impl->base.remote_peer_features = features;
+  server_impl->features_announced = parse_success;
+  tweak_common_mutex_unlock(&server_impl->base.conn_state_lock);
 }
 
 static void subscribe_tweak_pickle_impl(tweak_pickle_subscribe* subscribe, void *cookie) {
@@ -111,13 +193,15 @@ static void change_item_pickle_impl(tweak_pickle_change_item *change, void *cook
   struct tweak_app_context_server_impl* server_impl = cookie;
   struct tweak_model_impl* model = &server_impl->base.model_impl;
   bool emit_change_event = false;
-  tweak_id id;
+  tweak_id id = TWEAK_INVALID_ID;
   tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
-  pthread_rwlock_wrlock(&model->model_lock);
-  tweak_item* item = tweak_model_find_item_by_id(model->model, change->tweak_id);
-  if (item != NULL) {
+  tweak_common_rwlock_write_lock(&model->model_lock);
+  tweak_item* item = tweak_model_find_item_by_id(model->model, change->id);
+  if (item != NULL &&
+    tweak_app_context_private_check_value_compatibility(&item->current_value, &change->value))
+  {
     tweak_variant_swap(&item->current_value, &change->value);
-    TWEAK_LOG_TRACE("Item with tweak_id = %" PRId64 " has been updated", change->tweak_id);
+    TWEAK_LOG_TRACE("Item with tweak_id = %" PRId64 " has been updated", change->id);
     id = item->id;
     if (server_impl->server_callbacks.on_current_value_changed) {
       value = tweak_variant_copy(&item->current_value);
@@ -126,7 +210,7 @@ static void change_item_pickle_impl(tweak_pickle_change_item *change, void *cook
   } else {
     TWEAK_LOG_WARN("Ignored change request: Unknown tweak_id =  %" PRIu64 "", item->id);
   }
-  pthread_rwlock_unlock(&model->model_lock);
+  tweak_common_rwlock_write_unlock(&model->model_lock);
   if (emit_change_event) {
     TWEAK_LOG_TRACE("Invoking on_current_value_changed callback on tweak_id = %" PRId64 "", id);
     server_impl->server_callbacks.on_current_value_changed(&server_impl->base,
@@ -138,11 +222,23 @@ static void change_item_pickle_impl(tweak_pickle_change_item *change, void *cook
 static void connection_state_pickle_impl(tweak_pickle_connection_state connection_state,
   void *cookie)
 {
-  TWEAK_LOG_TRACE_ENTRY("connection_state = %d, cookie = %p", connection_state, cookie);
+  TWEAK_LOG_TRACE_ENTRY("connection_state = %d, cookie = %p",
+    connection_state, cookie);
   struct tweak_app_context_server_impl* server_impl = cookie;
-  if (connection_state == TWEAK_PICKLE_DISCONNECTED) {
+  switch (connection_state) {
+  case TWEAK_PICKLE_CONNECTED:
+    TWEAK_LOG_TRACE("Client connected.");
+    tweak_common_mutex_lock(&server_impl->base.conn_state_lock);
+    tweak_app_features_init_minimal(&server_impl->base.remote_peer_features);
+    tweak_common_mutex_unlock(&server_impl->base.conn_state_lock);
+    break;
+  case TWEAK_PICKLE_DISCONNECTED:
     TWEAK_LOG_TRACE("Client disconnected.");
     tweak_app_context_private_set_connected(&server_impl->base, false);
+    break;
+  default:
+    TWEAK_LOG_ERROR("Unexpected enum value: %u", connection_state);
+    break;
   }
 }
 
@@ -161,10 +257,10 @@ static void io_loop_append(tweak_id tweak_id, void* cookie) {
   struct tweak_model_impl* model = &server_impl->base.model_impl;
   tweak_item* item;
   tweak_pickle_add_item pickle_add_item = { 0 };
-  pthread_rwlock_wrlock(&model->model_lock);
+  tweak_common_rwlock_write_lock(&model->model_lock);
   item = tweak_model_find_item_by_id(model->model, tweak_id);
   if (item != NULL) {
-    pickle_add_item.tweak_id = item->id;
+    pickle_add_item.id = item->id;
     pickle_add_item.uri = tweak_variant_string_copy(&item->uri);
     pickle_add_item.meta = tweak_variant_string_copy(&item->meta);
     pickle_add_item.description = tweak_variant_string_copy(&item->description);
@@ -173,7 +269,7 @@ static void io_loop_append(tweak_id tweak_id, void* cookie) {
   } else {
     TWEAK_LOG_WARN("execute_add_item_task: Unknown tweak_id = %" PRIu64 "", tweak_id);
   }
-  pthread_rwlock_unlock(&model->model_lock);
+  tweak_common_rwlock_write_unlock(&model->model_lock);
   if (item) {
     TWEAK_LOG_TRACE("Progagating add_item request to client = %" PRIu64 "", item->id);
     tweak_pickle_call_result call_result =
@@ -201,7 +297,7 @@ static void io_loop_change(tweak_id tweak_id, void* cookie) {
   struct tweak_model_impl* model = &server_impl->base.model_impl;
   tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
   bool should_push_change = false;
-  pthread_rwlock_rdlock(&model->model_lock);
+  tweak_common_rwlock_read_lock(&model->model_lock);
   tweak_item* item = tweak_model_find_item_by_id(model->model, tweak_id);
   if (item != NULL) {
     value = tweak_variant_copy(&item->current_value);
@@ -209,11 +305,11 @@ static void io_loop_change(tweak_id tweak_id, void* cookie) {
   } else {
     TWEAK_LOG_WARN("change_item_callback: Unknown tweak_id = %" PRIu64 "\n", tweak_id);
   }
-  pthread_rwlock_unlock(&model->model_lock);
+  tweak_common_rwlock_read_unlock(&model->model_lock);
   if (should_push_change) {
     TWEAK_LOG_TRACE("Progagating change_item request to client = %" PRIu64 "", item->id);
     tweak_pickle_change_item change = {
-      .tweak_id = tweak_id,
+      .id = tweak_id,
       .value = value
     };
     tweak_pickle_call_result result =
@@ -221,8 +317,8 @@ static void io_loop_change(tweak_id tweak_id, void* cookie) {
     if (result != TWEAK_PICKLE_SUCCESS) {
       TWEAK_LOG_WARN("failed tweak_pickle_server_change_item RPC call on id = %" PRIu64 "", tweak_id);
     }
-    tweak_variant_destroy(&value);
   }
+  tweak_variant_destroy(&value);
 }
 
 static void server_push_changes(tweak_app_context context, tweak_id tweak_id) {
@@ -239,7 +335,7 @@ static void io_loop_remove(tweak_id tweak_id, void* cookie) {
   TWEAK_LOG_TRACE_ENTRY("tweak_id = %" PRIu64 ", cookie = %p", tweak_id, cookie);
   struct tweak_app_context_server_impl* server_impl = cookie;
   tweak_pickle_remove_item remove_item = {
-    .tweak_id = tweak_id
+    .id = tweak_id
   };
   tweak_pickle_call_result call_result =
     tweak_pickle_server_remove_item(server_impl->rpc_endpoint, &remove_item);
@@ -274,6 +370,10 @@ tweak_app_server_context tweak_app_create_server_context(const char *context_typ
     .params = params,
     .uri = uri,
     .skeleton = {
+      .announce_features_listener = {
+        .callback = &announce_features_impl,
+        .cookie = server_impl
+      },
       .subscribe_listener = {
         .callback = &subscribe_tweak_pickle_impl,
         .cookie = server_impl
@@ -327,14 +427,16 @@ tweak_id tweak_app_server_add_item(tweak_app_server_context server_context,
   struct tweak_model_impl* model = &server_impl->base.model_impl;
 
   tweak_variant_string uri0 = TWEAK_VARIANT_STRING_EMPTY;
-  tweak_variant_assign_string(&uri0, uri);
+  tweak_assign_string(&uri0, uri);
   tweak_variant_string description0 = TWEAK_VARIANT_STRING_EMPTY;
-  tweak_variant_assign_string(&description0, description);
+  tweak_assign_string(&description0, description);
   tweak_variant_string meta0 = TWEAK_VARIANT_STRING_EMPTY;
-  tweak_variant_assign_string(&meta0, meta);
+  tweak_assign_string(&meta0, meta);
   tweak_variant default_value = TWEAK_VARIANT_INIT_EMPTY;
   tweak_variant_swap(&default_value, initial_value);
   tweak_variant current_value = tweak_variant_copy(&default_value);
+  bool item_is_compatible =
+    tweak_app_features_check_type_compatibility(&server_context->remote_peer_features, current_value.type);
 
   bool should_push_change = false;
   tweak_id tweak_id = TWEAK_INVALID_ID;
@@ -342,7 +444,7 @@ tweak_id tweak_app_server_add_item(tweak_app_server_context server_context,
   tweak_model_error_code model_error_code;
   tweak_model_index_result index_result;
 
-  pthread_rwlock_wrlock(&model->model_lock);
+  tweak_common_rwlock_write_lock(&model->model_lock);
   if (tweak_model_uri_to_tweak_id_index_lookup(model->index, uri) != TWEAK_INVALID_ID) {
     goto error;
   }
@@ -367,9 +469,9 @@ tweak_id tweak_app_server_add_item(tweak_app_server_context server_context,
     goto error;
   }
 
-  should_push_change = tweak_app_context_private_is_connected(server_context);
+  should_push_change = item_is_compatible && tweak_app_context_private_is_connected(server_context);
 error:
-  pthread_rwlock_unlock(&model->model_lock);
+  tweak_common_rwlock_write_unlock(&model->model_lock);
 
   tweak_variant_destroy_string(&uri0);
   tweak_variant_destroy_string(&description0);
@@ -393,10 +495,10 @@ void* tweak_app_item_get_cookie(tweak_app_server_context server_context, tweak_i
   TWEAK_LOG_TRACE_ENTRY("server_context = %p, tweak_id = %" PRIu64 "", server_context, id);
   void* item_cookie;
   tweak_item* item = NULL;
-  pthread_rwlock_rdlock(&server_context->model_impl.model_lock);
+  tweak_common_rwlock_read_lock(&server_context->model_impl.model_lock);
   item = tweak_model_find_item_by_id(server_context->model_impl.model, id);
   item_cookie = item != NULL ? item->item_cookie : NULL;
-  pthread_rwlock_unlock(&server_context->model_impl.model_lock);
+  tweak_common_rwlock_read_unlock(&server_context->model_impl.model_lock);
   TWEAK_LOG_TRACE("Item with tweak_id = %" PRIu64 " has cookie = %p", id, item_cookie);
   return item_cookie;
 }
@@ -409,18 +511,20 @@ bool tweak_app_server_remove_item(tweak_app_server_context server_context, tweak
   struct tweak_model_impl* model = &server_impl->base.model_impl;
 
   bool should_push_change = false;
-  pthread_rwlock_wrlock(&model->model_lock);
+  tweak_common_rwlock_write_lock(&model->model_lock);
   tweak_item* item = tweak_model_find_item_by_id(model->model, id);
   if (item) {
+    bool item_is_compatible =
+      tweak_app_features_check_type_compatibility(&server_context->remote_peer_features, item->variant_type);
     tweak_model_uri_to_tweak_id_index_remove(model->index,
     tweak_variant_string_c_str(&item->uri));
     tweak_model_remove_item(model->model, id);
     result = true;
-    should_push_change = tweak_app_context_private_is_connected(server_context);
+    should_push_change = item_is_compatible && tweak_app_context_private_is_connected(server_context);
   } else {
     TWEAK_LOG_WARN("change_item_callback: Unknown tweak_id = %" PRIu64 "\n", id);
   }
-  pthread_rwlock_unlock(&model->model_lock);
+  tweak_common_rwlock_write_unlock(&model->model_lock);
   if (should_push_change) {
     TWEAK_LOG_TRACE("Pushing remove_item request to client");
     push_remove(server_context, id);

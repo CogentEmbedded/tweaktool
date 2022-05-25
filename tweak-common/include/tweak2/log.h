@@ -4,12 +4,25 @@
  *
  * @brief Common logging routine.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
@@ -138,7 +151,14 @@ void tweak_common_stderr_log_handler(const char* string);
  * Platform specific feature. May be unavailable on some platforms.
  * @endcond
  */
-const char* tweak_common_log_get_thread_id();
+const char* tweak_common_log_get_thread_id(void);
+
+/**
+ * @brief format time for logger.
+ *
+ * @return time string in ISO 8601.
+ */
+const char* tweak_common_log_format_time();
 
 /**
  * @brief Adjusts log granularity at run time.
@@ -194,22 +214,78 @@ static inline void tweak_common_log_unused_arguments(int dummy, ...)
  *
  * @return OS-specific thread id.
  */
-uint64_t tweak_common_log_get_tid();
+uint64_t tweak_common_log_get_tid(void);
+
+#if defined(_MSC_BUILD)
+
+#if TWEAK_LOG_LEVEL <= 0
+#define TWEAK_LOG_TRACE2(FORMAT, ...) tweak_common_log(TWEAK_LOG_LEVEL_TRACE, "TRACE " FORMAT, __VA_ARGS__)
+#define TWEAK_LOG_TRACE(...) TWEAK_LOG_TRACE2(__VA_ARGS__, 0)
+#else
+#define TWEAK_LOG_TRACE(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
+#endif
+
+#define TWEAK_LOG_TRACE_ENTRY2(FORMAT, ...) TWEAK_LOG_TRACE("Enter " FORMAT, __VA_ARGS__)
+
+#define TWEAK_LOG_TRACE_ENTRY(...) TWEAK_LOG_TRACE_ENTRY2(__VA_ARGS__, 0)
+
+#if TWEAK_LOG_LEVEL <= 0
+#define TWEAK_LOG_TRACE_HEXDUMP(MESSAGE, BUFFER, LENGTH) tweak_common_log_hexdump(TWEAK_LOG_LEVEL_TRACE, MESSAGE, BUFFER, LENGTH);
+#else
+#define TWEAK_LOG_TRACE_HEXDUMP(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
+#endif
+
+#if TWEAK_LOG_LEVEL <= 1
+#define TWEAK_LOG_DEBUG2(FORMAT, ...) tweak_common_log(TWEAK_LOG_LEVEL_DEBUG, "DEBUG " FORMAT, __VA_ARGS__)
+#define TWEAK_LOG_DEBUG(...) TWEAK_LOG_DEBUG2(__VA_ARGS__, 0)
+#else
+#define TWEAK_LOG_DEBUG(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
+#endif
+
+#if TWEAK_LOG_LEVEL <= 2
+#define TWEAK_LOG_TEST2(FORMAT, ...) tweak_common_log(TWEAK_LOG_LEVEL_TEST, "TEST" FORMAT, __VA_ARGS__)
+#define TWEAK_LOG_TEST(...) TWEAK_LOG_TEST2(__VA_ARGS__, 0)
+#else
+#define TWEAK_LOG_TEST(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
+#endif
+
+#if TWEAK_LOG_LEVEL <= 3
+#define TWEAK_LOG_WARN2(FORMAT, ...) tweak_common_log(TWEAK_LOG_LEVEL_WARN, "WARN " FORMAT, __VA_ARGS__)
+#define TWEAK_LOG_WARN(...) TWEAK_LOG_WARN2(__VA_ARGS__, 0)
+#else
+#define TWEAK_LOG_WARN(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
+#endif
+
+#if TWEAK_LOG_LEVEL <= 4
+#define TWEAK_LOG_ERROR2(FORMAT, ...) tweak_common_log(TWEAK_LOG_LEVEL_ERROR, "ERROR " FORMAT, __VA_ARGS__)
+#define TWEAK_LOG_ERROR(...) TWEAK_LOG_ERROR2(__VA_ARGS__, 0)
+#else
+#define TWEAK_LOG_ERROR(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
+#endif
+
+#if TWEAK_LOG_LEVEL <= 5
+#define TWEAK_FATAL2(FORMAT, ...) tweak_common_log(TWEAK_LOG_LEVEL_FATAL, "FATAL " FORMAT, __VA_ARGS__)
+#define TWEAK_FATAL(...) TWEAK_FATAL2(__VA_ARGS__, 0)
+#else
+#define TWEAK_FATAL(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
+#endif
+
+#else
 
 #if TWEAK_LOG_LEVEL <= 0
 #define TWEAK_LOG_TRACE_(FORMAT, ...) \
-  tweak_common_log(TWEAK_LOG_LEVEL_TRACE, "Trace %s : %s@%d | " FORMAT, \
-  tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
+  tweak_common_log(TWEAK_LOG_LEVEL_TRACE, "%s TRACE [%s] [%s@%d] " FORMAT, \
+  tweak_common_log_format_time(), tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
 #define TWEAK_LOG_TRACE(...) TWEAK_LOG_TRACE_(__VA_ARGS__, 0)
 #else
 #define TWEAK_LOG_TRACE(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
 #endif
 
-#define TWEAK_LOG_TRACE_ENTRY_(FORMAT, ...) \
+#define TWEAK_LOG_TRACE_ENTRY2(FORMAT, ...) \
   TWEAK_LOG_TRACE("Enter " FORMAT, ##__VA_ARGS__)
 
 #define TWEAK_LOG_TRACE_ENTRY(...) \
-  TWEAK_LOG_TRACE_ENTRY_(__VA_ARGS__, 0)
+  TWEAK_LOG_TRACE_ENTRY2(__VA_ARGS__, 0)
 
 #if TWEAK_LOG_LEVEL <= 0
 #define TWEAK_LOG_TRACE_HEXDUMP(MESSAGE, BUFFER, LENGTH) \
@@ -220,8 +296,8 @@ uint64_t tweak_common_log_get_tid();
 
 #if TWEAK_LOG_LEVEL <= 1
 #define TWEAK_LOG_DEBUG_(FORMAT, ...) \
-  tweak_common_log(TWEAK_LOG_LEVEL_DEBUG, "Debug %s : %s@%d | " FORMAT, \
-  tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
+  tweak_common_log(TWEAK_LOG_LEVEL_DEBUG, "%s DEBUG [%s] [%s@%d] " FORMAT, \
+  tweak_common_log_format_time(), tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
 #define TWEAK_LOG_DEBUG(...) TWEAK_LOG_DEBUG_(__VA_ARGS__, 0)
 #else
 #define TWEAK_LOG_DEBUG(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
@@ -229,8 +305,8 @@ uint64_t tweak_common_log_get_tid();
 
 #if TWEAK_LOG_LEVEL <= 2
 #define TWEAK_LOG_TEST_(FORMAT, ...) \
-  tweak_common_log(TWEAK_LOG_LEVEL_TEST, "Test %s : %s@%d | " FORMAT, \
-  tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
+  tweak_common_log(TWEAK_LOG_LEVEL_TEST, "%s TEST [%s] [%s@%d] " FORMAT, \
+  tweak_common_log_format_time(), tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
 #define TWEAK_LOG_TEST(...) TWEAK_LOG_TEST_(__VA_ARGS__, 0)
 #else
 #define TWEAK_LOG_TEST(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
@@ -238,8 +314,8 @@ uint64_t tweak_common_log_get_tid();
 
 #if TWEAK_LOG_LEVEL <= 3
 #define TWEAK_LOG_WARN_(FORMAT, ...) \
-  tweak_common_log(TWEAK_LOG_LEVEL_WARN, "Warning %s : %s@%d | " FORMAT, \
-  tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
+  tweak_common_log(TWEAK_LOG_LEVEL_WARN, "%s WARN [%s] [%s@%d] " FORMAT, \
+  tweak_common_log_format_time(), tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
 #define TWEAK_LOG_WARN(...) TWEAK_LOG_WARN_(__VA_ARGS__, 0)
 #else
 #define TWEAK_LOG_WARN(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
@@ -247,8 +323,8 @@ uint64_t tweak_common_log_get_tid();
 
 #if TWEAK_LOG_LEVEL <= 4
 #define TWEAK_LOG_ERROR_(FORMAT, ...) \
-  tweak_common_log(TWEAK_LOG_LEVEL_ERROR, "Error %s : %s@%d | " FORMAT, \
-  tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
+  tweak_common_log(TWEAK_LOG_LEVEL_ERROR, "%s ERROR [%s] [%s@%d] | " FORMAT, \
+  tweak_common_log_format_time(), tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
 #define TWEAK_LOG_ERROR(...) TWEAK_LOG_ERROR_(__VA_ARGS__, 0)
 #else
 #define TWEAK_LOG_ERROR(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
@@ -256,11 +332,13 @@ uint64_t tweak_common_log_get_tid();
 
 #if TWEAK_LOG_LEVEL <= 5
 #define TWEAK_FATAL_(FORMAT, ...) \
-  tweak_common_log(TWEAK_LOG_LEVEL_FATAL, "Fatal %s : %s@%d | " FORMAT, \
-  tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
+  tweak_common_log(TWEAK_LOG_LEVEL_FATAL, "%s FATAL [%s] [%s@%d] | " FORMAT, \
+  tweak_common_log_format_time(), tweak_common_log_get_thread_id(), __func__, __LINE__, ##__VA_ARGS__)
 #define TWEAK_FATAL(...) TWEAK_FATAL_(__VA_ARGS__, 0)
 #else
 #define TWEAK_FATAL(...) tweak_common_log_unused_arguments(0, ##__VA_ARGS__)
+#endif
+
 #endif
 
 #ifdef __cplusplus

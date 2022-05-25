@@ -1,27 +1,21 @@
 /* Protocol description for Cogent Tweak 2.
  *
- * Copyright (c) 2020 Cogent Embedded Inc.
+ * Copyright (c) 2020-2022 Cogent Embedded, Inc.
  * ALL RIGHTS RESERVED.
  *
- * The source code contained or described herein and all documents related to the
- * source code("Software") or their modified versions are owned by
- * Cogent Embedded Inc. or its affiliates.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * No part of the Software may be used, copied, reproduced, modified, published,
- * uploaded, posted, transmitted, distributed, or disclosed in any way without
- * prior express written permission from Cogent Embedded Inc.
- *
- * Cogent Embedded Inc. grants a nonexclusive, non-transferable, royalty-free
- * license to use the Software to Licensee without the right to sublicense.
- * Licensee agrees not to distribute the Software to any third-party without
- * the prior written permission of Cogent Embedded Inc.
- *
- * Unless otherwise agreed by Cogent Embedded Inc. in writing, you may not remove
- * or alter this notice or any other notice embedded in Software in any way.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -36,6 +30,7 @@ package tweak_pb;
 /* Variant value for transmission.
  */
 message value {
+  option (nanopb_msgopt).submsg_callback = true;
   oneof values {
     bool is_null = 1;
 
@@ -43,6 +38,7 @@ message value {
 
     sint32 scalar_sint8 = 3;
 
+    /* Protobuf doesn't support 16-bit integer type */
     sint32 scalar_sint16 = 4;
 
     sint32 scalar_sint32 = 5;
@@ -60,7 +56,69 @@ message value {
     float scalar_float = 11;
 
     double scalar_double = 12;
+
+    buffer_string string = 13;
+
+    buffer_raw sint8_buffer = 14;
+
+    buffer_sint16 sint16_buffer = 15;
+
+    buffer_sint32 sint32_buffer = 16;
+
+    buffer_sint64 sint64_buffer = 17;
+
+    buffer_raw uint8_buffer = 18;
+
+    buffer_uint16 uint16_buffer = 19;
+
+    buffer_uint32 uint32_buffer = 20;
+
+    buffer_uint64 uint64_buffer = 21;
+
+    buffer_float fp32_buffer = 22;
+
+    buffer_double fp64_buffer = 23;
   }
+}
+
+message buffer_string {
+  string data = 1;
+}
+
+message buffer_raw {
+  bytes data = 1;
+}
+
+message buffer_sint16 {
+  repeated sint32 buffer = 2;
+}
+
+message buffer_sint32 {
+  repeated sint32 buffer = 2;
+}
+
+message buffer_sint64 {
+  repeated sint64 buffer = 2;
+}
+
+message buffer_uint16 {
+  repeated uint32 buffer = 2;
+}
+
+message buffer_uint32 {
+  repeated uint32 buffer = 2;
+}
+
+message buffer_uint64 {
+  repeated uint64 buffer = 2;
+}
+
+message buffer_float {
+  repeated float buffer = 2;
+}
+
+message buffer_double {
+  repeated double buffer = 2;
 }
 
 /* A model is a flat list of these items.
@@ -113,6 +171,13 @@ message remove_item {
   uint64 tweak_id = 1;
 }
 
+/* Body of "announce_features" request.
+ */
+message announce_features {
+  /* Comma separated list of features */
+  string features = 1;
+}
+
 /* Envelope for messages being sent by client endpoint
    to server endpoint.
  */
@@ -123,6 +188,8 @@ message client_node_message {
     subscribe subscribe = 1;
 
     change_item change_item = 2;
+
+    announce_features announce_features = 3;
   }
 }
 
@@ -138,5 +205,7 @@ message server_node_message {
     change_item change_item = 2;
 
     remove_item remove_item = 3;
+
+    announce_features announce_features = 4;
   }
 }

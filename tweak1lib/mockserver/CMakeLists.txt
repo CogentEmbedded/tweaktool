@@ -1,33 +1,26 @@
-# ##############################################################################
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2020-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 #
-# The source code contained or described herein and all documents related to the
-# source code("Software") or their modified versions are owned by Cogent
-# Embedded Inc. or its affiliates.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# No part of the Software may be used, copied, reproduced, modified, published,
-# uploaded, posted, transmitted, distributed, or disclosed in any way without
-# prior express written permission from Cogent Embedded Inc.
-#
-# Cogent Embedded Inc. grants a nonexclusive, non-transferable, royalty-free
-# license to use the Software to Licensee without the right to sublicense.
-# Licensee agrees not to distribute the Software to any third-party without the
-# prior written permission of Cogent Embedded Inc.
-#
-# Unless otherwise agreed by Cogent Embedded Inc. in writing, you may not remove
-# or alter this notice or any other notice embedded in Software in any way.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-# ##############################################################################
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
 
 # ------------------------------------------------------------------------------
 # Common settings
@@ -46,10 +39,16 @@ set(${BINARY_NAME}_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.c)
 # ------------------------------------------------------------------------------
 
 add_executable(${BINARY_NAME} ${${BINARY_NAME}_SOURCES})
+
+if (MSVC)
+  target_compile_options(${BINARY_NAME} PRIVATE /W4 /WX)
+endif()
+
 add_dependencies(${BINARY_NAME} Acutest)
 
 target_link_libraries(${BINARY_NAME} ${PROJECT_NAMESPACE}::compatibility-server
   ${PROJECT_NAMESPACE}::app)
+target_compile_features(${BINARY_NAME} PUBLIC c_std_99)
 
 # ------------------------------------------------------------------------------
 # Automatic tests

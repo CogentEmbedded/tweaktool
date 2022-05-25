@@ -4,12 +4,25 @@
  *
  * @brief part of tweak2 application implementation.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <tweak2/log.h>
@@ -17,6 +30,59 @@
 #include <inttypes.h>
 
 #include "tweakappinternal.h"
+
+bool tweak_app_context_private_check_value_compatibility(const tweak_variant* sample,
+  const tweak_variant* value)
+{
+  assert (sample != NULL);
+  assert (value != NULL);
+
+  if (sample == value) {
+    return true;
+  }
+
+  if (sample->type != value->type) {
+    TWEAK_LOG_WARN("Constraint violation: type mismatch. target type = %d, source type = %d. Value rejected");
+    return false;
+  }
+
+  switch(sample->type) {
+  case TWEAK_VARIANT_TYPE_NULL:
+    return false;
+  case TWEAK_VARIANT_TYPE_BOOL:
+  case TWEAK_VARIANT_TYPE_SINT8:
+  case TWEAK_VARIANT_TYPE_SINT16:
+  case TWEAK_VARIANT_TYPE_SINT32:
+  case TWEAK_VARIANT_TYPE_SINT64:
+  case TWEAK_VARIANT_TYPE_UINT8:
+  case TWEAK_VARIANT_TYPE_UINT16:
+  case TWEAK_VARIANT_TYPE_UINT32:
+  case TWEAK_VARIANT_TYPE_UINT64:
+  case TWEAK_VARIANT_TYPE_FLOAT:
+  case TWEAK_VARIANT_TYPE_DOUBLE:
+  case TWEAK_VARIANT_TYPE_STRING:
+    return true;
+  case TWEAK_VARIANT_TYPE_VECTOR_SINT8:
+  case TWEAK_VARIANT_TYPE_VECTOR_SINT16:
+  case TWEAK_VARIANT_TYPE_VECTOR_SINT32:
+  case TWEAK_VARIANT_TYPE_VECTOR_SINT64:
+  case TWEAK_VARIANT_TYPE_VECTOR_UINT8:
+  case TWEAK_VARIANT_TYPE_VECTOR_UINT16:
+  case TWEAK_VARIANT_TYPE_VECTOR_UINT32:
+  case TWEAK_VARIANT_TYPE_VECTOR_UINT64:
+  case TWEAK_VARIANT_TYPE_VECTOR_FLOAT:
+  case TWEAK_VARIANT_TYPE_VECTOR_DOUBLE:
+    if (sample->value.buffer.size == value->value.buffer.size) {
+      return true;
+    } else {
+      TWEAK_LOG_WARN("Constraint violation: Buffer size mismatch. sample size = %zu, requested size = %zu",
+        sample->value.buffer.size, value->value.buffer.size);
+      return false;
+    }
+  }
+  TWEAK_FATAL("Unknown type: %d", sample->type);
+  return false;
+}
 
 static void* io_loop(void* arg) {
   TWEAK_LOG_TRACE_ENTRY();
@@ -40,10 +106,7 @@ static void* io_loop(void* arg) {
 
 bool tweak_app_context_private_initialize_base(struct tweak_app_context_base* app_context, uint32_t queue_size) {
   TWEAK_LOG_TRACE_ENTRY("app_context = %p, queue_size = %u", app_context, queue_size);
-  if (pthread_mutex_init(&app_context->conn_state_lock, NULL) != 0) {
-    TWEAK_LOG_ERROR("pthread_mutex_init() error. errno = %d", errno);
-    goto exit;
-  }
+  tweak_common_mutex_init(&app_context->conn_state_lock);
 
   app_context->model_impl.model = tweak_model_create();
   if (!app_context->model_impl.model) {
@@ -57,8 +120,8 @@ bool tweak_app_context_private_initialize_base(struct tweak_app_context_base* ap
     goto destroy_model;
   }
 
-  if (pthread_rwlock_init(&app_context->model_impl.model_lock, NULL) != 0) {
-    TWEAK_LOG_ERROR("pthread_rwlock_init() error. errno = %d", errno);
+  if (tweak_common_rwlock_init(&app_context->model_impl.model_lock) != TWEAK_COMMON_THREAD_SUCCESS) {
+    TWEAK_LOG_ERROR("tweak_common_rwlock_init() failed");
     goto destroy_tweak_id_index;
   }
 
@@ -68,8 +131,8 @@ bool tweak_app_context_private_initialize_base(struct tweak_app_context_base* ap
     goto destroy_rwlock;
   }
 
-  if (pthread_create(&app_context->worker_thread, NULL, io_loop, app_context) != 0) {
-    TWEAK_LOG_ERROR("pthread_create() error. errno = %d", errno);
+  if (tweak_common_thread_create(&app_context->worker_thread, io_loop, app_context) != TWEAK_COMMON_THREAD_SUCCESS) {
+    TWEAK_LOG_ERROR("Platform specific threading error in tweak_common_thread_create()");
     goto destroy_app_queue;
   }
 
@@ -79,7 +142,7 @@ destroy_app_queue:
   tweak_app_queue_destroy(app_context->job_queue);
 
 destroy_rwlock:
-  pthread_rwlock_destroy(&app_context->model_impl.model_lock);
+  tweak_common_rwlock_destroy(&app_context->model_impl.model_lock);
 
 destroy_tweak_id_index:
   tweak_model_uri_to_tweak_id_index_destroy(app_context->model_impl.index);
@@ -88,18 +151,17 @@ destroy_model:
   tweak_model_destroy(app_context->model_impl.model);
 
 destroy_connection_state_lock:
-  pthread_mutex_destroy(&app_context->conn_state_lock);
+  tweak_common_mutex_destroy(&app_context->conn_state_lock);
 
-exit:
   return false;
 }
 
 tweak_id tweak_app_find_id(tweak_app_context context, const char* uri) {
   TWEAK_LOG_TRACE_ENTRY("context = %p, uri = %s", context, uri);
   tweak_id id = TWEAK_INVALID_ID;
-  pthread_rwlock_rdlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_read_lock(&context->model_impl.model_lock);
   id = tweak_model_uri_to_tweak_id_index_lookup(context->model_impl.index, uri);
-  pthread_rwlock_unlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_read_unlock(&context->model_impl.model_lock);
   if (id == TWEAK_INVALID_ID) {
     TWEAK_LOG_TRACE("Item with uri = %s not found", uri);
   } else {
@@ -143,10 +205,10 @@ bool tweak_app_traverse_items(tweak_app_context context,
     .user_cookie = cookie
   };
   bool result;
-  pthread_rwlock_rdlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_read_lock(&context->model_impl.model_lock);
   result = tweak_model_uri_to_tweak_id_index_walk(context->model_impl.index,
     &index_traverse_proc, &traverse_context);
-  pthread_rwlock_unlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_read_unlock(&context->model_impl.model_lock);
   return result;
 }
 
@@ -156,7 +218,7 @@ tweak_app_item_snapshot* tweak_app_item_get_snapshot(tweak_app_context context,
   TWEAK_LOG_TRACE_ENTRY("context = %p, id = %" PRIu64 "", context, id);
   tweak_item* item = NULL;
   tweak_app_item_snapshot* snapshot = NULL;
-  pthread_rwlock_rdlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_read_lock(&context->model_impl.model_lock);
   item = tweak_model_find_item_by_id(context->model_impl.model, id);
   if (item != NULL) {
     snapshot = calloc(1, sizeof(*snapshot));
@@ -171,14 +233,14 @@ tweak_app_item_snapshot* tweak_app_item_get_snapshot(tweak_app_context context,
       TWEAK_FATAL("Can't allocate memory for item state snapshot");
     }
   }
-  pthread_rwlock_unlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_read_unlock(&context->model_impl.model_lock);
   return snapshot;
 }
 
 tweak_variant_type tweak_app_item_get_type(tweak_app_context context, tweak_id id) {
   TWEAK_LOG_TRACE_ENTRY("context = %p, id = %" PRIu64 "", context, id);
   tweak_variant_type result = TWEAK_VARIANT_TYPE_NULL;
-  pthread_rwlock_rdlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_read_lock(&context->model_impl.model_lock);
   tweak_item* item = tweak_model_find_item_by_id(context->model_impl.model, id);
   if (item != NULL) {
     result = item->default_value.type;
@@ -186,7 +248,7 @@ tweak_variant_type tweak_app_item_get_type(tweak_app_context context, tweak_id i
   } else {
     TWEAK_LOG_TRACE("Item with tweak_id = %" PRIu64 " isn't found", id);
   }
-  pthread_rwlock_unlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_read_unlock(&context->model_impl.model_lock);
   return result;
 }
 
@@ -220,12 +282,12 @@ tweak_app_error_code tweak_app_context_private_item_clone_current_value(tweak_ap
 {
   TWEAK_LOG_TRACE_ENTRY("context = %p, tweak_id =  %" PRIu64 ", value = %p", context, id, value);
   tweak_item* item = NULL;
-  pthread_rwlock_rdlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_read_lock(&context->model_impl.model_lock);
   item = tweak_model_find_item_by_id(context->model_impl.model, id);
   if (item) {
     *value = tweak_variant_copy(&item->current_value);
   }
-  pthread_rwlock_unlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_read_unlock(&context->model_impl.model_lock);
   if (item) {
     TWEAK_LOG_TRACE("Current value of item with tweak_id = %" PRIu64 " has been cloned", id);
     return TWEAK_APP_SUCCESS;
@@ -235,23 +297,61 @@ tweak_app_error_code tweak_app_context_private_item_clone_current_value(tweak_ap
   }
 }
 
+tweak_app_error_code tweak_app_item_get_metadata(tweak_app_context context,
+  tweak_id id, tweak_metadata* metadata)
+{
+  TWEAK_LOG_TRACE_ENTRY("context = %p, tweak_id =  %" PRIu64 ", metadata = %p", context, id, metadata);
+  assert(metadata != NULL);
+  tweak_app_error_code result;
+  tweak_item* item = NULL;
+  tweak_common_rwlock_read_lock(&context->model_impl.model_lock);
+  item = tweak_model_find_item_by_id(context->model_impl.model, id);
+  if (item) {
+    if (!item->metadata_initialized) {
+      tweak_common_rwlock_read_unlock(&context->model_impl.model_lock);
+      tweak_common_rwlock_write_lock(&context->model_impl.model_lock);
+      if (!item->metadata_initialized) {
+        item->metadata = tweak_metadata_create(item->current_value.type,
+          tweak_variant_get_item_count(&item->current_value),
+          tweak_variant_string_c_str(&item->meta));
+        item->metadata_initialized = true;
+      }
+      tweak_common_rwlock_write_unlock(&context->model_impl.model_lock);
+      tweak_common_rwlock_read_lock(&context->model_impl.model_lock);
+    }
+    *metadata = tweak_metadata_copy(item->metadata);
+    result = TWEAK_APP_SUCCESS;
+  } else {
+    TWEAK_LOG_ERROR("Item with tweak_id = %" PRIu64 " hasn't been found", id);
+    result = TWEAK_APP_ITEM_NOT_FOUND;
+  }
+  tweak_common_rwlock_read_unlock(&context->model_impl.model_lock);
+  return result;
+}
+
 tweak_app_error_code tweak_app_context_private_item_replace_current_value(tweak_app_context context,
   tweak_id tweak_id, tweak_variant* value)
 {
   tweak_app_error_code result;
   tweak_item* item = NULL;
   bool should_push_change = false;
-  pthread_rwlock_wrlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_write_lock(&context->model_impl.model_lock);
   item = tweak_model_find_item_by_id(context->model_impl.model, tweak_id);
   if (item) {
-    tweak_variant_swap(&item->current_value, value);
+    if (!tweak_variant_is_equal(&item->current_value, value)) {
+      tweak_variant_swap(&item->current_value, value);
+      bool item_is_compatible =
+        tweak_app_features_check_type_compatibility(&context->remote_peer_features, value->type);
+      should_push_change = item_is_compatible && tweak_app_context_private_is_connected(context);
+    } else {
+      TWEAK_LOG_TRACE("Omitting redundant value update");
+    }
     tweak_variant_destroy(value);
-    should_push_change = tweak_app_context_private_is_connected(context);
     result = TWEAK_APP_SUCCESS;
   } else {
     result = TWEAK_APP_ITEM_NOT_FOUND;
   }
-  pthread_rwlock_unlock(&context->model_impl.model_lock);
+  tweak_common_rwlock_write_unlock(&context->model_impl.model_lock);
   if (should_push_change) {
     assert(context->push_changes_proc != NULL);
     context->push_changes_proc(context, tweak_id);
@@ -266,29 +366,33 @@ tweak_app_error_code tweak_app_context_private_item_replace_current_value(tweak_
 
 void tweak_app_context_private_set_connected(struct tweak_app_context_base* app_context, bool arg) {
   TWEAK_LOG_TRACE_ENTRY("app_context = %p, connected = %s", app_context, arg ? "true" : "false");
-  pthread_mutex_lock(&app_context->conn_state_lock);
+  tweak_common_mutex_lock(&app_context->conn_state_lock);
   app_context->connected = arg;
-  pthread_mutex_unlock(&app_context->conn_state_lock);
+  tweak_common_mutex_unlock(&app_context->conn_state_lock);
 }
 
 bool tweak_app_context_private_is_connected(struct tweak_app_context_base* app_context) {
   TWEAK_LOG_TRACE_ENTRY("app_context = %p", app_context);
   bool result;
-  pthread_mutex_lock(&app_context->conn_state_lock);
+  tweak_common_mutex_lock(&app_context->conn_state_lock);
   result = app_context->connected;
-  pthread_mutex_unlock(&app_context->conn_state_lock);
+  tweak_common_mutex_unlock(&app_context->conn_state_lock);
   TWEAK_LOG_TRACE("result = %s", result ? "true" : "false");
   return result;
 }
 
 void tweak_app_context_private_destroy_base(struct tweak_app_context_base* app_context) {
   TWEAK_LOG_TRACE_ENTRY("app_context = %p", app_context);
-  pthread_join(app_context->worker_thread, NULL);
+  tweak_common_thread_join(app_context->worker_thread, NULL);
   tweak_app_queue_destroy(app_context->job_queue);
   tweak_model_destroy(app_context->model_impl.model);
   tweak_model_uri_to_tweak_id_index_destroy(app_context->model_impl.index);
-  pthread_rwlock_destroy(&app_context->model_impl.model_lock);
-  pthread_mutex_destroy(&app_context->conn_state_lock);
+  tweak_common_rwlock_destroy(&app_context->model_impl.model_lock);
+  tweak_common_mutex_destroy(&app_context->conn_state_lock);
+}
+
+void tweak_app_flush_queue(tweak_app_context context) {
+  tweak_app_queue_wait_empty(context->job_queue);
 }
 
 void tweak_app_destroy_context(tweak_app_context context) {

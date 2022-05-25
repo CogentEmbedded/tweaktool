@@ -1,7 +1,8 @@
 /*
 ISC License
 
-Copyright (c) 2019-2021 Hiltjo Posthuma <hiltjo@codemadness.org>
+Copyright (c) 2019-2022 Hiltjo Posthuma <hiltjo@codemadness.org>
+Copyright (c) 2021-2022 Sergey Zykov <sergey.zykov@cogentembedded.com>
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -80,31 +81,31 @@ codepointtoutf8(long r, char *s)
     else if (r <= 0x7F)
     {
         /* 1 byte: 0aaaaaaa */
-        s[0] = r;
+        s[0] = (char)r;
         return 1;
     }
     else if (r <= 0x07FF)
     {
         /* 2 bytes: 00000aaa aabbbbbb */
-        s[0] = 0xC0 | ((r & 0x0007C0) >> 6); /* 110aaaaa */
-        s[1] = 0x80 | (r & 0x00003F);        /* 10bbbbbb */
+        s[0] = (char)(0xC0 | ((r & 0x0007C0) >> 6)); /* 110aaaaa */
+        s[1] = (char)(0x80 | (r & 0x00003F));          /* 10bbbbbb */
         return 2;
     }
     else if (r <= 0xFFFF)
     {
         /* 3 bytes: aaaabbbb bbcccccc */
-        s[0] = 0xE0 | ((r & 0x00F000) >> 12); /* 1110aaaa */
-        s[1] = 0x80 | ((r & 0x000FC0) >> 6);  /* 10bbbbbb */
-        s[2] = 0x80 | (r & 0x00003F);         /* 10cccccc */
+        s[0] = (char)(0xE0 | ((r & 0x00F000) >> 12)); /* 1110aaaa */
+        s[1] = (char)(0x80 | ((r & 0x000FC0) >> 6));    /* 10bbbbbb */
+        s[2] = (char)(0x80 | (r & 0x00003F));           /* 10cccccc */
         return 3;
     }
     else
     {
         /* 4 bytes: 000aaabb bbbbcccc ccdddddd */
-        s[0] = 0xF0 | ((r & 0x1C0000) >> 18); /* 11110aaa */
-        s[1] = 0x80 | ((r & 0x03F000) >> 12); /* 10bbbbbb */
-        s[2] = 0x80 | ((r & 0x000FC0) >> 6);  /* 10cccccc */
-        s[3] = 0x80 | (r & 0x00003F);         /* 10dddddd */
+        s[0] = (char)(0xF0 | ((r & 0x1C0000) >> 18)); /* 11110aaa */
+        s[1] = (char)(0x80 | ((r & 0x03F000) >> 12));   /* 10bbbbbb */
+        s[2] = (char)(0x80 | ((r & 0x000FC0) >> 6));    /* 10cccccc */
+        s[3] = (char)(0x80 | (r & 0x00003F));             /* 10dddddd */
         return 4;
     }
 }
@@ -130,7 +131,7 @@ capacity(char **value, size_t *sz, size_t cur, size_t inc)
     /* check for addition overflow */
     if (cur > SIZE_MAX - inc)
     {
-        errno = EOVERFLOW;
+        errno = ENOENT;
         return -1;
     }
     need = cur + inc;
@@ -146,7 +147,8 @@ capacity(char **value, size_t *sz, size_t cur, size_t inc)
             for (newsiz = *sz < 64 ? 64 : *sz; newsiz <= need; newsiz *= 2)
                 ;
         }
-        if (!(newp = realloc(*value, newsiz)))
+        newp = realloc(*value, newsiz);
+        if (!newp)
             return -1; /* up to caller to free *value */
         *value = newp;
         *sz = newsiz;
@@ -175,7 +177,7 @@ static int parsejson(const char* json_snippet,
     void (*enter_cb)(struct json_node *, size_t, const char *, void*),
     void* cookie)
 {
-    struct json_node nodes[JSON_MAX_NODE_DEPTH] = {{0}};
+    struct json_node nodes[JSON_MAX_NODE_DEPTH] = {{(enum JSONType)0}};
     size_t depth = 0, p = 0, len, sz = 0;
     long cp, hi, lo;
     char pri[128], *str = NULL;
@@ -298,7 +300,7 @@ escchr:
                     }
                     if (capacity(&str, &sz, len, 1) == -1)
                         goto end;
-                    str[len++] = c;
+                    str[len++] = (char)c;
                 }
                 else if (c == '\\')
                 {
@@ -327,7 +329,7 @@ escchr:
                 {
                     if (capacity(&str, &sz, len, 1) == -1)
                         goto end;
-                    str[len++] = c;
+                    str[len++] = (char)c;
                 }
             }
             if (iskey)
@@ -471,7 +473,7 @@ escchr:
         default: /* number */
             nodes[depth].type = JSON_TYPE_NUMBER;
             p = 0;
-            pri[p++] = c;
+            pri[p++] = (char)c;
             expect = EXPECT_END;
             while (1)
             {
@@ -486,7 +488,7 @@ escchr:
                 }
                 else
                 {
-                    pri[p++] = c;
+                    pri[p++] = (char)c;
                 }
             }
         }

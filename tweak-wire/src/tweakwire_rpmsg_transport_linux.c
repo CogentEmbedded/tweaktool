@@ -4,12 +4,25 @@
  *
  * @brief Linux version of RPMessage transport.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <tweak2/log.h>
@@ -24,13 +37,40 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <utils/ipc/src/app_ipc_linux_priv.h>
 #include <utils/ipc/include/app_ipc.h>
 
+#define LINUX_ENDPOINT_NAME "rpmsg_chrdev"
+
 tweak_wire_error_code tweak_wire_rpmsg_init_transport(
-    struct tweak_wire_rpmsg_transport *transport, uint32_t endpoint)
+    struct tweak_wire_rpmsg_transport *transport, const char* endpoint_name, uint32_t endpoint,
+    const char *params)
 {
-    TWEAK_LOG_TRACE_ENTRY("transport = %p, endpoint = %u", transport, endpoint);
+    TWEAK_LOG_TRACE_ENTRY("transport = %p, endpoint_name = %s, endpoint = %u, role=%s", transport,
+        endpoint_name, endpoint, params);
+
+    if (params) {
+        if (strcmp("role=server", params) == 0) {
+            TWEAK_LOG_ERROR("Server role is not supported on rpmsg chrdev");
+            return TWEAK_WIRE_ERROR;
+        } else if (strcmp("role=client", params) == 0) {
+            TWEAK_LOG_TRACE("Client role is selected, opening chrdev");
+        } else {
+            TWEAK_LOG_ERROR("Can't parse connection params: \"%s\"", params);
+            return TWEAK_WIRE_ERROR;
+        }
+    } else {
+        TWEAK_LOG_ERROR("Connection params is NULL");
+        return TWEAK_WIRE_ERROR;
+    }
+
     /*.. Create an eventfd for interrupting receive operation */
+    if (strcmp(endpoint_name, LINUX_ENDPOINT_NAME) != 0)
+    {
+        TWEAK_LOG_ERROR("Only endpoint name %s is supported on Linux", LINUX_ENDPOINT_NAME);
+        return TWEAK_WIRE_ERROR;
+    }
+
     transport->eventfd_unblock = eventfd(0, 0);
     if (transport->eventfd_unblock < 0)
     {
@@ -50,7 +90,7 @@ tweak_wire_error_code tweak_wire_rpmsg_init_transport(
     }
 
     /* .. Open RPMSG character device */
-    transport->fd = appIpcCreateTxCh(transport->remote_proc, transport->remote_endpoint, &transport->local_endpoint);
+    transport->fd = appIpcCreateTxCh(transport->remote_proc, transport->remote_endpoint, &transport->local_endpoint, &transport->rcdev[0]);
     if (transport->fd < 0)
     {
         TWEAK_LOG_ERROR("failed to create endpoint %d: %m", transport->local_endpoint);
@@ -133,7 +173,7 @@ tweak_wire_rpmsg_transport_send(struct tweak_wire_rpmsg_transport *transport,
 tweak_wire_error_code tweak_wire_rpmsg_transport_receive(struct tweak_wire_rpmsg_transport *transport,
                                                          uint8_t *buffer, uint16_t *len)
 {
-    TWEAK_LOG_TRACE_ENTRY("transport = %p, buffer = %p, len = %d", transport, buffer, len);
+    TWEAK_LOG_TRACE_ENTRY("transport = %p, buffer = %p, len = %d", transport, buffer, *len);
 
     tweak_wire_error_code status = tweak_wire_rpmsg_check_op_possible(transport, POLLIN);
     if (status != TWEAK_WIRE_SUCCESS)
@@ -174,7 +214,7 @@ void tweak_wire_rpmsg_transport_close(struct tweak_wire_rpmsg_transport *transpo
 {
     TWEAK_LOG_TRACE_ENTRY("transport = %p", transport);
 
-    appIpcDeleteCh(transport->remote_proc, transport->remote_endpoint, transport->local_endpoint, transport->fd);
+    appIpcDeleteCh(transport->rcdev[0]);
     transport->fd = -1;
     transport->remote_endpoint = 0;
     transport->local_endpoint = 0;

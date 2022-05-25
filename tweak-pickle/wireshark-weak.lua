@@ -12,7 +12,7 @@
 @note Requires tweak.proto to be configured as described at
       @url https://www.wireshark.org/docs/wsug_html_chunked/ChProtobufSearchPaths.html
 
-@copyright (c) 2020 Cogent Embedded Inc.
+@copyright (c) 2020-2022 Cogent Embedded, Inc.
 
 ]]
 

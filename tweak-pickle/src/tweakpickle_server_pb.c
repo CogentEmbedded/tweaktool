@@ -5,12 +5,25 @@
  * @brief RPC implementation over transport layer provided by
  * weak2::wire library, server endpoint.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <tweak2/pickle.h>
@@ -115,15 +128,33 @@ struct decoded_client_node_message {
     tweak_pickle_subscribe subscribe;
 
     tweak_pickle_change_item change_item;
+
+    tweak_pickle_features announce_features;
   } body;
 };
+
+static bool decode_announce_features_request(pb_istream_t *stream, tweak_pb_announce_features *announce_features,
+  struct decoded_client_node_message* decoded_client_node_message)
+{
+  TWEAK_LOG_TRACE_ENTRY("stream = %p, announce_features = %p, decoded_client_node_message = %p",
+    stream, announce_features, decoded_client_node_message);
+  announce_features->features =  tweak_pickle_pb_make_string_decode_callback(
+    &decoded_client_node_message->body.announce_features.features
+  );
+  if (!pb_decode(stream, tweak_pb_announce_features_fields, announce_features)) {
+    tweak_variant_destroy_string(&decoded_client_node_message->body.announce_features.features);
+    TWEAK_LOG_WARN("Can't decode inbound announce_features request");
+    return false;
+  }
+  return true;
+}
 
 static bool decode_client_subscribe_request(pb_istream_t *stream, tweak_pb_subscribe *subscribe,
   struct decoded_client_node_message* decoded_client_node_message)
 {
   TWEAK_LOG_TRACE_ENTRY("stream = %p, subscribe = %p, decoded_client_node_message = %p",
     stream, subscribe, decoded_client_node_message);
-  subscribe->uri_patterns = make_decode_callback_for_tweak_variant_string(
+  subscribe->uri_patterns = tweak_pickle_pb_make_string_decode_callback(
     &decoded_client_node_message->body.subscribe.uri_patterns
   );
   if (!pb_decode(stream, tweak_pb_subscribe_fields, subscribe)) {
@@ -139,13 +170,18 @@ static bool decode_client_change_item_request(pb_istream_t *stream, tweak_pb_cha
 {
   TWEAK_LOG_TRACE_ENTRY("stream = %p, change_item = %p, decoded_client_node_message = %p",
     stream, change_item, decoded_client_node_message);
+  change_item->value.cb_values = tweak_pickle_pb_make_variant_decode_callback(
+    &decoded_client_node_message->body.change_item.value
+  );
   if (!pb_decode(stream, tweak_pb_change_item_fields, change_item)) {
     TWEAK_LOG_WARN("Can't decode inbound change item request");
     return false;
   }
 
-  decoded_client_node_message->body.change_item.tweak_id = change_item->tweak_id;
-  decoded_client_node_message->body.change_item.value = tweak_pickle_from_pb_variant(&change_item->value);
+  decoded_client_node_message->body.change_item.id = change_item->tweak_id;
+  if (tweak_pickle_pb_is_scalar(&change_item->value)) {
+    decoded_client_node_message->body.change_item.value = tweak_pickle_pb_value_to_variant(&change_item->value);
+  }
   return true;
 }
 
@@ -163,6 +199,10 @@ static bool decode_client_request(pb_istream_t *stream, const pb_field_t *field,
     break;
   case tweak_pb_client_node_message_change_item_tag:
     rv = decode_client_change_item_request(stream, (tweak_pb_change_item *)field->pData,
+      decoded_client_node_message);
+    break;
+  case tweak_pb_client_node_message_announce_features_tag:
+    rv = decode_announce_features_request(stream, (tweak_pb_announce_features *)field->pData,
       decoded_client_node_message);
     break;
   default:
@@ -204,6 +244,11 @@ static void server_receive_listener(const uint8_t *buffer, size_t size,
       TRIGGER_EVENT(endpoint->skeleton.change_item_listener, &decoded_client_node_message.body.change_item);
       tweak_variant_destroy(&decoded_client_node_message.body.change_item.value);
       break;
+    case tweak_pb_client_node_message_announce_features_tag:
+      tweak_pickle_trace_announce_features_req("Inbound", &decoded_client_node_message.body.announce_features);
+      TRIGGER_EVENT(endpoint->skeleton.announce_features_listener, &decoded_client_node_message.body.announce_features);
+      tweak_variant_destroy_string(&decoded_client_node_message.body.announce_features.features);
+      break;
     default:
       TWEAK_LOG_WARN("Should never happen.\n"
         "Unrecognized tags should cause error in pb_decode()\n"
@@ -243,7 +288,7 @@ tweak_pickle_call_result
     return TWEAK_PICKLE_BAD_PARAMETER;
   }
 
-  if (add_item->tweak_id == TWEAK_INVALID_ID) {
+  if (add_item->id == TWEAK_INVALID_ID) {
     TWEAK_LOG_ERROR("add_item->tweak_id == TWEAK_INVALID_ID");
     return TWEAK_PICKLE_BAD_PARAMETER;
   }
@@ -261,24 +306,50 @@ tweak_pickle_call_result
   bool has_default_value = add_item->default_value.type != TWEAK_VARIANT_TYPE_NULL;
   tweak_pb_value default_value = tweak_pb_value_init_default;
   if (has_default_value) {
-    default_value = tweak_pickle_to_pb_variant(&add_item->default_value);
+    default_value = tweak_pickle_pb_variant_to_value(&add_item->default_value);
   }
   tweak_pb_server_node_message message = {
     .which_request = tweak_pb_server_node_message_add_item_tag,
     .request = {
       .add_item = {
-        .tweak_id = add_item->tweak_id,
-        .uri = make_encode_callback_for_tweak_variant_string(&add_item->uri),
-        .description = make_encode_callback_for_tweak_variant_string(&add_item->description),
-        .meta = make_encode_callback_for_tweak_variant_string(&add_item->meta),
+        .tweak_id = add_item->id,
+        .uri = tweak_pickle_pb_make_string_encode_callback(&add_item->uri),
+        .description = tweak_pickle_pb_make_string_encode_callback(&add_item->description),
+        .meta = tweak_pickle_pb_make_string_encode_callback(&add_item->meta),
         .has_default_value = has_default_value,
         .default_value = default_value,
         .has_current_value = true,
-        .current_value = tweak_pickle_to_pb_variant(&add_item->current_value)
+        .current_value = tweak_pickle_pb_variant_to_value(&add_item->current_value)
       }
     }
   };
   tweak_pickle_trace_add_item_req("Outbound", add_item);
+  tweak_pickle_call_result result = encode_and_transmit_server_message(server_endpoint, &message);
+  if (result == TWEAK_PICKLE_SUCCESS) {
+    TWEAK_LOG_TRACE("Server message has been encoded and transmitted");
+  } else {
+    TWEAK_LOG_TRACE("Server message hasn't been delivered");
+  }
+  return result;
+}
+
+tweak_pickle_call_result
+  tweak_pickle_server_announce_features(tweak_pickle_server_endpoint server_endpoint,
+    const tweak_pickle_features* features)
+{
+  TWEAK_LOG_TRACE_ENTRY("server_endpoint = %p, features = %p",
+    server_endpoint, features);
+
+  tweak_pb_server_node_message message = {
+    .which_request = tweak_pb_server_node_message_announce_features_tag,
+    .request = {
+      .announce_features = {
+        .features =  tweak_pickle_pb_make_string_encode_callback(&features->features)
+      }
+    }
+  };
+
+  tweak_pickle_trace_announce_features_req("Outbound", features);
   tweak_pickle_call_result result = encode_and_transmit_server_message(server_endpoint, &message);
   if (result == TWEAK_PICKLE_SUCCESS) {
     TWEAK_LOG_TRACE("Server message has been encoded and transmitted");
@@ -306,9 +377,9 @@ tweak_pickle_call_result
     .which_request = tweak_pb_server_node_message_change_item_tag,
     .request = {
       .change_item = {
-        .tweak_id = change->tweak_id,
+        .tweak_id = change->id,
         .has_value = true,
-        .value = tweak_pickle_to_pb_variant(&change->value)
+        .value = tweak_pickle_pb_variant_to_value(&change->value)
       }
     }
   };
@@ -331,7 +402,7 @@ tweak_pickle_call_result
     .which_request = tweak_pb_server_node_message_remove_item_tag,
     .request = {
       .remove_item = {
-        .tweak_id = remove_item->tweak_id
+        .tweak_id = remove_item->id
       }
     }
   };

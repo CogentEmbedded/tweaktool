@@ -4,19 +4,32 @@
  *
  * @brief Tweak wire transport layer implementation, NNG backend.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <tweak2/log.h>
+#include <tweak2/thread.h>
 
 #include "tweakwire_nng.h"
 
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -144,7 +157,7 @@ tweak_wire_connection tweak_wire_create_nng_connection(
   TWEAK_LOG_TRACE_ENTRY("connection_type=\"%s\", params=\"%s\", uri=\"%s\","
     " connection_state_listener=%p, connection_state_cookie=%p,"
     " receive_listener=%p, receive_listener_cookie=%p",
-    connection_type, params, uri, 
+    connection_type, params, uri,
     connection_state_listener, connection_state_cookie,
     receive_listener, receive_listener_cookie);
 
@@ -156,7 +169,7 @@ tweak_wire_connection tweak_wire_create_nng_connection(
   bool server_role;
 
   if (params) {
-    if (strcmp("role=server", params) == 0) {  
+    if (strcmp("role=server", params) == 0) {
       TWEAK_LOG_TRACE("nng set to \"listen\" mode");
       server_role = true;
     } else if (strcmp("role=client", params) == 0) {
@@ -200,7 +213,7 @@ tweak_wire_connection tweak_wire_create_nng_connection(
       return TWEAK_WIRE_INVALID_CONNECTION;
     }
   }
-  
+
   connection->base.transmit_proc = &tweak_wire_nng_transmit;
   connection->base.destroy_proc = &tweak_wire_destroy_nng_connection;
 
@@ -439,7 +452,7 @@ tweak_wire_error_code tweak_wire_nng_transmit(tweak_wire_connection connection,
   } else {
     TWEAK_LOG_TRACE("nng_aio_result returned %d", aio_result);
     nng_msg_free(outbound_message);
-    return aio_result == NNG_ETIMEDOUT 
+    return aio_result == NNG_ETIMEDOUT
       ? TWEAK_WIRE_ERROR_TIMEOUT
       : TWEAK_WIRE_ERROR;
   }

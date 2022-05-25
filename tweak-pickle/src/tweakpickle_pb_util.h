@@ -5,12 +5,25 @@
  * @brief RPC implementation over transport layer provided by
  * weak2::wire library, common data conversion helpers.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #ifndef TWEAK_PICKLE_PB_UTIL_INCLUDED
@@ -34,6 +47,8 @@ void tweak_pickle_trace_remove_item_req(const char* direction, const tweak_pickl
 
 void tweak_pickle_trace_subscribe_req(const char* direction, const tweak_pickle_subscribe* subscribe);
 
+void tweak_pickle_trace_announce_features_req(const char* direction, const tweak_pickle_features* features);
+
 #else
 
 #define tweak_pickle_trace_add_item_req(...)
@@ -44,93 +59,33 @@ void tweak_pickle_trace_subscribe_req(const char* direction, const tweak_pickle_
 
 #define tweak_pickle_trace_subscribe_req(...)
 
+#define tweak_pickle_trace_announce_features_req(...)
+
 #endif
 
-static inline void reserve_tweak_string(size_t length,
-  tweak_variant_string *string, char **buff)
-{
-  assert(string);
-  assert(buff);
+bool tweak_pickle_pb_is_scalar(tweak_pb_value *arg);
 
-  size_t desired_capacity = length + 1;
-  if (desired_capacity <= sizeof(string->buffers.small_buffer)) {
-    string->capacity = sizeof(string->buffers.small_buffer);
-    string->length = length;
-    *buff = string->buffers.small_buffer;
-  } else {
-    string->buffers.large_buffer = calloc(1, desired_capacity);
-    assert(string->buffers.large_buffer);
-    string->capacity = desired_capacity;
-    string->length = length;
-    *buff = string->buffers.large_buffer;
-  }
-}
+void tweak_pickle_pb_reserve_string(size_t length,
+  tweak_variant_string *string, char **buff);
 
-static inline bool decode_tweak_string(pb_istream_t *stream,
-  const pb_field_t *field, void ** arg)
-{
-  assert(stream);
-  (void)field;
-  assert(arg);
+bool tweak_pickle_pb_decode_string(pb_istream_t *stream,
+  const pb_field_t *field, void ** arg);
 
-  tweak_variant_string *string = *(tweak_variant_string **)arg;
+pb_callback_t tweak_pickle_pb_make_string_decode_callback(
+  tweak_variant_string *arg);
 
-  char *buffer;
-  reserve_tweak_string(stream->bytes_left, string, &buffer);
+bool tweak_pickle_pb_encode_string(pb_ostream_t *stream,
+  const pb_field_t *field, void *const *arg);
 
-  if (!pb_read(stream, (pb_byte_t*)buffer, stream->bytes_left))
-    return false;
+pb_callback_t tweak_pickle_pb_make_string_encode_callback(
+  const tweak_variant_string *arg);
 
-  return true;
-}
+pb_callback_t tweak_pickle_pb_make_variant_decode_callback(
+  tweak_variant *arg);
 
-static inline pb_callback_t make_decode_callback_for_tweak_variant_string(
-  tweak_variant_string *arg)
-{
-  assert(arg);
-  pb_callback_t result = {
-      .funcs = {
-        .decode = &decode_tweak_string
-      },
-      .arg = arg};
-  return result;
-}
+tweak_variant tweak_pickle_pb_value_to_variant(tweak_pb_value *src);
 
-static inline bool encode_tweak_string(pb_ostream_t *stream,
-  const pb_field_t *field, void *const *arg)
-{
-  assert(stream);
-  assert(field);
-  assert(arg);
-
-  tweak_variant_string *string = *((tweak_variant_string *const *)arg);
-
-  if (!pb_encode_tag_for_field(stream, field))
-    return false;
-
-  if (!pb_encode_string(stream, (const pb_byte_t *)tweak_variant_string_c_str(string),
-                        string->length))
-    return false;
-
-  return true;
-}
-
-static inline pb_callback_t make_encode_callback_for_tweak_variant_string(
-  const tweak_variant_string *arg)
-{
-  assert(arg);
-
-  pb_callback_t result = {
-      .funcs = {
-        .encode = &encode_tweak_string
-      },
-      .arg = (void *)arg};
-  return result;
-}
-
-tweak_variant tweak_pickle_from_pb_variant(const tweak_pb_value *src);
-
-tweak_pb_value tweak_pickle_to_pb_variant(const tweak_variant *src);
+tweak_pb_value tweak_pickle_pb_variant_to_value(const tweak_variant *src);
 
 tweak_pickle_call_result tweak_pickle_send_message(tweak_wire_connection wire_connection,
   const pb_msgdesc_t *fields, const void *src_struct);

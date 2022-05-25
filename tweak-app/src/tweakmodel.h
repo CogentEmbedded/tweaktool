@@ -4,12 +4,25 @@
  *
  * @brief part of tweak2 application implementation.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #ifndef TWEAK_MODEL_H_INCLUDED
@@ -18,6 +31,7 @@
 #include <tweak2/string.h>
 #include <tweak2/types.h>
 #include <tweak2/variant.h>
+#include <tweak2/metadata.h>
 
 /**
  * @brief Structure to encapsulate an item.
@@ -55,6 +69,15 @@ typedef struct {
    * @brief user might provide additional context on per-item basis.
    */
   void* item_cookie;
+  /**
+   * @brief Metadata was parsed. If this field is true and metadata
+   * field is NULL then string contained in meta is invalid.
+   */
+  bool metadata_initialized;
+  /**
+   * @brief metadata instance.
+   */
+  tweak_metadata metadata;
 } tweak_item;
 
 /**
@@ -118,6 +141,7 @@ tweak_model tweak_model_create();
  * @param meta meta
  * @param default_value default_value
  * @param current_value current_value
+ * @param metadata metadata
  * @param item_cookie additional context
  *
  * @return TWEAK_MODEL_SUCCESS if there weren't any errors, TWEAK_MODEL_INDEX_ERROR if

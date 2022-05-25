@@ -1,20 +1,20 @@
 <!--
-Copyright (c) 2018-2020 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+Copyright (c) 2018-2020 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 
 The source code contained or described herein and all documents related to the
 # source code("Software") or their modified versions are owned by
-# Cogent Embedded Inc. or its affiliates.
+# Cogent Embedded, Inc. or its affiliates.
 #
 # No part of the Software may be used, copied, reproduced, modified, published,
 # uploaded, posted, transmitted, distributed, or disclosed in any way without
-# prior express written permission from Cogent Embedded Inc.
+# prior express written permission from Cogent Embedded, Inc.
 #
-# Cogent Embedded Inc. grants a nonexclusive, non-transferable, royalty-free
+# Cogent Embedded, Inc. grants a nonexclusive, non-transferable, royalty-free
 # license to use the Software to Licensee without the right to sublicense.
 # Licensee agrees not to distribute the Software to any third-party without
-# the prior written permission of Cogent Embedded Inc.
+# the prior written permission of Cogent Embedded, Inc.
 #
-# Unless otherwise agreed by Cogent Embedded Inc. in writing, you may not remove
+# Unless otherwise agreed by Cogent Embedded, Inc. in writing, you may not remove
 # or alter this notice or any other notice embedded in Software in any way.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -132,7 +132,7 @@ Debugger is a very good alternative for Debug use case. Usage of Tweak Tool shal
 Permanent GUI replacement for tuning a complex application where no simple way of adding HMI exists. Integration is permanent, delivered to customers. Rich functionality is expected.
 
 Examples:
-- IMR + VSP or DSP rendering. Only basic primitives (lines, 2d textures) are available 
+- IMR + VSP or DSP rendering. Only basic primitives (lines, 2d textures) are available
 - Low-level OpenGL / Vulkan application. Specific API is available.
 - Complex long-term applications that need tuning: utest, libsv, isp-rc
 
@@ -183,7 +183,7 @@ Known alternatives to Tweak Tool:
    + Easy to implement initially, harder as complexity grows
    + Easy to use (visual feedback)
    - Hard to maintain
-   - Hard to do complex parameter trees 
+   - Hard to do complex parameter trees
    - Boilerplate code duplication
    - Hard to do plots and lut editing
 - OpenCV cvui
@@ -255,7 +255,7 @@ Integrity      |  Required    |  --
    - protobuf v3
    - JSON text
 
- 
+
 * Server Requirements
    - Multiple simultaneous client support
    - Reset to default
@@ -390,7 +390,7 @@ Primary tweak types shall be:
    - 2D arrays (matrices)
 
        * x -> y mapping  (1D array of pairs (x,y)) -- same as (2 x n) array
-       
+
        * mat22, mat33, mat44
 
        * fixed-size m x n arrays

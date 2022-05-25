@@ -5,12 +5,25 @@
  * @brief Remote procedure call implementation over transport layer provided by
  * weak2::wire library.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
@@ -130,6 +143,12 @@ typedef struct {
  */
 typedef struct {
   /**
+   * @brief Listener for features sets.
+   *
+   * @see tweak_pickle_features_listener.
+   */
+  tweak_pickle_features_listener announce_features_listener;
+  /**
    * @brief Listener for add item event.
    *
    * @see tweak_pickle_add_item_listener.
@@ -141,7 +160,6 @@ typedef struct {
    *
    * @see tweak_pickle_change_item_listener.
    */
-
   tweak_pickle_change_item_listener change_item_listener;
 
   /**
@@ -220,8 +238,11 @@ tweak_pickle_client_endpoint tweak_pickle_create_client_endpoint(
 /**
  * @brief Subscribe to track state of items uri of which matches to pattern.
  *
- * @details This call is expected to be the first action of the client after
- * endpoint is created and connection. Server is initially silent.
+ * @details This call could be the first action of the client after
+ * endpoint is created and connection if client implements mandatory features only.
+ * If it implements any extended features, it is expected to enumerate
+ * supported features by prior @see tweak_pickle_client_announce_features call.
+ *
  * After client created subscriptions, the server will send updates of items
  * uris of which matches to patterns provided by uri_patterns parameter.
  *
@@ -237,6 +258,25 @@ tweak_pickle_client_endpoint tweak_pickle_create_client_endpoint(
 tweak_pickle_call_result
   tweak_pickle_client_subscribe(tweak_pickle_client_endpoint client_endpoint,
     const tweak_pickle_subscribe* subscribe);
+
+/**
+ * @brief Notify server about set of features supported by this client.
+ *
+ * @details This call could be the first action of the client after
+ * endpoint is created connection. If client called @see tweak_pickle_client_subscribe
+ * as its first action, server would assume that tweak_pickle_client_announce_features
+ * supports minimal set of features and won't notify it about its own features.
+ *
+ * @param[in] client_endpoint Endpoint instance created by
+ * @p tweak_pickle_create_client_endpoint call.
+ * @param[in] features supported by this client endpoint as semicolon delimited list.
+ *
+ * @return @p TWEAK_PICKLE_SUCCESS if there wasn't any errors.
+ * @p TWEAK_PICKLE_REMOTE_ERROR if disconnected.
+ */
+tweak_pickle_call_result
+  tweak_pickle_client_announce_features(tweak_pickle_client_endpoint client_endpoint,
+    const tweak_pickle_features* features);
 
 /**
  * @brief Push item's current value update to server side.

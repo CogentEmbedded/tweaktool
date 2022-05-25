@@ -5,12 +5,25 @@
  * @brief Remote procedure call implementation over transport layer provided by
  * weak2::wire library.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
@@ -54,7 +67,7 @@ typedef struct {
   /**
    * @brief Internal tweak id.
    */
-  tweak_id tweak_id;
+  tweak_id id;
   /**
    * @brief Fully qualified name.
    */
@@ -88,7 +101,7 @@ typedef struct {
   /**
    * @brief Internal tweak id.
    */
-  tweak_id tweak_id;
+  tweak_id id;
   /**
    * @brief Updated value for tweak's @p current_value field.
    */
@@ -105,7 +118,7 @@ typedef struct {
   /**
    * @brief Internal tweak id.
    */
-  tweak_id tweak_id;
+  tweak_id id;
 } tweak_pickle_remove_item;
 
 /**
@@ -124,6 +137,24 @@ typedef struct {
    */
   tweak_variant_string uri_patterns;
 } tweak_pickle_subscribe;
+
+/**
+ * @brief This structure contains all fields for announce_features request.
+ *
+ * @details announce features is a bidirectional request that should
+ * be implemented as a stub and as a skeleton/callback on both
+ * client and server sides.
+ */
+typedef struct {
+  /**
+   * @brief Features supported by endpoint separated by semicolon.
+   *
+   * @details Currently only "scalar" is supported.
+   * Complex pattern collections such as "scalar;vector"
+   * are planned for future releases.
+   */
+  tweak_variant_string features;
+} tweak_pickle_features;
 
 /**
  * @brief Error codes for tweak-pickle calls.
@@ -166,7 +197,8 @@ typedef enum {
  * @param[in] cookie an opaque pointer to user context.
  */
 typedef void (*tweak_pickle_connection_state_callback)(
-    tweak_pickle_connection_state connection_state, void *cookie);
+    tweak_pickle_connection_state connection_state,
+    void *cookie);
 
 /**
  * @brief Connection state listener and its bound
@@ -226,5 +258,38 @@ typedef struct {
   void *cookie;
 } tweak_pickle_change_item_listener;
 
+
+/**
+ * @brief Signature for a user defined callback for feature set
+ * notification protocol.
+ *
+ * @param[in] features semicolon delimited list of features.
+ * @param[in] cookie an opaque pointer to user context.
+ */
+typedef void (*tweak_announce_features_callback)(
+  tweak_pickle_features* features, void *cookie);
+
+/**
+ * @brief Listener for receiving list of features
+ * supported by partner.
+ *
+ * @details Could be implemented by both client
+ * and server endpoints. By default, only "scalar"
+ * feature is supported. Properly implemented endpoint
+ * must restrict itself to useing subset of featres
+ * supported by its counterpart.
+ */
+typedef struct {
+  /**
+   * @brief Handler receiving feature set.
+   */
+  tweak_announce_features_callback callback;
+
+  /**
+   * @brief a pointer to a user defined data structure
+   * encapsulating context for the @p callback.
+   */
+  void *cookie;
+} tweak_pickle_features_listener;
 
 #endif

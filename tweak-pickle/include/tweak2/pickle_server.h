@@ -5,12 +5,25 @@
  * @brief Remote procedure call implementation over transport layer provided by
  * weak2::wire library.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
@@ -101,6 +114,12 @@ typedef struct {
  */
 typedef struct {
   /**
+   * @brief Listener for features sets.
+   *
+   * @see tweak_pickle_features_listener.
+   */
+  tweak_pickle_features_listener announce_features_listener;
+  /**
    * @brief Listener for subscribe event.
    *
    * @see tweak_pickle_subscribe_listener.
@@ -184,10 +203,32 @@ typedef struct {
 tweak_pickle_server_endpoint tweak_pickle_create_server_endpoint(
     const tweak_pickle_server_descriptor* server_descriptor);
 
+
+/**
+ * @brief Notify client about set of features supported by this server.
+ *
+ * @details This call is expected to be the first server call if client
+ * initiated the session by @see tweak_pickle_client_announce_features call.
+ * It must be invoked prior to any @see tweak_pickle_server_add_item calls in this case.
+ * features listed here must be the intersection of features supported by both sides.
+ *
+ * @param[in] server_endpoint Endpoint instance created by
+ * @p tweak_pickle_create_server_endpoint call.
+ *
+ * @param[in] features supported by this client endpoint as semicolon delimited list.
+ * NULL is equivalent to string "scalar".
+ *
+ * @return @p TWEAK_PICKLE_SUCCESS if there wasn't any errors.
+ * @p TWEAK_PICKLE_REMOTE_ERROR if disconnected.
+ */
+tweak_pickle_call_result
+  tweak_pickle_server_announce_features(tweak_pickle_server_endpoint server_endpoint,
+    const tweak_pickle_features* features);
+
 /**
  * @brief Call this in order to forward item creation event to client endpoint.
  *
- * @param[in] client_endpoint Endpoint instance created by
+ * @param[in] server_endpoint Endpoint instance created by
  * @p tweak_pickle_create_server_endpoint call.
  * @param[in] add_item record containing all fields of the tweak.
  * @return @p TWEAK_PICKLE_SUCCESS if there wasn't any errors.

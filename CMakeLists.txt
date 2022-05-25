@@ -1,19 +1,18 @@
-# ##############################################################################
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
-#
+# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+# 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+# 
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+# 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +20,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# ##############################################################################
+#
 
 # ------------------------------------------------------------------------------
 # Check CMake version
@@ -31,8 +30,16 @@ cmake_minimum_required(VERSION 3.1)
 # ------------------------------------------------------------------------------
 # Generate project version
 # ------------------------------------------------------------------------------
-set(PROJECT_NUMERIC_VERSION "2.0.1")
+set(PROJECT_NUMERIC_VERSION "2.1.0")
 include(cmake/generate_version.cmake)
+include(CMakeDependentOption)
+
+# ------------------------------------------------------------------------------
+# Set default compiler options policy for Visual Studio
+# ------------------------------------------------------------------------------
+if (POLICY CMP0092)
+    cmake_policy(SET CMP0092 NEW)
+endif()
 
 # ------------------------------------------------------------------------------
 # Create project
@@ -55,12 +62,20 @@ message(STATUS "Project description: ${PROJECT_SUMMARY}")
 # cmake-format: off
 # <Option name>        <Description/Help>                <Default value>
 option(BUILD_TESTS     "Build tests"                         OFF)
-option(BUILD_GUI       "Build host tools"                    OFF)
-option(BUILD_CLI       "Build command line client"            ON)
+option(BUILD_GUI       "Build GUI tools"                     OFF)
+option(BUILD_MOCK      "Build mock server"                   ON)
+# CLI not ported to win32
+cmake_dependent_option(BUILD_CLI "Build command line client" ON "NOT MSVC" OFF)
 option(WITH_DOXYGEN    "Enable Doxygen-based documentation"  OFF)
+option(WITH_PYTHON     "Build Python 3 binding"               ON)
 option(WITH_WIRE_NNG   "Build NNG wire backend"               ON)
-option(WITH_WIRE_RPMSG "Build RPMSG wire backend"            OFF)
 # cmake-format: on
+
+set(WIRE_RPMSG_BACKENDS OFF TI_API CHRDEV)
+set(WIRE_RPMSG_BACKEND
+    OFF
+    CACHE STRING "Select backend for RPMSG wire")
+set_property(CACHE WIRE_RPMSG_BACKEND PROPERTY STRINGS ${WIRE_RPMSG_BACKENDS})
 
 set(TWEAK_COMMON_LOG_LEVELS Trace Debug Test Warn Error Fatal)
 list(LENGTH TWEAK_COMMON_LOG_LEVELS TWEAK_COMMON_LOG_LEVELS_LENGTH)
@@ -76,13 +91,13 @@ set_property(CACHE TWEAK_COMMON_LOG_LEVEL PROPERTY STRINGS
 
 set(CMAKE_POSITION_INDEPENDENT_CODE YES)
 
-set(PROJECT_VENDOR "Cogent Embedded Inc.")
+set(PROJECT_VENDOR "Cogent Embedded, Inc.")
 add_definitions(-DPROJECT_VENDOR=\"${PROJECT_VENDOR}\")
 set(PROJECT_DOMAIN "cogentembedded.com")
 add_definitions(-DPROJECT_DOMAIN=\"${PROJECT_DOMAIN}\")
 add_definitions(-DPROJECT_SUMMARY=\"${PROJECT_SUMMARY}\")
 
-set(PROJECT_NAMESPACE ${CMAKE_PROJECT_NAME})
+set(PROJECT_NAMESPACE tweak2)
 
 set(GUI_TOOL_NAME tweak-gui)
 
@@ -131,7 +146,31 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Asan")
-  find_package(Asan)
+  if(MSVC)
+    add_compile_options(/Zi /fsanitize=address /fsanitize-address-use-after-return)
+  else()
+    include(Asan)
+  endif()
+endif()
+
+# Prefer system version of uthash packages. Use a submodule if not available.
+find_package(uthash)
+if (UTHASH_INCLUDE_DIR)
+  message(STATUS "Using system uthash: ${UTHASH_INCLUDE_DIR}")
+else()
+  find_path(
+    UTHASH_INCLUDE_DIR
+    NAMES "uthash.h"
+    PATHS "${CMAKE_CURRENT_LIST_DIR}/extern/uthash/include/"
+    NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
+
+  if(UTHASH_INCLUDE_DIR)
+    message(STATUS "Using uthash from a submodule: ${UTHASH_INCLUDE_DIR}")
+  else()
+    message(
+      FATAL_ERROR "uthash.h is NOT FOUND, please init and update all submodules"
+    )
+  endif()
 endif()
 
 if(BUILD_TESTS)
@@ -162,17 +201,19 @@ include_directories(${PROJECT_BINARY_DIR}/generated)
 # Compilation flags
 # ------------------------------------------------------------------------------
 
-add_compile_options(
-  -Wall -Wextra -pedantic -Werror
-  $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>
-)
+if (MSVC)
+  add_compile_definitions(NOMINMAX _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE)
+  set(VC_UTHASH_WARNINGS "/wd4127 /wd4702")
+elseif()
+  add_compile_options(
+    -Wall -Wextra -pedantic -Werror
+    $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
+endif()
 
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-Wno-deprecated-copy NO_DEPRECATED_COPY_SUPPORTED)
-if (NO_DEPRECATED_COPY_SUPPORTED)
-  add_compile_options(
-    $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy>
-  )
+if(NO_DEPRECATED_COPY_SUPPORTED)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy>)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -201,15 +242,21 @@ add_subdirectory(tweak1lib)
 
 add_subdirectory(tweak2lib)
 
-add_subdirectory(tweak-mock-server)
+if (BUILD_MOCK)
+  add_subdirectory(tweak-mock-server)
+endif()
 
-if(BUILD_CLI)
+if (BUILD_CLI)
   add_subdirectory(tweak-app-cl)
 endif()
 
 add_subdirectory(tweak-json)
 
 add_subdirectory(tweak-metadata)
+
+if(WITH_PYTHON)
+  add_subdirectory(tweak-py)
+endif()
 
 if(BUILD_GUI)
   add_subdirectory(extern/SortFilterProxyModel)

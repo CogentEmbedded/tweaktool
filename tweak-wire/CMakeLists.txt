@@ -1,34 +1,26 @@
-# ##############################################################################
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2020 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 #
-# The source code contained or described herein and all documents related to the
-# source code("Software") or their modified versions are owned by Cogent
-# Embedded Inc. or its affiliates.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# No part of the Software may be used, copied, reproduced, modified, published,
-# uploaded, posted, transmitted, distributed, or disclosed in any way without
-# prior express written permission from Cogent Embedded Inc.
-#
-# Cogent Embedded Inc. grants a nonexclusive, non-transferable, royalty-free
-# license to use the Software to Licensee without the right to sublicense.
-# Licensee agrees not to distribute the Software to any third-party without the
-# prior written permission of Cogent Embedded Inc.
-#
-# Unless otherwise agreed by Cogent Embedded Inc. in writing, you may not remove
-# or alter this notice or any other notice embedded in Software in any way.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-# ##############################################################################
-
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
 # ------------------------------------------------------------------------------
 # Common settings
 # ------------------------------------------------------------------------------
@@ -59,7 +51,15 @@ if(WITH_WIRE_NNG)
   list(APPEND ${LIBRARY_NAME}_DEPENDENCIES nng)
 endif()
 
-if(WITH_WIRE_RPMSG)
+if(WIRE_RPMSG_BACKEND STREQUAL TI_API)
+  list(
+    APPEND
+    ${LIBRARY_NAME}_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg_transport.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg_transport_ti_api.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg.c)
+elseif(WIRE_RPMSG_BACKEND STREQUAL CHRDEV)
   list(
     APPEND
     ${LIBRARY_NAME}_SOURCES
@@ -67,6 +67,13 @@ if(WITH_WIRE_RPMSG)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg_transport.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg_transport_linux.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg.c)
+elseif(WIRE_RPMSG_BACKEND STREQUAL OFF)
+
+else()
+  message(
+    FATAL_ERROR
+      "Unsupported value of WIRE_RPMSG_BACKEND: ${WIRE_RPMSG_BACKEND}. "
+      "Supported values are: ${WIRE_RPMSG_BACKENDS}")
 endif()
 
 set(${LIBRARY_NAME}_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/tweak2/wire.h)
@@ -78,12 +85,16 @@ set(${LIBRARY_NAME}_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/tweak2/wire.h)
 add_library(${LIBRARY_NAME} ${${LIBRARY_NAME}_SOURCES}
                             ${${LIBRARY_NAME}_HEADERS})
 
+if (MSVC)
+  target_compile_options(${LIBRARY_NAME} PRIVATE /W4 /WX)
+endif()
+
 add_library(${PROJECT_NAMESPACE}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
 
 target_compile_definitions(
   ${LIBRARY_NAME}
   PRIVATE $<$<BOOL:${WITH_WIRE_NNG}>:WITH_WIRE_NNG>
-  PRIVATE $<$<BOOL:${WITH_WIRE_RPMSG}>:WITH_WIRE_RPMSG>)
+  PRIVATE WIRE_RPMSG_BACKEND_${WIRE_RPMSG_BACKEND})
 
 target_link_libraries(
   ${LIBRARY_NAME}

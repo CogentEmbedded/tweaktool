@@ -4,12 +4,25 @@
  *
  * @brief Arbitrary length string for use within pickle and app layer APIs.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
@@ -54,7 +67,7 @@ enum {
  */
 typedef struct {
   /**
-   * @brief Length of the string.
+   * @brief Length of the string, without '\0' terinator.
    */
   size_t length;
   /**
@@ -106,7 +119,28 @@ void tweak_variant_destroy_string(tweak_variant_string* string);
  * @param[in] arg new string value. Can be of arbitrary length.
  * Heap memory will be allocated if necessary.
  */
-void tweak_variant_assign_string(tweak_variant_string* string, const char* arg);
+void tweak_assign_string(tweak_variant_string* string, const char* arg);
+
+/**
+ * @brief Append @p arg to the end of @p string, growing its internal buffer if necessary
+ * with @see realloc.
+ *
+ * @param[in] string The string instance to append value to.
+ * @param[in] arg C string to append.
+ */
+void tweak_string_append(tweak_variant_string* string, const char* arg);
+
+/**
+ * @brief sprintf-like assign new value to a string instance.
+ *
+ * @note If string being assigned is large and this instance
+ * does already contain a string buffer with sufficient capacity allocated on heap,
+ * it will reuse it. It its capacity is insufficient, it will be enlarged with @p realloc().
+ *
+ * @param[in] string The string instance to assign value to.
+ * @param[in] format format of the string. Should match ellipsis parameters.
+ */
+void tweak_string_format(tweak_variant_string* string, const char* format, ...);
 
 /**
  * @brief Swaps string values. Needed to implement move semantics.

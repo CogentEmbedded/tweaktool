@@ -1,19 +1,18 @@
-# ##############################################################################
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
-# 
+# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,14 +20,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# ##############################################################################
-
+#
 # ------------------------------------------------------------------------------
 # Common settings
 # ------------------------------------------------------------------------------
 
 set(LIBRARY_NAME pickle)
-set(LIBRARY_SOVERSION 0)
+set(LIBRARY_SOVERSION 2)
 
 # ------------------------------------------------------------------------------
 # Dependencies
@@ -70,6 +68,10 @@ set(${LIBRARY_NAME}_HEADERS
 add_library(${LIBRARY_NAME} ${${LIBRARY_NAME}_SOURCES}
                             ${${LIBRARY_NAME}_HEADERS})
 
+if (MSVC)
+  target_compile_options(${LIBRARY_NAME} PRIVATE /W4 /WX)
+endif()
+
 add_library(${PROJECT_NAMESPACE}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
 
 target_compile_features(${LIBRARY_NAME} PUBLIC c_std_99)
@@ -105,5 +107,6 @@ tweak_component_install(${LIBRARY_NAME})
 # ------------------------------------------------------------------------------
 
 if(BUILD_TESTS)
-  add_subdirectory(test)
+  add_subdirectory(test/simple-types)
+  add_subdirectory(test/vector-types)
 endif()

@@ -4,15 +4,28 @@
  *
  * @brief part of tweak2 application interface.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
- /**
+/**
  * @defgroup tweak-api Tweak API
  * Part of library API. Can be used by user to develop applications
  */
@@ -23,6 +36,7 @@
 #include <tweak2/string.h>
 #include <tweak2/types.h>
 #include <tweak2/variant.h>
+#include <tweak2/metadata.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,7 +75,11 @@ typedef enum {
    * @brief Context can't propagate updated value since connection
    * is no longer available.
    */
-  TWEAK_APP_PEER_DISCONNECTED
+  TWEAK_APP_PEER_DISCONNECTED,
+  /**
+   * @brief Operation timed out.
+   */
+  TWEAK_APP_TIMEOUT
 } tweak_app_error_code;
 
 /**
@@ -86,10 +104,8 @@ typedef struct {
    */
   tweak_variant_string description;
   /**
-   * @brief Meta. Provided by server in one of tweak_add_* calls.
-   *
-   * Client is supposed to understand format of this string and use it
-   * in control placement in conjunction with uri.
+   * @brief Meta. Json snippet describing properties of data.
+   * Format is described in docs/METADATA.md
    *
    * @note uri is unique whereas meta is not.
    */
@@ -229,6 +245,29 @@ tweak_app_error_code tweak_app_item_clone_current_value(tweak_app_context contex
  */
 tweak_app_error_code tweak_app_item_replace_current_value(tweak_app_context context,
   tweak_id id, tweak_variant* value);
+
+/**
+ * @brief Retrieves metadata instance for given item. Client does assume
+ * ownership for this instance, thus user must invoke @see tweak_metadata_destroy
+ * on retrieved instance .
+ *
+ * @param context an application context.
+ * @param id tweak id.
+ * @param metadata output pointer receiving result of the operation.
+ *
+ * @return TWEAK_APP_SUCCESS if there wasn't any errors.
+ */
+tweak_app_error_code tweak_app_item_get_metadata(tweak_app_context context,
+  tweak_id id, tweak_metadata* metadata);
+
+/**
+ * @brief Blocks unless all pending IO jobs are being completed
+ *
+ * @param context an application context.
+ *
+ * @return TWEAK_APP_SUCCESS if there wasn't any errors.
+ */
+void tweak_app_flush_queue(tweak_app_context context);
 
 /**
  * @brief a virtual destructor for application context objects.

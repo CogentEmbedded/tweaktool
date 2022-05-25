@@ -4,19 +4,35 @@
  *
  * @brief Implementation of tweak wire API interface for TI RP Messaging.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <tweak2/log.h>
+#include <tweak2/thread.h>
 #include <tweak2/wire.h>
 
 #include "tweakwire_rpmsg.h"
 #include "tweakwire_rpmsg_transport.h"
+
+#include <common/app.h> // from vision_apps
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,7 +74,7 @@ struct tweak_wire_connection_rpmsg
     /**
      * @brief Receiving processing thread.
      */
-    pthread_t receive_thread;
+    tweak_common_thread receive_thread;
 
     /**
      * @brief Statically-allocated receive buffer.
@@ -82,6 +98,93 @@ static tweak_wire_error_code tweak_wire_rpmsg_transmit(tweak_wire_connection con
 static void tweak_wire_rpmsg_destroy_connection(tweak_wire_connection connection_base);
 static void *tweak_wire_rpmsg_receive_thread(void *arg);
 
+static bool rpmsg_uri_parse(const char* param,
+  char* endpoint_name, size_t endpoint_name_size,
+  uint32_t* endpoint)
+{
+  const char prefix[] = "rpmsg://";
+  bool rv = false;
+  char* param0 = strdup(param);
+  char* p0 = NULL;
+  char* p1 = NULL;
+  char* p2 = NULL;
+
+  uint32_t endpoint0;
+
+  if (!param0) {
+    TWEAK_LOG_ERROR("strdup returned NULL");
+    goto exit;
+  }
+
+  if (strncmp(prefix, param0, sizeof(prefix) - 1) != 0) {
+    goto exit;
+  }
+
+  p0 = param0 + sizeof(prefix) - 1;
+  p1 = strchr(p0, '/');
+
+  if (p1) {
+    *p1 = '\0';
+    strncpy(endpoint_name, p0, endpoint_name_size - 1);
+    endpoint_name[endpoint_name_size - 1] = '\0';
+    ++p1;
+  } else {
+        /**
+         * @details Linux side of the RPMsg channel uses standard rpmsg_chrdev device driver provided,
+         *          @see https://github.com/torvalds/linux/tree/master/drivers/rpmsg
+         *
+         *          It abstracts all implementation details and allows the user to simply read and write
+         *          arbitrary-sized messages from / to the character device.
+         *
+         *          On QNX, a custom endpoint name 'tweak' is used.
+         */
+        const char *default_endpoint_name;
+
+#if defined(TI_ARM_R5F)
+    uint32_t host_os = appGetHostOSType();
+    if (host_os == APP_HOST_TYPE_LINUX)
+    {
+        default_endpoint_name = "rpmsg_chrdev";
+    }
+    else
+    {
+        default_endpoint_name = "tweak";
+    }
+#elif defined(__QNX__)
+        default_endpoint_name = "tweak";
+#elif defined(__linux__)
+        default_endpoint_name = "rpmsg_chrdev";
+#else
+        default_endpoint_name = "tweak";
+#endif
+
+        strncpy(endpoint_name, default_endpoint_name, endpoint_name_size - 1);
+        endpoint_name[endpoint_name_size - 1] = '\0';
+        p1 = p0;
+    }
+
+    if (strlen(p1) < 1)
+    {
+        TWEAK_LOG_ERROR("uri lacks endpoint number");
+        goto exit;
+    }
+
+    endpoint0 = strtol(p1, &p2, 10);
+    if (*p2 != '\0')
+    {
+        TWEAK_LOG_ERROR("uri lacks endpoint number");
+        goto exit;
+    }
+
+    *endpoint = endpoint0;
+    rv = true;
+
+exit:
+  free(param0);
+  return rv;
+}
+
+
 tweak_wire_connection tweak_wire_create_rpmsg_connection(
     const char *connection_type, const char *params, const char *uri,
     tweak_wire_connection_state_listener connection_state_listener,
@@ -103,12 +206,12 @@ tweak_wire_connection tweak_wire_create_rpmsg_connection(
 
     /*.. Client / server role does not matter for rpmsg,
          the connection is always established by the host microcontroller. */
+    char endpoint_name[128];
     uint32_t endpoint = 0;
-    if (uri == NULL || sscanf(uri, "rpmsg://%u", &endpoint) != 1 || endpoint == 0)
+    if (!rpmsg_uri_parse(uri, endpoint_name, sizeof(endpoint_name), &endpoint))
     {
-        /*.. failure is silent: use default */
-        endpoint = 17;
-        TWEAK_LOG_WARN("Cannot parse uri parameter: '%s', using default: 'rpmsg://%u'", params, endpoint);
+        TWEAK_LOG_ERROR("Cannot parse uri parameter: '%s'", uri);
+        return TWEAK_WIRE_INVALID_CONNECTION;
     }
 
     if (receive_listener == NULL)
@@ -130,19 +233,20 @@ tweak_wire_connection tweak_wire_create_rpmsg_connection(
     connection->receive_listener = receive_listener;
     connection->receive_listener_cookie = receive_listener_cookie;
 
-    if (tweak_wire_rpmsg_init_transport(&connection->transport, endpoint) != TWEAK_WIRE_SUCCESS)
+    if (tweak_wire_rpmsg_init_transport(&connection->transport, endpoint_name, endpoint, params)
+         != TWEAK_WIRE_SUCCESS)
     {
         free(connection);
         return TWEAK_WIRE_INVALID_CONNECTION;
     }
 
-    int32_t status = pthread_create(&connection->receive_thread, NULL,
-                                    tweak_wire_rpmsg_receive_thread,
-                                    (void *)connection);
+    tweak_common_thread_error status = tweak_common_thread_create(&connection->receive_thread,
+                                                                  tweak_wire_rpmsg_receive_thread,
+                                                                  (void *)connection);
 
-    if (status != 0)
+    if (status != TWEAK_COMMON_THREAD_SUCCESS)
     {
-        TWEAK_LOG_ERROR("pthread_create failed: %d", status);
+        TWEAK_LOG_ERROR("tweak_common_thread_create failed: %d", status);
         free(connection);
         return TWEAK_WIRE_INVALID_CONNECTION;
     }
@@ -348,7 +452,7 @@ static void tweak_wire_rpmsg_destroy_connection(tweak_wire_connection connection
     /*.. TODO: Make some sanity checks on connection */
 
     tweak_wire_rpmsg_transport_abort(&connection->transport);
-    pthread_join(connection->receive_thread, NULL);
+    tweak_common_thread_join(connection->receive_thread, NULL);
 
     tweak_wire_rpmsg_transport_close(&connection->transport);
 

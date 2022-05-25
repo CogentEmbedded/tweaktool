@@ -3,12 +3,25 @@
  * @ingroup tweak-api
  * @brief test suite for common library.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <tweak2/string.h>
@@ -18,10 +31,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <math.h>
 
 static double convert_simple_to_double(const struct tweak_json_node* simple, bool* success)  {
   bool success0 = false;
-  double d;
+  double d = NAN;
   if (tweak_json_get_type(simple) == TWEAK_JSON_NODE_TYPE_NUMBER) {
     char* endp;
     const char* p = tweak_json_node_as_c_str(simple);
@@ -38,7 +52,7 @@ static double convert_simple_to_double(const struct tweak_json_node* simple, boo
 
 static int32_t convert_simple_to_int32(const struct tweak_json_node* simple, bool* success)  {
   bool success0 = false;
-  int64_t i;
+  int64_t i = 0;
   if (tweak_json_get_type(simple) == TWEAK_JSON_NODE_TYPE_NUMBER) {
     char* endp;
     const char* p = tweak_json_node_as_c_str(simple);
@@ -72,12 +86,12 @@ static bool convert_simple_to_bool(const struct tweak_json_node* simple, bool* s
   return success0 ? b : false;
 }
 
-void test_json_1() {
+void test_json_1(void) {
     struct tweak_json_node* doc = tweak_json_parse(NULL);
     TEST_CHECK(doc == NULL);
 }
 
-void test_json_11() {
+void test_json_11(void) {
     struct tweak_json_node* doc = tweak_json_parse("\"BoZo\"");
     TEST_CHECK(doc != NULL);
     TEST_CHECK(tweak_json_get_type(doc) == TWEAK_JSON_NODE_TYPE_STRING);
@@ -87,7 +101,7 @@ void test_json_11() {
 
 void test_json_12_check_X_string(struct tweak_json_node* array, int index, const char* value);
 
-void test_json_12() {
+void test_json_12(void) {
     struct tweak_json_node* doc = tweak_json_parse("[\"Alpha\", \"Bravo\", \"Charlie\", \"Foxtrot\"]");
     TEST_CHECK(doc != NULL);
     TEST_CHECK(tweak_json_get_type(doc) == TWEAK_JSON_NODE_TYPE_ARRAY);
@@ -115,7 +129,7 @@ const char* JSON1e_1 = "{\"options\": [{\"value\": 100, \"text\": \"Foo\"}"
 "                                      {\"value\": 120, \"text\":  \"Baz\"}]"
 "};";
 
-void test_json_1e_1() {
+void test_json_1e_1(void) {
   struct tweak_json_node* doc = tweak_json_parse(JSON1e_1);
   TEST_CHECK(doc == NULL);
 }
@@ -123,7 +137,7 @@ void test_json_1e_1() {
 /* Missing closing square bracket of item's array */
 const char* JSON1e_2 = "{\"options\": [{\"value\": 100, \"text\": \"Foo\"}};";
 
-void test_json_1e_2() {
+void test_json_1e_2(void) {
   struct tweak_json_node* doc = tweak_json_parse(JSON1e_2);
   TEST_CHECK(doc == NULL);
 }
@@ -131,7 +145,7 @@ void test_json_1e_2() {
 /* Missing opening curly bracket */
 const char* JSON1e_3 = "\"options\": [{\"value\": 100, \"text\": \"Foo\"}};";
 
-void test_json_1e_3() {
+void test_json_1e_3(void) {
   struct tweak_json_node* doc = tweak_json_parse(JSON1e_2);
   TEST_CHECK(doc == NULL);
 }
@@ -139,7 +153,7 @@ void test_json_1e_3() {
 /* Missing quote pair*/
 const char* JSON1e_4 = "\"BoZo";
 
-void test_json_1e_4() {
+void test_json_1e_4(void) {
   struct tweak_json_node* doc = tweak_json_parse(JSON1e_3);
   TEST_CHECK(doc == NULL);
 }
@@ -147,7 +161,7 @@ void test_json_1e_4() {
 /* Missing quote pair*/
 const char* JSON1e_5 = "{\"}";
 
-void test_json_1e_5() {
+void test_json_1e_5(void) {
   struct tweak_json_node* doc = tweak_json_parse(JSON1e_4);
   TEST_CHECK(doc == NULL);
 }
@@ -178,7 +192,7 @@ static void test_json_2_node_X(const struct tweak_json_node* array, int index, i
     TEST_CHECK(strcmp(tweak_json_node_as_c_str(text_field), text) == 0);
 }
 
-void test_json_2() {
+void test_json_2(void) {
     struct tweak_json_node* doc = tweak_json_parse(JSON2);
     TEST_CHECK(doc != NULL);
     TEST_CHECK(tweak_json_get_type(doc) == TWEAK_JSON_NODE_TYPE_OBJECT);
@@ -275,7 +289,7 @@ const char* JSON3 = ""
 "    \"step\": 0.1"
 "}";
 
-void test_json_3() {
+void test_json_3(void) {
     struct tweak_json_node* doc = tweak_json_parse(JSON3);
     TEST_CHECK(doc != NULL);
     TEST_CHECK(tweak_json_get_type(doc) == TWEAK_JSON_NODE_TYPE_OBJECT);
@@ -297,7 +311,7 @@ const char* JSON4 = ""
 
 static void test_json_4_node_X(const struct tweak_json_node* array, int index, bool value, const char* text);
 
-void test_json_4() {
+void test_json_4(void) {
     struct tweak_json_node* doc = tweak_json_parse(JSON4);
     TEST_CHECK(doc != NULL);
     TEST_CHECK(tweak_json_get_type(doc) == TWEAK_JSON_NODE_TYPE_OBJECT);
@@ -347,7 +361,7 @@ const char* JSON5 = ""
 "    \"step\": 0.1"
 "}";
 
-void test_json_5() {
+void test_json_5(void) {
     struct tweak_json_node* doc = tweak_json_parse(JSON5);
     TEST_CHECK(doc != NULL);
     TEST_CHECK(tweak_json_get_type(doc) == TWEAK_JSON_NODE_TYPE_OBJECT);
@@ -362,7 +376,7 @@ void test_json_5() {
     tweak_json_destroy(doc);
 }
 
-void test_json_null_1() {
+void test_json_null_1(void) {
     struct tweak_json_node* doc = tweak_json_parse("null");
     TEST_CHECK(doc != NULL);
     TEST_CHECK(tweak_json_get_type(doc) == TWEAK_JSON_NODE_TYPE_NULL);

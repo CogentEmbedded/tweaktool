@@ -4,15 +4,28 @@
  *
  * @brief part of tweak2 application interface.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
- /**
+/**
  * @defgroup tweak-api Tweak API
  * Part of library API. Can be used by user to develop applications
  */
@@ -21,6 +34,7 @@
 #define TWEAK_APP_CLIENT_INCLUDED
 
 #include <tweak2/appcommon.h>
+#include <tweak2/thread.h> /* Timespan definitions */
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,7 +69,7 @@ typedef void (*tweak_app_on_item_removed_callback)(tweak_app_context context,
 
  /**
   * @brief Callback for tracking connection state of a client.
-  * 
+  *
   * When server is disconnected, user won't be able to change item's
   * values. An attempt to access item's values shall issue
   * last known values of these items.
@@ -110,6 +124,23 @@ typedef struct {
  */
 tweak_app_client_context tweak_app_create_client_context(const char *context_type, const char *params,
   const char *uri, const tweak_app_client_callbacks* client_listeners);
+
+/**
+ * @brief Waits until client connection could be used to access all @p uris from given list
+ * for given @p timeout.
+ *
+ * @param client_context tweak client context created @see by tweak_app_create_client_context.
+ * @param uris list of uris to wait for.
+ * @param uris_size of uris array.
+ * @param tweak_ids Optional output list of tweak ids, must have size equal to size of @p uris array.
+ * Can be NULL if not needed.
+ * @param timeout timespan in milliseconds.
+ *
+ * @return TWEAK_APP_SUCCESS if all @p uris are available or TWEAK_APP_TIMEOUT if some of
+ * @p uris are still inaccessible after @p timeout milliseconds.
+ */
+tweak_app_error_code tweak_app_client_wait_uris(tweak_app_client_context client_context,
+  const char** uris, size_t uris_size, tweak_id* tweak_ids, tweak_common_milliseconds timeout_millis);
 
 #ifdef __cplusplus
 }

@@ -4,12 +4,25 @@
  *
  * @brief RPMessage transport API for tweak wire.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
@@ -23,21 +36,17 @@
 
 #include <tweak2/wire.h>
 
-#include <pthread.h>
 #include <stdbool.h>
 
-#if defined(CPU_mcu2_0)
+#if defined(WIRE_RPMSG_BACKEND_TI_API)
 #include <ti/drv/ipc/ipc.h>
+#else
+#include <ti_rpmsg_char.h>
 #endif
 
-/**
- * @details Linux side of the RPMsg channel uses standard rpmsg_chrdev device driver provided,
- *          @see https://github.com/torvalds/linux/tree/master/drivers/rpmsg
- *
- *          It abstracts all implementation details and allows the user to simply read and write
- *          arbitrary-sized messages from / to the character device.
- */
-#define ENDPOINT_NAME "rpmsg_chrdev"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define TWEAK_WIRE_FINALIZING 100
 
@@ -79,9 +88,8 @@ enum
  *
  * 256 bytes are needed for internal structures of RPMsg.
  * @note This typedef is needed to align data on MCU memory page boundary.
- * @todo Optimize message number and default size.
  */
-typedef uint8_t tweak_wire_rpmsg_buf_t[tweak_wire_rpmsg_max_message_size * tweak_wire_rpmsg_num_buffers_in_flight + 256] __attribute__((aligned(1024)));
+typedef uint8_t tweak_wire_rpmsg_buf_t[tweak_wire_rpmsg_max_message_size * tweak_wire_rpmsg_num_buffers_in_flight * 2 + 256] __attribute__((aligned(1024)));
 
 /**
  * @brief RPMsg endpoint context.
@@ -109,7 +117,7 @@ struct tweak_wire_rpmsg_transport
 
     uint8_t send_buff[tweak_wire_rpmsg_max_message_size];
 
-#if defined(CPU_mcu2_0)
+#if defined(WIRE_RPMSG_BACKEND_TI_API)
 
     /**> RPMSG handle on SYSBIOS */
     RPMessage_Handle rpmsg;
@@ -119,7 +127,7 @@ struct tweak_wire_rpmsg_transport
      */
     tweak_wire_rpmsg_buf_t mcu_rpmsg_buf;
 
-#elif defined(CPU_mpu1)
+#elif defined(WIRE_RPMSG_BACKEND_CHRDEV)
 
     /**
      * @brief File descriptor for communication with rpmsg_chardev.
@@ -133,26 +141,27 @@ struct tweak_wire_rpmsg_transport
      */
     int eventfd_unblock;
 
+    rpmsg_char_dev_t *rcdev[1];
 #else
-#error CPU type must be defined
+#error Backend type must be defined
 #endif
 };
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /**
  * @brief Initialize RPMessage transport.
  *
  * @param transport RPMessage transport descriptor.
+ * @param endpoint_name Name of endpoint.
  * @param endpoint Endpoint to use.
+ * @param params Determines if transport is initialized as server (announces an endpoint)
+ *                                                    or client (waits for announce from remote side).
  * @return tweak_wire_error_code
  *       @ref TWEAK_WIRE_SUCCESS The transport was created.
  *       @ref TWEAK_WIRE_ERROR The transport cannot be created (permanent failure).
  */
 tweak_wire_error_code tweak_wire_rpmsg_init_transport(
-    struct tweak_wire_rpmsg_transport *transport, uint32_t endpoint);
+    struct tweak_wire_rpmsg_transport *transport, const char *endpoint_name,
+    uint32_t endpoint, const char *params);
 
 /**
  * @brief Transmit data over RPMessage endpoint.

@@ -1,8 +1,7 @@
-# ##############################################################################
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,10 +20,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# ##############################################################################
+#
+if(APPLE)
+  option(PACKAGE_DMG "Generate DMG package" ON)
+else()
+  option(PACKAGE_RPM "Generate RPM package" ON)
+  option(PACKAGE_DEB "Generate DEB package" ON)
+endif()
 
-option(PACKAGE_RPM "Generate RPM package" ON)
-option(PACKAGE_DEB "Generate DEB package" ON)
+if(PACKAGE_DMG)
+  list(APPEND GEN_PACKAGES DragNDrop)
+endif()
 
 if(PACKAGE_DEB)
   list(APPEND GEN_PACKAGES DEB)
@@ -40,7 +46,7 @@ set(CPACK_GENERATOR ${GEN_PACKAGES})
 
 set(CPACK_PACKAGE_NAME tweaktool)
 
-set(CPACK_COMPONENTS_ALL dev tools)
+set(CPACK_COMPONENTS_ALL dev tools python)
 set(CPACK_COMPONENTS_GROUPING IGNORE)
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_SUMMARY})

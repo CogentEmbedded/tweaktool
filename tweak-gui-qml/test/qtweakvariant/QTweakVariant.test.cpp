@@ -4,12 +4,25 @@
  *
  * @brief test suite for TweakQml component.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via http://cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <QtTest/QtTest>
@@ -76,7 +89,7 @@ template<typename T> struct CheckConv {
 };
 
 template<typename T>
-    void CheckConv<T>::checkValue(T src, tweak_variant* dest) 
+    void CheckConv<T>::checkValue(T src, tweak_variant* dest)
 {
     bool checkResult;
     QVariant check = QVariant::fromValue(src);
@@ -178,7 +191,7 @@ class QTweakVariantTest : public QObject
                                 bool need_type_coercion = false)
     {
         (void)need_type_coercion;
-        tweak_variant tv;
+        tweak_variant tv = TWEAK_VARIANT_INIT_EMPTY;
         (*f)(&tv, example);
         QVERIFY(tv.type != TWEAK_VARIANT_TYPE_NULL);
 
@@ -189,26 +202,26 @@ class QTweakVariantTest : public QObject
   private slots:
     void Scalar()
     {
-        testTweakVariantScalar(&tweak_variant_create_bool, true);
+        testTweakVariantScalar(&tweak_variant_assign_bool, true);
 
-        testTweakVariantScalar(&tweak_variant_create_uint8,
+        testTweakVariantScalar(&tweak_variant_assign_uint8,
                                static_cast<uint8_t>(UINT8_MAX), true);
-        testTweakVariantScalar(&tweak_variant_create_sint8,
+        testTweakVariantScalar(&tweak_variant_assign_sint8,
                                static_cast<int8_t>(INT8_MAX), true);
 
-        testTweakVariantScalar(&tweak_variant_create_uint16,
+        testTweakVariantScalar(&tweak_variant_assign_uint16,
                                static_cast<uint16_t>(UINT16_MAX), true);
-        testTweakVariantScalar(&tweak_variant_create_sint16,
+        testTweakVariantScalar(&tweak_variant_assign_sint16,
                                static_cast<int16_t>(INT16_MAX), true);
 
-        testTweakVariantScalar(&tweak_variant_create_uint32, UINT32_MAX);
-        testTweakVariantScalar(&tweak_variant_create_sint32, INT32_MAX);
+        testTweakVariantScalar(&tweak_variant_assign_uint32, UINT32_MAX);
+        testTweakVariantScalar(&tweak_variant_assign_sint32, INT32_MAX);
 
-        testTweakVariantScalar(&tweak_variant_create_uint64, UINT64_MAX);
-        testTweakVariantScalar(&tweak_variant_create_sint64, INT64_MAX);
+        testTweakVariantScalar(&tweak_variant_assign_uint64, UINT64_MAX);
+        testTweakVariantScalar(&tweak_variant_assign_sint64, INT64_MAX);
 
-        testTweakVariantScalar(&tweak_variant_create_float, FLT_MAX);
-        testTweakVariantScalar(&tweak_variant_create_double, DBL_MAX);
+        testTweakVariantScalar(&tweak_variant_assign_float, FLT_MAX);
+        testTweakVariantScalar(&tweak_variant_assign_double, DBL_MAX);
     }
 
     void TestTo()

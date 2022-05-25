@@ -1,15 +1,28 @@
 /**
- * @file tweakstring.h
+ * @file variant.h
  * @ingroup tweak-api
  *
  * @brief Tweak variant type.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via www.cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
@@ -22,6 +35,7 @@
 
 #include <tweak2/log.h>
 #include <tweak2/string.h>
+#include <tweak2/buffer.h>
 #include <tweak2/types.h>
 
 #include <assert.h>
@@ -52,130 +66,49 @@ typedef struct {
     uint64_t uint64;
     float fp32;
     double fp64;
+    tweak_variant_string string;
+    struct tweak_variant_buffer buffer;
   } value;
 } tweak_variant;
 
 #define TWEAK_VARIANT_INIT_EMPTY { TWEAK_VARIANT_TYPE_NULL, { 0 } }
 
 /**
- * @brief assign bool value to variant.
+ * @brief Checks if variant instance is initialized and
+ * has value known to this particular build of tweak library.
  *
- * @param[in] variant target variant.
- * @param[in] arg value to assign.
- */
-static inline void tweak_variant_create_bool(tweak_variant* variant, bool arg) {
-  variant->type = TWEAK_VARIANT_TYPE_BOOL;
-  variant->value.b = arg;
-}
-
-/**
- * @brief assign int8_t value to variant.
+ * @param[in] arg variant instance to check.
  *
- * @param[in] variant target variant.
- * @param[in] arg value to assign.
+ * @return true in @p arg is valid
  */
-static inline void tweak_variant_create_sint8(tweak_variant* variant, int8_t arg) {
-  variant->type = TWEAK_VARIANT_TYPE_SINT8;
-  variant->value.sint8 = arg;
-}
-
-/**
- * @brief assign int16_t value to variant.
- *
- * @param[in] variant target variant.
- * @param[in] arg value to assign.
- */
-static inline void tweak_variant_create_sint16(tweak_variant* variant, int16_t arg) {
-  variant->type = TWEAK_VARIANT_TYPE_SINT16;
-  variant->value.sint16 = arg;
-}
-
-/**
- * @brief assign int32_t value to variant.
- *
- * @param[in] variant target variant.
- * @param[in] arg value to assign.
- */
-static inline void tweak_variant_create_sint32(tweak_variant* variant, int32_t arg) {
-  variant->type = TWEAK_VARIANT_TYPE_SINT32;
-  variant->value.sint32 = arg;
-}
-
-/**
- * @brief assign int64_t value to variant.
- *
- * @param[in] variant target variant.
- * @param[in] arg value to assign.
- */
-static inline void tweak_variant_create_sint64(tweak_variant* variant, int64_t arg) {
-  variant->type = TWEAK_VARIANT_TYPE_SINT64;
-  variant->value.sint64 = arg;
-}
-
-/**
- * @brief assign uint8_t value to variant.
- *
- * @param[in] variant target variant.
- * @param[in] arg value to assign.
- */
-static inline void tweak_variant_create_uint8(tweak_variant* variant, uint8_t arg) {
-  variant->type = TWEAK_VARIANT_TYPE_UINT8;
-  variant->value.uint8 = arg;
-}
-
-/**
- * @brief assign uint16_t value to variant.
- *
- * @param[in] variant1 target variant.
- * @param[in] arg value to assign.
- */
-static inline void tweak_variant_create_uint16(tweak_variant* variant, uint16_t arg) {
-  variant->type = TWEAK_VARIANT_TYPE_UINT16;
-  variant->value.uint16 = arg;
-}
-
-/**
- * @brief assign uint32_t value to variant.
- *
- * @param[in] variant1 target variant.
- * @param[in] arg value to assign.
- */
-static inline void tweak_variant_create_uint32(tweak_variant* variant, uint32_t arg) {
-  variant->type = TWEAK_VARIANT_TYPE_UINT32;
-  variant->value.uint32 = arg;
-}
-
-/**
- * @brief assign uint64_t value to variant.
- *
- * @param[in] variant target variant.
- * @param[in] arg value to assign.
- */
-static inline void tweak_variant_create_uint64(tweak_variant* variant, uint64_t arg) {
-  variant->type = TWEAK_VARIANT_TYPE_UINT64;
-  variant->value.uint64 = arg;
-}
-
-/**
- * @brief assign float value to variant.
- *
- * @param[in] variant target variant.
- * @param[in] arg value to assign.
- */
-static inline void tweak_variant_create_float(tweak_variant* variant, float arg) {
-  variant->type = TWEAK_VARIANT_TYPE_FLOAT;
-  variant->value.fp32 = arg;
-}
-
-/**
- * @brief assign double value to variant.
- *
- * @param[in] variant target variant.
- * @param[in] arg value to assign.
- */
-static inline void tweak_variant_create_double(tweak_variant* variant, double arg) {
-  variant->type = TWEAK_VARIANT_TYPE_DOUBLE;
-  variant->value.fp64 = arg;
+static inline bool tweak_variant_is_valid(const tweak_variant* arg) {
+  switch(arg->type) {
+  case TWEAK_VARIANT_TYPE_NULL:
+  case TWEAK_VARIANT_TYPE_BOOL:
+  case TWEAK_VARIANT_TYPE_SINT8:
+  case TWEAK_VARIANT_TYPE_SINT16:
+  case TWEAK_VARIANT_TYPE_SINT32:
+  case TWEAK_VARIANT_TYPE_SINT64:
+  case TWEAK_VARIANT_TYPE_UINT8:
+  case TWEAK_VARIANT_TYPE_UINT16:
+  case TWEAK_VARIANT_TYPE_UINT32:
+  case TWEAK_VARIANT_TYPE_UINT64:
+  case TWEAK_VARIANT_TYPE_FLOAT:
+  case TWEAK_VARIANT_TYPE_DOUBLE:
+  case TWEAK_VARIANT_TYPE_STRING:
+  case TWEAK_VARIANT_TYPE_VECTOR_SINT8:
+  case TWEAK_VARIANT_TYPE_VECTOR_SINT16:
+  case TWEAK_VARIANT_TYPE_VECTOR_SINT32:
+  case TWEAK_VARIANT_TYPE_VECTOR_SINT64:
+  case TWEAK_VARIANT_TYPE_VECTOR_UINT8:
+  case TWEAK_VARIANT_TYPE_VECTOR_UINT16:
+  case TWEAK_VARIANT_TYPE_VECTOR_UINT32:
+  case TWEAK_VARIANT_TYPE_VECTOR_UINT64:
+  case TWEAK_VARIANT_TYPE_VECTOR_FLOAT:
+  case TWEAK_VARIANT_TYPE_VECTOR_DOUBLE:
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -192,18 +125,410 @@ static inline void tweak_variant_swap(tweak_variant* variant1, tweak_variant* va
 }
 
 /**
- * @brief Clones variant value. A user assumes ownership of a new instance.
- *
- * @param[in] variant pointer to value being coped.
- */
-tweak_variant tweak_variant_copy(const tweak_variant* variant);
-
-/**
  * @brief Destroys variant instance.
  *
  * @param[in] variant value to deallocate.
  */
 void tweak_variant_destroy(tweak_variant* variant);
+
+/**
+ * @brief assign bool value to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg value to assign.
+ */
+static inline void tweak_variant_assign_bool(tweak_variant* variant, bool arg) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_BOOL;
+  tmp.value.b = arg;
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign int8_t value to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg value to assign.
+ */
+static inline void tweak_variant_assign_sint8(tweak_variant* variant, int8_t arg) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_SINT8;
+  tmp.value.sint8 = arg;
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign int16_t value to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg value to assign.
+ */
+static inline void tweak_variant_assign_sint16(tweak_variant* variant, int16_t arg) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type =  TWEAK_VARIANT_TYPE_SINT16;
+  tmp.value.sint16 = arg;
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign int32_t value to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg value to assign.
+ */
+static inline void tweak_variant_assign_sint32(tweak_variant* variant, int32_t arg) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type =  TWEAK_VARIANT_TYPE_SINT32;
+  tmp.value.sint32 = arg;
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign int64_t value to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg value to assign.
+ */
+static inline void tweak_variant_assign_sint64(tweak_variant* variant, int64_t arg) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_SINT64;
+  tmp.value.sint64 = arg;
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign uint8_t value to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg value to assign.
+ */
+static inline void tweak_variant_assign_uint8(tweak_variant* variant, uint8_t arg) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_UINT8;
+  tmp.value.uint8 = arg;
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign uint16_t value to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant1 target variant.
+ * @param[in] arg value to assign.
+ */
+static inline void tweak_variant_assign_uint16(tweak_variant* variant, uint16_t arg) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_UINT16;
+  tmp.value.uint16 = arg;
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign uint32_t value to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant1 target variant.
+ * @param[in] arg value to assign.
+ */
+static inline void tweak_variant_assign_uint32(tweak_variant* variant, uint32_t arg) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_UINT32;
+  tmp.value.uint32 = arg;
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign uint64_t value to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg value to assign.
+ */
+static inline void tweak_variant_assign_uint64(tweak_variant* variant, uint64_t arg) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_UINT64,
+  tmp.value.uint64 = arg;
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign float value to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg value to assign.
+ */
+static inline void tweak_variant_assign_float(tweak_variant* variant, float arg) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_FLOAT;
+  tmp.value.fp32 = arg;
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign double value to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg value to assign.
+ */
+static inline void tweak_variant_assign_double(tweak_variant* variant, double arg) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_DOUBLE;
+  tmp.value.fp64 = arg;
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign string value to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg value to assign.
+ */
+static inline void tweak_variant_assign_string(tweak_variant* variant, const char* arg) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_STRING,
+  tweak_assign_string(&tmp.value.string, arg);
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign int8_t array to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg pointer to vector data.
+ * @param[in] size number of elements in vector.
+ */
+static inline void tweak_variant_assign_sint8_vector(tweak_variant* variant, const int8_t* arg, size_t size) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_VECTOR_SINT8;
+  tmp.value.buffer = tweak_buffer_create(arg, size * sizeof(arg[0]));
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief Checks whether two variant values are equal.
+ *
+ * @param[in] arg1 first variant value.
+ * @param[in] arg2 second variant value.
+ */
+bool tweak_variant_is_equal(const tweak_variant* arg1, const tweak_variant* arg2);
+
+/**
+ * @brief assign int16_t array to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg pointer to vector data.
+ * @param[in] size number of elements in vector.
+ */
+static inline void tweak_variant_assign_sint16_vector(tweak_variant* variant, const int16_t* arg, size_t size) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_VECTOR_SINT16;
+  tmp.value.buffer = tweak_buffer_create(arg, size * sizeof(arg[0]));
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign int32_t array to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg pointer to vector data.
+ * @param[in] size number of elements in vector.
+ */
+static inline void tweak_variant_assign_sint32_vector(tweak_variant* variant, const int32_t* arg, size_t size) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_VECTOR_SINT32;
+  tmp.value.buffer = tweak_buffer_create(arg, size * sizeof(arg[0]));
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign int64_t array to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg pointer to vector data.
+ * @param[in] size number of elements in vector.
+ */
+static inline void tweak_variant_assign_sint64_vector(tweak_variant* variant, const int64_t* arg, size_t size) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_VECTOR_SINT64;
+  tmp.value.buffer = tweak_buffer_create(arg, size * sizeof(arg[0]));
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign uint8_t array to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg pointer to vector data.
+ * @param[in] size number of elements in vector.
+ */
+static inline void tweak_variant_assign_uint8_vector(tweak_variant* variant, const uint8_t* arg, size_t size) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_VECTOR_UINT8;
+  tmp.value.buffer = tweak_buffer_create(arg, size * sizeof(arg[0]));
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign uint16_t array to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg pointer to vector data.
+ * @param[in] size number of elements in vector.
+ */
+static inline void tweak_variant_assign_uint16_vector(tweak_variant* variant, const uint16_t* arg, size_t size) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_VECTOR_UINT16,
+  tmp.value.buffer = tweak_buffer_create(arg, size * sizeof(arg[0]));
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign uint32_t array to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg pointer to vector data.
+ * @param[in] size number of elements in vector.
+ */
+static inline void tweak_variant_assign_uint32_vector(tweak_variant* variant, const uint32_t* arg, size_t size) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_VECTOR_UINT32,
+  tmp.value.buffer = tweak_buffer_create(arg, size * sizeof(arg[0]));
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign uint64_t array to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg pointer to vector data.
+ * @param[in] size number of elements in vector.
+ */
+static inline void tweak_variant_assign_uint64_vector(tweak_variant* variant, const uint64_t* arg, size_t size) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_VECTOR_UINT64;
+  tmp.value.buffer = tweak_buffer_create(arg, size * sizeof(arg[0]));
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign float array to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg pointer to vector data.
+ * @param[in] size number of elements in vector.
+ */
+static inline void tweak_variant_assign_float_vector(tweak_variant* variant, const float* arg, size_t size) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_VECTOR_FLOAT;
+  tmp.value.buffer = tweak_buffer_create(arg, size * sizeof(arg[0]));
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief assign double array to variant.
+ *
+ * @note existing non-null value being stored in @p variant shall be destroyed.
+ *
+ * @param[in] variant target variant.
+ * @param[in] arg pointer to vector data.
+ * @param[in] size number of elements in vector.
+ */
+static inline void tweak_variant_assign_double_vector(tweak_variant* variant, const double* arg, size_t size) {
+  tweak_variant tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.type = TWEAK_VARIANT_TYPE_VECTOR_DOUBLE;
+  tmp.value.buffer = tweak_buffer_create(arg, size * sizeof(arg[0]));
+  tweak_variant_swap(&tmp, variant);
+  tweak_variant_destroy(&tmp);
+}
+
+/**
+ * @brief Clones variant value. A user assumes ownership of a new instance.
+ *
+ * @param[in] variant pointer to value being coped.
+ */
+tweak_variant tweak_variant_copy(const tweak_variant* variant);
 
 /**
  * @brief Result of a type conversion operation.
@@ -264,6 +589,15 @@ tweak_variant_string tweak_variant_to_string(const tweak_variant* arg);
  * @return String representing value of given variant as string in format {type:value}.
  */
 tweak_variant_string tweak_variant_to_json(const tweak_variant* arg);
+
+/**
+ * @brief Returns number of items in variant instance.
+ *
+ * @param arg variant value.
+ *
+ * @return number of items in a vector. returns 1 if type is a scalar.
+ */
+size_t tweak_variant_get_item_count(const tweak_variant* arg);
 
 #ifdef __cplusplus
 }

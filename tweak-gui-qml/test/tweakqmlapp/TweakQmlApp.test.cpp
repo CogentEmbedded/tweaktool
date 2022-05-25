@@ -4,23 +4,38 @@
  *
  * @brief test suite for TweakQml component.
  *
- * @copyright 2018-2021 Cogent Embedded Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
- * This file is a part of Cogent Tweak Tool feature.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * It is subject to the license terms in the LICENSE file found in the top-level
- * directory of this distribution or by request via http://cogentembedded.com
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 #include <QtTest/QtTest>
+#include <QMutex>
+#include <QWaitCondition>
 
 #include "TweakQmlApp.hpp"
 #include <tweak2/tweak2.h>
+#include <tweak2/defaults.h>
 
 #include <stdexcept>
 #include <vector>
 #include <errno.h>
-#include <pthread.h>
 
 namespace tweak2
 {
@@ -40,8 +55,8 @@ class TestTweakApplication : public QObject
 {
   Q_OBJECT
 
-  pthread_mutex_t _lock;
-  pthread_cond_t _cond;
+  QMutex _lock;
+  QWaitCondition _cond;
   bool _inserted;
   bool _updated;
   bool _serverUpdated;
@@ -55,12 +70,12 @@ class TestTweakApplication : public QObject
   {
     (void)tweakApplication;
     (void)parent;
-    pthread_mutex_lock(&_lock);
+    _lock.lock();
     struct row_interval tmp = { start, end };
     std::swap(_row_interval, tmp);
     _inserted = true;
-    pthread_cond_broadcast(&_cond);
-    pthread_mutex_unlock(&_lock);
+    _cond.wakeAll();
+    _lock.unlock();
   }
 
   void dataChanged(TweakApplication *tweakApplication,
@@ -69,11 +84,11 @@ class TestTweakApplication : public QObject
   {
     (void)bottomRight;
     (void)roles;
-    pthread_mutex_lock(&_lock);
+    _lock.lock();
     _value = tweakApplication->data(topLeft, TweakApplication::ValueRole);
     _updated = true;
-    pthread_cond_broadcast(&_cond);
-    pthread_mutex_unlock(&_lock);
+    _cond.wakeAll();
+    _lock.unlock();
   }
 
   void rowsAboutToBeRemoved(TweakApplication *tweakApplication,
@@ -81,52 +96,52 @@ class TestTweakApplication : public QObject
   {
     (void)tweakApplication;
     (void)parent;
-    pthread_mutex_lock(&_lock);
+    _lock.lock();
     struct row_interval tmp = { start, end };
     std::swap(_row_interval, tmp);
     _removed = true;
-    pthread_cond_broadcast(&_cond);
-    pthread_mutex_unlock(&_lock);
+    _cond.wakeAll();
+    _lock.unlock();
   }
 
   QVariant waitChange() {
     QVariant result;
-    pthread_mutex_lock(&_lock);
+    _lock.lock();
     while (!_updated) {
-        pthread_cond_wait(&_cond, &_lock);
+        _cond.wait(&_lock);
     }
     result.swap(_value);
-    pthread_mutex_unlock(&_lock);
+    _lock.unlock();
     return result;
   }
 
   struct row_interval waitInsert() {
     struct row_interval result = { -1, -1};
-    pthread_mutex_lock(&_lock);
+    _lock.lock();
     while (!_inserted) {
-        pthread_cond_wait(&_cond, &_lock);
+        _cond.wait(&_lock);
     }
     std::swap(_row_interval, result);
-    pthread_mutex_unlock(&_lock);
+    _lock.unlock();
     return result;
   }
   struct row_interval waitRemove() {
     struct row_interval result = { -1, -1};
-    pthread_mutex_lock(&_lock);
+    _lock.lock();
     while (!_removed) {
-        pthread_cond_wait(&_cond, &_lock);
+      _cond.wait(&_lock);
     }
     std::swap(_row_interval, result);
-    pthread_mutex_unlock(&_lock);
+    _lock.unlock();
     return result;
   }
 
   void itemChangeListener(tweak_id tweak_id) {
-    pthread_mutex_lock(&_lock);
+    _lock.lock();
     _serverValue = tweak_get_scalar_float(tweak_id);
     _serverUpdated = true;
-    pthread_cond_broadcast(&_cond);
-    pthread_mutex_unlock(&_lock);
+    _cond.wakeAll();
+    _lock.unlock();
   }
 
   static void itemChangeListenerAddapter(tweak_id tweak_id, void* cookie) {
@@ -136,21 +151,18 @@ class TestTweakApplication : public QObject
 
   float waitServerUpdate() {
     float result;
-    pthread_mutex_lock(&_lock);
+    _lock.lock();
     while (!_serverUpdated) {
-        pthread_cond_wait(&_cond, &_lock);
+        _cond.wait(&_lock);
     }
     std::swap(_serverValue, result);
-    pthread_mutex_unlock(&_lock);
+    _lock.unlock();
     return result;
   }
 
   private slots:
     void sanityTest() {
-        pthread_mutex_init(&_lock, NULL);
-        pthread_cond_init(&_cond, NULL);
-
-        tweak_initialize_library("nng", "role=server", "tcp://0.0.0.0:7777/");
+        tweak_initialize_library("nng", "role=server", TWEAK_DEFAULT_ENDPOINT);
 
         std::vector<float> ground_truth_values;
         std::vector<tweak_id> tweak_ids;
@@ -175,7 +187,7 @@ class TestTweakApplication : public QObject
             rowsAboutToBeRemoved(tweakApplication, parent, start, end);
         });
 
-        ConnectionId connectionId = tweakApplication->addClient("mock", "nng", "role=client", "tcp://0.0.0.0:7777/");
+        ConnectionId connectionId = tweakApplication->addClient("mock", "nng", "role=client", TWEAK_DEFAULT_ENDPOINT);
         for (uint32_t item_no = 0; item_no < TEST_ITEM_COUNT; item_no++) {
             char uri[100];
             snprintf(uri, sizeof(uri), "item_%d", item_no);
@@ -259,9 +271,6 @@ class TestTweakApplication : public QObject
         }
 
         tweak_finalize_library();
-
-        pthread_cond_destroy(&_cond);
-        pthread_mutex_destroy(&_lock);
     }
 };
 } // namespace tweak2
