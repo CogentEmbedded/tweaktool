@@ -32,7 +32,11 @@ endif
 ifeq ($(TARGET_OS),QNX)
     IDIRS       += $(QNX_TARGET)/usr/include
     STATIC_LIBS += nng
-    SYS_SHARED_LIBS += socket regex
+    SYS_SHARED_LIBS += socket
+    ifneq ("$(wildcard $(QNX_TARGET)/aarch64le/lib/libregex.*)","")
+        # SDP 710 has a separate regex library
+        SYS_SHARED_LIBS += regex
+    endif
 endif
 
 include $(VISION_APPS_PATH)/apps/concerto_a72_inc.mak
