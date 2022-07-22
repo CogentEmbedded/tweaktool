@@ -516,6 +516,9 @@ static inline tweak_common_nanoseconds tweak_common_timestamp_subtract_timestamp
   assert(timestamp1 != NULL);
   assert(timestamp2 != NULL);
 #if defined(TI_ARM_R5F) || defined(_MSC_BUILD)
+  if (*timestamp2 > *timestamp1)
+    return 0ULL;
+
   return *timestamp1 - *timestamp2;
 #else
   tweak_common_timestamp r;

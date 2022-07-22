@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 enum { NUM_TWEAKS = 1000 };
 
@@ -509,6 +510,8 @@ static void* wait_uri_client_loop(void *arg) {
   error_code = tweak_app_client_wait_uris(client_context, wait_uris1, sizeof(wait_uris1) / sizeof(wait_uris1[0]),  NULL, 300);
   TEST_CHECK(error_code  == TWEAK_APP_TIMEOUT);
   tweak_app_destroy_context(client_context);
+
+  return NULL;
 }
 
 void test_wait_uri(void) {

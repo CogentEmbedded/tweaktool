@@ -76,4 +76,6 @@ target_include_directories(${BINARY_NAME}
 # Automatic tests
 # ------------------------------------------------------------------------------
 
-add_test(NAME ${BINARY_NAME} COMMAND ${BINARY_NAME})
+if(NOT MSVC)
+  add_test(NAME ${BINARY_NAME} COMMAND ${BINARY_NAME} -platform offscreen)
+endif()

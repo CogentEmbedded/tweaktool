@@ -28,8 +28,15 @@
 #include "tweakmodel.h"
 
 #include <stdlib.h>
-#include <uthash.h>
 #include <tweak2/metadata.h>
+
+#if defined(_MSC_BUILD)
+#pragma warning( push )
+#pragma warning( disable : 4127 )
+#pragma warning( disable : 4702 )
+#endif
+#include <uthash.h>
+
 
 #define HASH_FIND_TWEAK_ID(head, findint, out) HASH_FIND(hh, head, findint, sizeof(tweak_id), out)
 
@@ -154,3 +161,7 @@ void tweak_model_destroy(tweak_model model) {
   }
   free(model_impl);
 }
+
+#if defined(_MSC_BUILD)
+#pragma warning( pop )
+#endif

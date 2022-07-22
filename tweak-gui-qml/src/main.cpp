@@ -38,6 +38,9 @@
 #include <QQmlEngine>
 #include <QQmlFileSelector>
 #include <QQuickView>
+#include <QSGEngine>
+
+#include "version.h"
 
 using namespace tweak2;
 
@@ -63,12 +66,12 @@ int main(int argc, char *argv[])
     /*.. Initialize resources from the static library */
     Q_INIT_RESOURCE(main);
 
-    app.setApplicationName("Tweak Tool V2");
-    app.setOrganizationName("Cogent Embedded, Inc.");
+    app.setApplicationName(PROJECT_FULL_NAME);
+    app.setOrganizationName(PROJECT_VENDOR);
     app.setOrganizationDomain("v2.tweaktool.cogentembedded.com");
-    app.setApplicationVersion("v2.0.0");
+    app.setApplicationVersion(PROJECT_VERSION);
     app.setQuitOnLastWindowClosed(true);
-    app.setWindowIcon(QIcon("qrc:/images/tweak-icon.png"));
+    app.setWindowIcon(QIcon(":/images/tweak-icon.png"));
 
     tweak2::registerQmlTypes();
 
@@ -79,5 +82,14 @@ int main(int argc, char *argv[])
     tweakApp = nullptr;
 
     engine.load("qrc:/main.qml");
+
+#if defined(_MSC_BUILD)
+    /*.. Workaround until https://github.com/microsoft/vcpkg/issues/10520 is not fixed */
+    if (argc < 0)
+    {
+        QSGEngine e;
+    }
+#endif
+
     return app.exec();
 }

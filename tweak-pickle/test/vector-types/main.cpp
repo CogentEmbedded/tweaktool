@@ -26,6 +26,7 @@
  */
 
 #include <tweak2/log.h>
+#include <tweak2/defaults.h>
 #include <tweak2/pickle_client.h>
 #include <tweak2/pickle_server.h>
 
@@ -309,9 +310,9 @@ tweak_variant_string create_variant_string(const char* arg) {
 }
 
 std::string generateNngUri(int port) {
-  std::stringstream uri0;
-  uri0<<"tcp://0.0.0.0:"<<port<<"/";
-  return uri0.str();
+  char uri0[256];
+  snprintf(uri0, sizeof(uri0), TWEAK_DEFAULT_ENDPOINT_TEMPLATE, port);
+  return uri0;
 }
 
 template<typename Q>

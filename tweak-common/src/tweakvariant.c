@@ -532,7 +532,7 @@ static tweak_variant_type_conversion_result
 {
   int64_t i;
   char* endp;
-  i = strtol(s, &endp, 10);
+  i = strtoll(s, &endp, 10);
   if (endp != s && *endp == '\0') {
     *out = i;
     return TWEAK_VARIANT_TYPE_CONVERSION_RESULT_SUCCESS;
@@ -627,7 +627,7 @@ static tweak_variant_type_conversion_result
 {
   uint64_t u;
   char* endp;
-  u = strtoul(s, &endp, 10);
+  u = strtoull(s, &endp, 10);
   if (endp != s && *endp == '\0') {
     *out = u;
     return TWEAK_VARIANT_TYPE_CONVERSION_RESULT_SUCCESS;

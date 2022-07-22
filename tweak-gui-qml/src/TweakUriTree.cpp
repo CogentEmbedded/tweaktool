@@ -159,20 +159,11 @@ void TweakUriTree::removeAllTweaks()
 
 QStringList TweakUriTree::splitPathFromUri(QUrl uri)
 {
-    static const QRegularExpression badPathComponents =
-            QRegularExpression("^[ ]*$");
-
     if (!uri.isValid())
         return QStringList();
 
     QStringList path = uri.path().split("/");
-
-    /*.. Fold incorrect components */
-    const auto bad = path.filter(badPathComponents);
-    foreach (const QString &b, bad)
-    {
-        path.removeAll(b);
-    }
+    path.removeAll("");
 
     return path;
 }

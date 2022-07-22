@@ -57,7 +57,7 @@ tweak_variant_string uris[NUM_TWEAKS];
 tweak_variant values[NUM_TWEAKS];
 
 void test_model(void) {
-  srand((unsigned)time(0));
+  srand((unsigned)time(NULL));
   tweak_model model = tweak_model_create();
   for (size_t ix = 0; ix < NUM_TWEAKS; ix++) {
     ids[ix] = gen_id();

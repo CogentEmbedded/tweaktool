@@ -32,7 +32,14 @@
 
 #include <assert.h>
 #include <limits.h>
+
+#if defined(_MSC_BUILD)
+#pragma warning( push )
+#pragma warning( disable : 4127 )
+#pragma warning( disable : 4702 )
+#endif
 #include <uthash.h>
+
 struct uri_tweak_id_pair {
   char* key;
   tweak_id tweak_id;
@@ -125,3 +132,7 @@ void tweak_model_uri_to_tweak_id_index_destroy(tweak_model_uri_to_tweak_id_index
   }
   free(index_impl);
 }
+
+#if defined(_MSC_BUILD)
+#pragma warning( pop )
+#endif

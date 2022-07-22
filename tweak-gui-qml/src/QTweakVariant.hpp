@@ -62,7 +62,8 @@ static inline tweak_variant from_json_node(const QVariant& arg, tweak_variant_ty
 {
     (void)arg;
     (void)dest_type;
-    Q_UNREACHABLE(); // Not implemented
+    Q_ASSERT(false); // Not implemented
+    return TWEAK_VARIANT_INIT_EMPTY;
 }
 
 static inline QVariant from_tweak_variant(const tweak_variant *arg)
@@ -165,6 +166,7 @@ static inline void to_tweak_variant(tweak_variant *dest, tweak_variant_type dest
     case TWEAK_VARIANT_TYPE_VECTOR_FLOAT:
     case TWEAK_VARIANT_TYPE_VECTOR_DOUBLE:
         *dest = from_json_node(src, dest_type);
+        break;
     default:
         Q_UNREACHABLE();
         break;

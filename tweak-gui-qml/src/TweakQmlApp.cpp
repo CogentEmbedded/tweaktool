@@ -616,11 +616,15 @@ void TweakApplicationPrivate::itemRemovedImpl(quint64 connection_id, quint64 twe
     if (itr != tweakControlIdList.end()) {
         int pos = static_cast<int>(itr - tweakControlIdList.begin());
         tweakControlIdCache.clear();
-        tweakControlIdList.erase(itr);
-        treeModel.itemRemoved(tweakControlId);
+
+        qDebug() << "Removing model item: " << itr->tweakId
+            << "Removing item pos: " << pos;
 
         q->beginRemoveRows(QModelIndex(), pos, pos);
         q->endRemoveRows();
+
+        tweakControlIdList.erase(itr);
+        treeModel.itemRemoved(tweakControlId);
     } else {
         qWarning() << "Attempt to remove an item that was not found";
     }

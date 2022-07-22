@@ -245,7 +245,7 @@ Ubuntu 20.04 LTS cmake 3.16.+ will not create properly export files for default 
 
 See: <https://gitlab.kitware.com/cmake/cmake/-/issues/20204>
 
-Thus, user have to install cmake from KitWare to build library, selecting focal repository 
+Thus, user have to install cmake from KitWare to build library, selecting focal repository
 
 ```bash
 wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -

@@ -36,12 +36,12 @@ ApplicationWindow {
     id: window
 
     visible: true
-    flags: Qt.WindowCloseButtonHint | Qt.WindowTitleHint | Qt.WindowMinMaxButtonsHint
+    flags: Qt.Window
 
     minimumWidth: 900
     minimumHeight: 750
 
-    title: "Cogent Tweak Tool v2 Preview"
+    title: Qt.application.name
 
     header:     TabBar{
         Layout.fillWidth: true
@@ -84,7 +84,7 @@ ApplicationWindow {
 
         RowLayout {
             anchors.fill: parent
-            Label { text: "Cogent Tweak Tool 2: Preview" }
+            Label { text: Qt.application.name + ": " + Qt.application.version }
         }
     }
 }

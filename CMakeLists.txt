@@ -2,24 +2,24 @@
 # CMake build configuration for Cogent Tweak Tool.
 #
 # Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-# 
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 #
 
 # ------------------------------------------------------------------------------
@@ -37,8 +37,8 @@ include(CMakeDependentOption)
 # ------------------------------------------------------------------------------
 # Set default compiler options policy for Visual Studio
 # ------------------------------------------------------------------------------
-if (POLICY CMP0092)
-    cmake_policy(SET CMP0092 NEW)
+if(POLICY CMP0092)
+  cmake_policy(SET CMP0092 NEW)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -49,6 +49,7 @@ project(
   VERSION ${PROJECT_NUMERIC_VERSION}
   LANGUAGES C CXX)
 
+set(PROJECT_FULL_NAME "Cogent Tweak Tool")
 set(PROJECT_SUMMARY "Cogent Real-Time Tuning Tool (Tweak)")
 
 message(
@@ -94,8 +95,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE YES)
 set(PROJECT_VENDOR "Cogent Embedded, Inc.")
 add_definitions(-DPROJECT_VENDOR=\"${PROJECT_VENDOR}\")
 set(PROJECT_DOMAIN "cogentembedded.com")
+set(PROJECT_URI "http://cogentembedded.com")
 add_definitions(-DPROJECT_DOMAIN=\"${PROJECT_DOMAIN}\")
 add_definitions(-DPROJECT_SUMMARY=\"${PROJECT_SUMMARY}\")
+add_definitions(-DPROJECT_FULL_NAME=\"${PROJECT_FULL_NAME}\")
 
 set(PROJECT_NAMESPACE tweak2)
 
@@ -147,7 +150,8 @@ find_package(Threads REQUIRED)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Asan")
   if(MSVC)
-    add_compile_options(/Zi /fsanitize=address /fsanitize-address-use-after-return)
+    add_compile_options(/Zi /fsanitize=address
+                        /fsanitize-address-use-after-return)
   else()
     include(Asan)
   endif()
@@ -155,7 +159,7 @@ endif()
 
 # Prefer system version of uthash packages. Use a submodule if not available.
 find_package(uthash)
-if (UTHASH_INCLUDE_DIR)
+if(UTHASH_INCLUDE_DIR)
   message(STATUS "Using system uthash: ${UTHASH_INCLUDE_DIR}")
 else()
   find_path(
@@ -176,26 +180,6 @@ endif()
 if(BUILD_TESTS)
   enable_testing()
 endif()
-
-# ------------------------------------------------------------------------------
-# Generate version header
-# ------------------------------------------------------------------------------
-
-add_custom_command(OUTPUT always_rebuild COMMAND cmake -E echo)
-
-add_custom_command(
-  OUTPUT ${PROJECT_BINARY_DIR}/generated/version.h
-  COMMAND
-    ${CMAKE_COMMAND} -DHEADER_SRC=${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.h.in
-    -DHEADER_DST=${PROJECT_BINARY_DIR}/generated/version.h -P
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_version.cmake
-  COMMENT "Generating version.h"
-  MAIN_DEPENDENCY always_rebuild
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.h.in
-          ${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_version.cmake
-  VERBATIM)
-
-include_directories(${PROJECT_BINARY_DIR}/generated)
 
 # ------------------------------------------------------------------------------
 # Compilation flags
@@ -242,11 +226,11 @@ add_subdirectory(tweak1lib)
 
 add_subdirectory(tweak2lib)
 
-if (BUILD_MOCK)
+if(BUILD_MOCK)
   add_subdirectory(tweak-mock-server)
 endif()
 
-if (BUILD_CLI)
+if(BUILD_CLI)
   add_subdirectory(tweak-app-cl)
 endif()
 

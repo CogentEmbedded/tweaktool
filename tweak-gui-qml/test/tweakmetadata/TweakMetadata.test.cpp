@@ -116,7 +116,7 @@ class QMetadataTest : public QObject
       QVERIFY(metadata->getReadonly() == false);
       float step = metadata->getStep().value<float>();
       float err = std::abs(step - .0001f); /* derived from decimals == 4*/
-      QVERIFY(err < pow(10, -(decimals + 2)));
+      QVERIFY(err < pow(10, -((int)decimals + 2)));
       delete metadata;
       delete parser;
    }

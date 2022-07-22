@@ -37,12 +37,12 @@ set(${BINARY_NAME}_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 # Binary generation
 # ------------------------------------------------------------------------------
 
+add_executable(${BINARY_NAME} ${${BINARY_NAME}_SOURCES})
+add_dependencies(${BINARY_NAME} Acutest)
+
 if (MSVC)
   target_compile_options(${BINARY_NAME} PRIVATE /W4 /WX)
 endif()
-
-add_executable(${BINARY_NAME} ${${BINARY_NAME}_SOURCES})
-add_dependencies(${BINARY_NAME} Acutest)
 
 target_link_libraries(${BINARY_NAME} ${PROJECT_NAMESPACE}::pickle
                       ${PROJECT_NAMESPACE}::common)

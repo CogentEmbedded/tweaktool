@@ -25,6 +25,7 @@
  * THE SOFTWARE.
  */
 
+#include <tweak2/defaults.h>
 #include <tweak2/log.h>
 #include <tweak2/pickle_client.h>
 #include <tweak2/pickle_server.h>
@@ -34,8 +35,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#if (__linux__)
 #include <unistd.h>
+#endif
 #include <math.h>
+#include <time.h>
 
 static int32_t answer_count = false;
 
@@ -148,15 +152,15 @@ static tweak_variant_string create_variant_string(const char* arg) {
   return rv;
 }
 
-void test_pickle() {
-  srand(time(NULL));
+void test_pickle(void) {
+  srand((unsigned)time(NULL));
   int port = 32769 + rand() % 20000;
   char uri0[256];
-  snprintf(uri0, sizeof(uri0), "tcp://0.0.0.0:%d/", port);
+  snprintf(uri0, sizeof(uri0), TWEAK_DEFAULT_ENDPOINT_TEMPLATE, port);
 
-  reset_answer_count(2);
   tweak_common_mutex_init(&lock);
   tweak_common_cond_init(&cond);
+  reset_answer_count(2);
   tweak_pickle_server_descriptor server_descriptor = {
     .context_type = "nng",
     .uri = uri0,
@@ -333,10 +337,10 @@ static void                                                                     
 }                                                                                                    \
                                                                                                      \
 void test_pickle_vector_##SUFFIX##_data() {                                                          \
-  srand(time(NULL));                                                                                 \
+  srand((unsigned)time(NULL));                                                                                       \
   int port = 32769 + rand() % 20000;                                                                 \
   char uri0[256];                                                                                    \
-  snprintf(uri0, sizeof(uri0), "tcp://0.0.0.0:%d/", port);                                           \
+  snprintf(uri0, sizeof(uri0), TWEAK_DEFAULT_ENDPOINT_TEMPLATE, port);                               \
                                                                                                      \
   reset_answer_count(2);                                                                             \
   tweak_common_mutex_init(&lock, NULL);                                                              \

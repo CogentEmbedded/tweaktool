@@ -121,7 +121,7 @@ static const char *const large_sting_literal2 =
 "et eli1. Nullam non nibh2ex. Curabitur eg3t ante torto4. Donec inte5dum viverra          \n"
 "turpis1tempor hendrerit.2Fusce rhoncus ac3umsan orci, 4ed placerat 5iam consectetur et.  \n";
 
-void test_common() {
+void test_common(void) {
   tweak_variant_string test1 = { 0 };
 
   puts("tweak_variant_string_c_str(NULL) == NULL");
@@ -193,7 +193,7 @@ void test_common() {
                                         */
 }
 
-void test_string_to_json() {
+void test_string_to_json(void) {
   tweak_variant test1 = TWEAK_VARIANT_INIT_EMPTY;
   tweak_variant_assign_string(&test1, "\"abc\"\\\n");
   tweak_variant_string test2 = tweak_variant_to_json(&test1);
