@@ -1,0 +1,60 @@
+# escape=`
+
+# Use the latest Windows Server Core 2019 image.
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
+
+# Restore the default Windows shell for correct batch processing.
+SHELL ["cmd", "/S", "/C"]
+
+RUN powershell.exe [Net.ServicePointManager]::Expect100Continue = $true; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls, [Net.SecurityProtocolType]::Tls11, [Net.SecurityProtocolType]::Tls12, [Net.SecurityProtocolType]::Ssl3; Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1')
+RUN choco install git unzip 7zip-zstd -y
+RUN choco install python -y
+RUN choco install visualstudio2022buildtools -y
+RUN choco install nsis -y
+
+# Enable git symlinks and long paths by default
+RUN git config --global core.symlinks true
+RUN git config --global core.longpaths true
+
+# Ignore git 'unsafe directory' warnings
+RUN git config --global --add safe.directory *
+
+# Download vcpkg
+RUN git clone https://github.com/Microsoft/vcpkg.git
+# Install vcpkg
+RUN cd .\vcpkg `
+    && .\bootstrap-vcpkg.bat -disableMetrics `
+    && .\vcpkg integrate install
+
+# Install zstd
+RUN cd .\vcpkg `
+    && .\vcpkg install --triplet x64-windows zstd
+
+# Install nng, getopt
+RUN cd .\vcpkg `
+    && .\vcpkg install --triplet x64-windows nng getopt
+
+# Install qt5-base
+RUN cd .\vcpkg `
+    && .\vcpkg install --triplet x64-windows qt5-base
+
+# Install qt5-declarative
+RUN cd .\vcpkg `
+    && .\vcpkg install --triplet x64-windows qt5-declarative
+
+# Install qt5-quickcontrols qt5-quickcontrols2
+RUN cd .\vcpkg `
+    && .\vcpkg install --triplet x64-windows qt5-quickcontrols qt5-quickcontrols2
+
+# Install qt5-tools
+RUN cd .\vcpkg `
+    && .\vcpkg install --triplet x64-windows qt5-tools
+
+ENV CMAKE_TOOLCHAIN_FILE "c:\vcpkg\scripts\buildsystems\vcpkg.cmake"
+ENV VCPKG_TARGET_TRIPLET x64-windows
+ENV VCPKG_PATH %cd%\vcpkg
+ENV VC_ENV_SETUP="C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat"
+RUN setx path "%path%;%cd%\vcpkg\installed\x64-windows\tools\qt5-tools\bin"
+RUN setx path "%path%;%cd%\vcpkg\installed\x64-windows\tools\qt5\bin"
+
+ENTRYPOINT ["C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat", "&&", "powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]

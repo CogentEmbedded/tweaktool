@@ -1,0 +1,29 @@
+#!/usr/bin/env groovy
+
+node('docker_win') {
+    stage('checkout') {
+        cleanWs()
+        checkout scm
+    }
+    def image
+    stage('docker image') {
+        image = docker.build('tweaktool', './devops/windows64/')
+    }
+    image.inside() {
+        stage('build') {
+            dir('build') {
+                bat '"%VC_ENV_SETUP%" && powershell.exe -File "..\\devops\\windows64\\build.ps1"'
+            }
+        }
+    }
+    stage('archive') {
+        dir('build') {
+            zip zipFile: 'binaries.zip', archive: true, dir: 'install'
+            archiveArtifacts (
+                artifacts: 'tweaktool-*.exe,binaries.zip',
+                fingerprint: true,
+                onlyIfSuccessful: true
+            )
+        }
+    }
+}

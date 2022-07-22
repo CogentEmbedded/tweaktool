@@ -1,0 +1,54 @@
+#!/usr/bin/env groovy
+
+node('docker') {
+    stage('checkout') {
+        cleanWs()
+        checkout scm
+    }
+    def image
+    stage('docker image') {
+        image = docker.build('tweaktool', './devops/ubuntu20.04/')
+    }
+    image.inside() {
+        dir('build-ubuntu18.04') {
+            stage('build') {
+                sh 'ls -l'
+                cmakeBuild (
+                    buildType: 'Release',
+                    sourceDir: '../',
+                    cmakeArgs: '-DBUILD_GUI=ON -DBUILD_SHARED_LIBS=ON -DPACKAGE_RPM=OFF -DBUILD_TESTS=ON -DWITH_PYTHON=OFF -DCMAKE_INSTALL_PREFIX=/usr',
+                    cleanBuild: true,
+                    installation: 'InSearchPath',
+                    steps: [[withCmake: true, args: '--parallel']]
+                )
+            }
+            stage('test') {
+                try {
+                    // Allow tests to fail until they are stable
+                    ctest (
+                        arguments: '-T test --no-compress-output --output-on-failure',
+                        installation: 'InSearchPath'
+                    )
+                } catch(err) {
+                     echo err.getMessage()
+                }
+            }
+            stage('pack') {
+                cpack(
+                    arguments: '-G DEB',
+                    installation: 'InSearchPath'
+                )
+            }
+        }
+    }
+    stage('archive') {
+        dir('build-ubuntu18.04') {
+            sh 'mkdir -p ubuntu-18.04 && mv *.deb ubuntu-18.04'
+            archiveArtifacts (
+                artifacts: 'ubuntu-18.04/*.deb',
+                fingerprint: true,
+                onlyIfSuccessful: true
+            )
+        }
+    }
+}

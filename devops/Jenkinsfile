@@ -1,9 +1,21 @@
-def platforms = ['ubuntu16.04']
+#!/usr/bin/env groovy
 
-def buildArgs = ['ubuntu16.04': [CMAKE_BUILD_TYPE:"Release", CMAKE_INSTALL_PREFIX:"/usr", BUILD_GUI:"ON", WITH_QTCHARTS:"OFF"]]
+node() {
+    stage('checkout') {
+        cleanWs()
+        checkout scm
+    }
 
-def buildDeps = []
+    def builders = [:]
+    builders['ubuntu20.04'] = {
+        load 'devops/ubuntu20.04/Jenkinsfile'
+    }
+    builders['ubuntu18.04'] = {
+        load 'devops/ubuntu18.04/Jenkinsfile'
+    }
+    builders['windows64'] = {
+        load 'devops/windows64/Jenkinsfile'
+    }
 
-def environment = ['ubuntu16.04': []]
-
-buildWrapper.cmake platforms: platforms, buildDependencies: buildDeps, buildArguments: buildArgs, environment: environment, doTests: false
+    parallel builders
+}
