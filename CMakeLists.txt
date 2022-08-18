@@ -30,9 +30,8 @@ cmake_minimum_required(VERSION 3.1)
 # ------------------------------------------------------------------------------
 # Generate project version
 # ------------------------------------------------------------------------------
-set(PROJECT_NUMERIC_VERSION "2.1.0")
+set(PROJECT_NUMERIC_VERSION "2.1.2") # fallback
 include(cmake/generate_version.cmake)
-include(CMakeDependentOption)
 
 # ------------------------------------------------------------------------------
 # Set default compiler options policy for Visual Studio
@@ -46,7 +45,7 @@ endif()
 # ------------------------------------------------------------------------------
 project(
   tweak2
-  VERSION ${PROJECT_NUMERIC_VERSION}
+  VERSION "${PROJECT_NUMERIC_VERSION}"
   LANGUAGES C CXX)
 
 set(PROJECT_FULL_NAME "Cogent Tweak Tool")
@@ -60,6 +59,8 @@ message(STATUS "Project description: ${PROJECT_SUMMARY}")
 # ------------------------------------------------------------------------------
 # User-configurable options
 # ------------------------------------------------------------------------------
+include(CMakeDependentOption)
+
 # cmake-format: off
 # <Option name>        <Description/Help>                <Default value>
 option(BUILD_TESTS     "Build tests"                         OFF)
