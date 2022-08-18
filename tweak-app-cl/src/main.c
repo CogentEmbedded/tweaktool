@@ -348,7 +348,7 @@ static void execute_set_cmd(tweak_app_client_context context, char **tokens) {
   free(value_str);
 }
 
-#if !defined(__QNX__)
+#if !defined(__QNX__) && !defined(__APPLE__)
 static int initial_readline_content_hook() {
   if (s_value_being_edited) {
     rl_insert_text (s_value_being_edited);
@@ -361,7 +361,7 @@ static int initial_readline_content_hook() {
 
 static char* readline_edit(const char* prompt, const char* initial_text) {
   s_value_being_edited = initial_text;
-#if !defined(__QNX__)
+#if !defined(__QNX__) && !defined(__APPLE__)
   rl_startup_hook = initial_readline_content_hook;
 #endif
   return readline(prompt);

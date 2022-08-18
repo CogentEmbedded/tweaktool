@@ -403,6 +403,8 @@ Equivalent to list(lambda uri: True)
 
 } // namespace
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 PYBIND11_PLUGIN(tweak2) {
     using tweak2::TweakClient;
     using tweak2::TweakServer;
@@ -818,3 +820,5 @@ PYBIND11_PLUGIN(tweak2) {
         m.add_object("_cleanup", py::capsule(&TweakServerSingleton::finalize_library));
     return m.ptr();
 }
+#pragma GCC diagnostic pop
+

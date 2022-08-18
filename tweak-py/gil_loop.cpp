@@ -64,7 +64,7 @@ void GilLoop::feed(tweak_id id, VariantGuard&& value, MetadataGuard&& metadata) 
         return;
 
     changeQueue.erase(
-        std::remove_if(changeQueue.begin(), changeQueue.end(), [id](const auto &item) -> bool {
+        std::remove_if(changeQueue.begin(), changeQueue.end(), [id](const QueueItem &item) -> bool {
             return item.id() == id;
         }), changeQueue.end());
 

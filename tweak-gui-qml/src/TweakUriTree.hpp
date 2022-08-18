@@ -190,7 +190,7 @@ private:
 
 private:
         Item(const QString &name, const QUrl &path)
-            : name(name), path(path), parent(parent)
+            : name(name), path(path), parent(*this)
         {}
 public:
         /**

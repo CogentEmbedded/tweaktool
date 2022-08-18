@@ -33,7 +33,7 @@
 #ifndef TWEAK_DEFAULTS_H_INCLUDED
 #define TWEAK_DEFAULTS_H_INCLUDED
 
-#ifdef _MSC_BUILD
+#if defined(_MSC_BUILD) || defined(__APPLE__)
 #define TWEAK_DEFAULT_ENDPOINT_TEMPLATE "tcp://127.0.0.1:%d/"
 #define TWEAK_DEFAULT_ENDPOINT "tcp://127.0.0.1:7777/"
 #else

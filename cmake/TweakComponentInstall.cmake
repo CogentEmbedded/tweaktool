@@ -83,6 +83,7 @@ macro(tweak_binary_install TARGET_NAME)
 
   install(TARGETS ${TARGET_NAME} # CMake less than 3.10 require explicit
                                  # specification of installation paths
-          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT tools)
+          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT tools
+          BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT tools)
 
 endmacro()

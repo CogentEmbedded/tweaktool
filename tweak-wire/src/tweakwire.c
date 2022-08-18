@@ -27,11 +27,11 @@
 
 #include "tweak2/wire.h"
 
-#ifdef WITH_WIRE_NNG
+#if defined(WITH_WIRE_NNG)
 #include "tweakwire_nng.h"
 #endif
 
-#ifdef WITH_WIRE_RPMSG
+#if defined(WITH_WIRE_RPMSG)
 #include "tweakwire_rpmsg.h"
 #endif
 
@@ -47,14 +47,14 @@ tweak_wire_connection tweak_wire_create_connection(
       return TWEAK_WIRE_INVALID_CONNECTION;
    }
 
-#ifdef WITH_WIRE_NNG
+#if defined(WITH_WIRE_NNG)
    if (strcmp(connection_type, "nng") == 0) {
       return tweak_wire_create_nng_connection(connection_type, params, uri,
             connection_state_listener, connection_state_cookie, receive_listener,
             receive_listener_cookie);
    }
 #endif
-#ifdef WITH_WIRE_RPMSG
+#if defined(WITH_WIRE_RPMSG)
    if (strcmp(connection_type, "rpmsg") == 0) {
       return tweak_wire_create_rpmsg_connection(connection_type, params, uri,
             connection_state_listener, connection_state_cookie, receive_listener,

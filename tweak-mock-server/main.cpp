@@ -50,7 +50,7 @@
 #include <unordered_set>
 #include <typeinfo>
 
-#ifdef _MSC_BUILD
+#if defined(_MSC_BUILD)
 #include <getopt.h>
 #else
 #include <unistd.h>
