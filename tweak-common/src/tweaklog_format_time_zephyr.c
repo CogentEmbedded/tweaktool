@@ -1,8 +1,8 @@
 /**
- * @file tweaklog_format_time_tda4.c
+ * @file tweaklog_format_time_zephyr.c
  * @ingroup tweak-api
  *
- * @brief Routine to get printable ISO 8601 time string for logging.
+ * @brief Prepends log messages with kernel uptime.
  *
  * @copyright 2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
@@ -27,7 +27,10 @@
 
 #include <tweak2/log.h>
 
-const char* tweak_common_log_format_time() {
-  /*.. on TDA4 log is automatically prefixed by system monotonic clock by appLogPrintf */
-  return "";
+#include <zephyr/kernel.h>
+
+const char *tweak_common_log_format_time() {
+    static char buffer[32];
+    sprintf(buffer, "%06" PRIu64, k_uptime_get());
+    return buffer;
 }

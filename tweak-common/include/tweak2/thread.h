@@ -54,6 +54,7 @@ typedef uint64_t tweak_common_milliseconds;
 typedef uint64_t tweak_common_nanoseconds;
 
 #define TWEAK_COMMON_TIMESPAN_INFINITE UINT64_MAX
+#define TWEAK_DEFAULT_STACK_SIZE (32 * 1024)
 
 typedef void *(*tweak_common_thread_routine)(void *);
 
@@ -67,7 +68,7 @@ struct thread_param_thunk {
   tweak_common_thread_routine thread_proc;
   void *client_cookie;
   void *result;
-  uint8_t stack[32 * 1024];
+  uint8_t stack[TWEAK_DEFAULT_STACK_SIZE];
 };
 
 typedef struct _tweak_common_thread {
@@ -136,6 +137,11 @@ static unsigned __stdcall winapi_thread_entry_point(void *arg) {
 #include <errno.h>
 #include <time.h>
 
+#if defined(__ZEPHYR__)
+#include <zephyr/posix/pthread.h>
+#include <zephyr/posix/time.h>
+#endif
+
 typedef pthread_t tweak_common_thread;
 
 typedef pthread_mutex_t tweak_common_mutex;
@@ -202,7 +208,22 @@ static inline tweak_common_thread_error tweak_common_thread_create(tweak_common_
 
   return TWEAK_COMMON_THREAD_SUCCESS;
 #else
-  return tweak_common_convert_map_posix_error_code(pthread_create(thread, NULL, thread_routine, cookie));
+  pthread_attr_t *attr = NULL;
+
+#if defined(__ZEPHYR__)
+  pthread_attr_t zephyr_attr;
+  attr = &zephyr_attr;
+
+  pthread_attr_init(attr);
+  void *stack = malloc(TWEAK_DEFAULT_STACK_SIZE);
+  if (stack == NULL)
+  {
+      TWEAK_FATAL("malloc() returned NULL");
+  }
+  pthread_attr_setstack(attr, stack, TWEAK_DEFAULT_STACK_SIZE);
+#endif
+
+  return tweak_common_convert_map_posix_error_code(pthread_create(thread, attr, thread_routine, cookie));
 #endif
 }
 
@@ -363,7 +384,7 @@ static inline tweak_common_thread_error tweak_common_cond_timed_wait(tweak_commo
 
 static inline tweak_common_thread_error tweak_common_cond_wait(tweak_common_cond* cond, tweak_common_mutex* mutex) {
 #if defined(TI_ARM_R5F)
-  return tweak_common_cond_timed_wait(cond, mutex, TIVX_EVENT_TIMEOUT_WAIT_FOREVER);
+  return tweak_common_cond_timed_wait(cond, mutex, TWEAK_COMMON_TIMESPAN_INFINITE);
 #elif defined(_MSC_BUILD)
   return SleepConditionVariableCS(cond, mutex, INFINITE)
               ? TWEAK_COMMON_THREAD_SUCCESS

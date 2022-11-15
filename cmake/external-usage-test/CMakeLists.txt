@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.16)
 project(test-user-app VERSION 1.0 LANGUAGES CXX C)
 
 # Locate basic tweak package with needed components only. Dependencies are added automatically.

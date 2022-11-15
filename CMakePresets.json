@@ -1,0 +1,464 @@
+{
+    "version": 4,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 23,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name":"pc-linux-debug",
+            "displayName": "PC Linux Debug Config",
+            "description": "Default PC Linux Debug",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_INSTALL_PREFIX": "/usr",
+                "BUILD_TESTS": "ON",
+                "BUILD_GUI": "ON",
+                "TWEAK_COMMON_LOG_LEVEL": "Debug"
+            }
+        },
+        {
+            "name":"pc-linux-release",
+            "inherits": "pc-linux-debug",
+            "displayName": "PC Linux Release Config",
+            "description": "Default PC Linux Release",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_TESTS": "OFF",
+                "TWEAK_COMMON_LOG_LEVEL": "Error"
+            }
+        },
+        {
+            "name": "r5f-build-options",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "/cogent_tweaktool",
+                "WITH_WIRE_NNG": "OFF",
+                "BUILD_MOCK": "OFF",
+                "WIRE_RPMSG_BACKEND": "TI_API",
+                "BUILD_CLI": "OFF",
+                "WITH_PYTHON": "OFF"
+            }
+        },
+        {
+            "name": "vb4-r5f-sysbios-debug",
+            "inherits": "r5f-build-options",
+            "displayName": "VB4 R5F SYSBIOS Debug Config",
+            "description": "VB4 R5F SYSBIOS Debug Build Configuration",
+            "environment": {
+                "DEVICE_NAME": "vb4",
+                "BSP_ROOT":"/opt/$env{DEVICE_NAME}",
+                "PSDKR_PATH": "$env{BSP_ROOT}/ti-processor-sdk-rtos-j721e-evm-07_01_00_11"
+            },
+            "toolchainFile": "${sourceDir}/cmake/tda4_bsp7_cgt_arm.toolchain.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "vb4-r5f-sysbios-debug-env",
+            "inherits": "vb4-r5f-sysbios-debug",
+            "displayName": "VB4 R5F SYSBIOS Debug Config using env BSP_ROOT",
+            "description": "VB4 R5F SYSBIOS Debug Build Configuration using env BSP_ROOT",
+            "environment": {
+                "BSP_ROOT": "$penv{BSP_ROOT}"
+            }
+        },
+        {
+            "name": "vb4-r5f-sysbios-release",
+            "inherits": "vb4-r5f-sysbios-debug",
+            "displayName": "VB4 R5F SYSBIOS Release Config",
+            "description": "VB4 R5F SYSBIOS Release Build Configuration",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "vb4-r5f-sysbios-release-env",
+            "inherits": "vb4-r5f-sysbios-release",
+            "displayName": "VB4 R5F SYSBIOS Release Config using env BSP_ROOT",
+            "description": "VB4 R5F SYSBIOS Release Build Configuration using env BSP_ROOT",
+            "environment": {
+                "BSP_ROOT": "$penv{BSP_ROOT}"
+            }
+        },
+        {
+            "name": "vb4.3-r5f-freertos-debug",
+            "inherits": "r5f-build-options",
+            "displayName": "VB4.3 R5F FREERTOS Debug Config",
+            "description": "VB4.3 R5F FREERTOS Debug Build Configuration",
+            "environment": {
+                "DEVICE_NAME": "vb4.3",
+                "BSP_ROOT":"/opt/$env{DEVICE_NAME}",
+                "PSDKR_PATH": "$env{BSP_ROOT}/ti-processor-sdk-rtos-j721e-evm-08_02_00_05"
+            },
+            "toolchainFile": "${sourceDir}/cmake/tda4_bsp_8.02_cgt_armllvm.toolchain.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "vb4.3-r5f-freertos-debug-env",
+            "inherits": "vb4.3-r5f-freertos-debug",
+            "displayName": "VB4.3 R5F FREERTOS Debug Config using env BSP_ROOT",
+            "description": "VB4.3 R5F FREERTOS Debug Build Configuration using env BSP_ROOT",
+            "environment": {
+                "BSP_ROOT": "$penv{BSP_ROOT}"
+            }
+        },
+        {
+            "name": "vb4.3-r5f-freertos-release",
+            "inherits": "vb4.3-r5f-freertos-debug",
+            "displayName": "VB4.3 R5F FREERTOS Release Config",
+            "description": "VB4.3 R5F FREERTOS Release Build Configuration",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "vb4.3-r5f-freertos-release-env",
+            "inherits": "vb4.3-r5f-freertos-release",
+            "displayName": "VB4.3 R5F FREERTOS Release Config using env BSP_ROOT",
+            "description": "VB4.3 R5F FREERTOS Release Build Configuration using env BSP_ROOT",
+            "environment": {
+                "BSP_ROOT": "$penv{BSP_ROOT}"
+            }
+        },
+        {
+            "name": "evm-r5f-freertos-debug",
+            "displayName": "EVM R5F FREERTOS Debug Config",
+            "description": "EVM R5F FREERTOS Debug Build Configuration",
+            "inherits": "r5f-build-options",
+            "environment": {
+                "DEVICE_NAME": "evm",
+                "BSP_ROOT":"/opt/$env{DEVICE_NAME}",
+                "PSDKR_PATH": "$env{BSP_ROOT}/ti-processor-sdk-rtos-j721e-evm-08_04_00_02"
+            },
+            "toolchainFile": "${sourceDir}/cmake/tda4_bsp_8.04_cgt_armllvm.toolchain.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "evm-r5f-freertos-debug-env",
+            "inherits": "evm-r5f-freertos-debug",
+            "displayName": "EVM R5F FREERTOS Debug Config using env BSP_ROOT",
+            "description": "EVM R5F FREERTOS Debug Build Configuration using env BSP_ROOT",
+            "environment": {
+                "BSP_ROOT": "$penv{BSP_ROOT}"
+            }
+        },
+        {
+            "name": "evm-r5f-freertos-release",
+            "inherits": "evm-r5f-freertos-debug",
+            "displayName": "EVM R5F FREERTOS Release Config",
+            "description": "EVM R5F FREERTOS Release Build Configuration",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "evm-r5f-freertos-release-env",
+            "inherits": "evm-r5f-freertos-release",
+            "displayName": "EVM R5F FREERTOS Release Config using env BSP_ROOT",
+            "description": "EVM R5F FREERTOS Release Build Configuration using env BSP_ROOT",
+            "environment": {
+                "BSP_ROOT": "$penv{BSP_ROOT}"
+            }
+        },
+        {
+            "name": "a72-linux-build-options",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "environment": {
+                "SDKTARGETSYSROOT": "$env{LINUX_DEVKIT}/sysroots/aarch64-linux",
+                "OECORE_NATIVE_SYSROOT": "$env{LINUX_DEVKIT}/sysroots/x86_64-arago-linux",
+                "OECORE_TARGET_SYSROOT": "$env{SDKTARGETSYSROOT}",
+                "OE_CMAKE_TOOLCHAIN_FILE": "$env{OECORE_NATIVE_SYSROOT}/usr/share/cmake/OEToolchainConfig.cmake",
+                "PKG_CONFIG_SYSROOT_DIR": "$env{SDKTARGETSYSROOT}",
+                "PKG_CONFIG_PATH": "$env{SDKTARGETSYSROOT}/usr/lib/pkgconfig:$env{SDKTARGETSYSROOT}/usr/share/pkgconfig",
+                "CONFIG_SITE":"$env{LINUX_DEVKIT}/site-config-aarch64-linux",
+                "PATH": "$env{OECORE_NATIVE_SYSROOT}/usr/bin:$env{OECORE_NATIVE_SYSROOT}/sbin:$penv{PATH}",
+                "CC": "aarch64-none-linux-gnu-gcc --sysroot=$env{SDKTARGETSYSROOT}",
+                "CXX": "aarch64-none-linux-gnu-g++ --sysroot=$env{SDKTARGETSYSROOT}",
+                "CPP": "aarch64-none-linux-gnu-gcc -E --sysroot=$env{SDKTARGETSYSROOT}",
+                "AS": "aarch64-none-linux-gnu-as",
+                "LD": "aarch64-none-linux-gnu-ld --sysroot=$env{SDKTARGETSYSROOT}",
+                "STRIP": "aarch64-none-linux-gnu-strip",
+                "RANLIB": "aarch64-none-linux-gnu-ranlib",
+                "OBJCOPY": "aarch64-none-linux-gnu-objcopy",
+                "AR": "aarch64-none-linux-gnu-ar",
+                "NM": "aarch64-none-linux-gnu-nm",
+                "M4": "m4",
+                "ARCH": "arm64"
+            },
+            "toolchainFile": "${sourceDir}/cmake/tda4_linux.toolchain.cmake",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "/usr",
+                "WITH_TWEAK_GW":"ON",
+                "WIRE_RPMSG_BACKEND": "CHRDEV",
+                "WITH_PYTHON": "ON"
+            }
+        },
+        {
+            "name": "vb4-a72-linux-debug",
+            "inherits": "a72-linux-build-options",
+            "displayName": "VB4 A72 Linux Debug Config",
+            "description": "VB4 A72 Linux Debug Build Configuration",
+            "environment": {
+                "DEVICE_NAME": "vb4",
+                "BSP_ROOT":"/opt/$env{DEVICE_NAME}",
+                "PSDKR_PATH": "$env{BSP_ROOT}/ti-processor-sdk-rtos-j721e-evm-07_01_00_11",
+                "LINUX_DEVKIT": "$env{BSP_ROOT}/ti-processor-sdk-linux-j7-evm-07_01_00_10/linux-devkit"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "vb4-a72-linux-debug-env",
+            "inherits": "vb4-a72-linux-debug",
+            "displayName": "VB4 A72 Linux Debug Config using env BSP_ROOT",
+            "description": "VB4 A72 Linux Debug Build Configuration using env BSP_ROOT",
+            "environment": {
+                "BSP_ROOT": "$penv{BSP_ROOT}"
+            }
+        },
+        {
+            "name": "vb4-a72-linux-release",
+            "inherits": "vb4-a72-linux-debug",
+            "displayName": "VB4 A72 Linux Release Config",
+            "description": "VB4 A72 Linux Release Build Configuration",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "vb4-a72-linux-release-env",
+            "inherits": "vb4-a72-linux-release",
+            "displayName": "VB4 A72 Linux Release Config using env BSP_ROOT",
+            "description": "VB4 A72 Linux Release Build Configuration using env BSP_ROOT",
+            "environment": {
+                "BSP_ROOT": "$penv{BSP_ROOT}"
+            }
+        },
+        {
+            "name": "vb4.3-a72-linux-debug",
+            "inherits": "a72-linux-build-options",
+            "displayName": "VB4.3 A72 Linux Debug Config",
+            "description": "VB4.3 A72 Linux Debug Build Configuration",
+            "environment": {
+                "DEVICE_NAME": "vb4.3",
+                "BSP_ROOT":"/opt/$env{DEVICE_NAME}",
+                "PSDKR_PATH": "$env{BSP_ROOT}/ti-processor-sdk-rtos-j721e-evm-08_02_00_05",
+                "LINUX_DEVKIT": "$env{BSP_ROOT}/ti-processor-sdk-linux-j7-evm-08_02_00_03/linux-devkit"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "vb4.3-a72-linux-debug-env",
+            "inherits": "vb4.3-a72-linux-debug",
+            "displayName": "VB4.3 A72 Linux Debug Config using env BSP_ROOT",
+            "description": "VB4.3 A72 Linux Debug Build Configuration using env BSP_ROOT",
+            "environment": {
+                "BSP_ROOT": "$penv{BSP_ROOT}"
+            }
+        },
+        {
+            "name": "vb4.3-a72-linux-release",
+            "inherits": "vb4.3-a72-linux-debug",
+            "displayName": "VB4.3 A72 Linux Release Config",
+            "description": "VB4.3 A72 Linux Release Build Configuration",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "vb4.3-a72-linux-release-env",
+            "inherits": "vb4.3-a72-linux-release",
+            "displayName": "VB4.3 A72 Linux Release Config using env BSP_ROOT",
+            "description": "VB4.3 A72 Linux Release Build Configuration using env BSP_ROOT",
+            "environment": {
+                "BSP_ROOT": "$penv{BSP_ROOT}"
+            }
+        },
+        {
+            "name": "evm-a72-linux-debug",
+            "inherits": "a72-linux-build-options",
+            "displayName": "EVM A72 Linux Debug Config",
+            "description": "EVM A72 Linux Debug Build Configuration",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "environment": {
+                "DEVICE_NAME": "evm",
+                "BSP_ROOT":"/opt/$env{DEVICE_NAME}",
+                "PSDKR_PATH": "$env{BSP_ROOT}/ti-processor-sdk-rtos-j721e-evm-08_04_00_02",
+                "LINUX_DEVKIT": "$env{BSP_ROOT}/ti-processor-sdk-linux-j7-evm-08_04_00_11/linux-devkit"
+            }
+        },
+        {
+            "name": "evm-a72-linux-debug-env",
+            "inherits": "evm-a72-linux-debug",
+            "displayName": "EVM A72 Linux Debug Config using env BSP_ROOT",
+            "description": "EVM A72 Linux Debug Build Configuration using env BSP_ROOT",
+            "environment": {
+                "BSP_ROOT": "$penv{BSP_ROOT}"
+            }
+        },
+        {
+            "name": "evm-a72-linux-release",
+            "inherits": "evm-a72-linux-debug",
+            "displayName": "EVM A72 Linux Release Config",
+            "description": "EVM A72 Linux Release Build Configuration",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "evm-a72-linux-release-env",
+            "inherits": "evm-a72-linux-release",
+            "displayName": "EVM A72 Linux Release Config using env BSP_ROOT",
+            "description": "EVM A72 Linux Release Build Configuration using env BSP_ROOT",
+            "environment": {
+                "BSP_ROOT": "$penv{BSP_ROOT}"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "pc-linux-release",
+            "configurePreset":"pc-linux-release",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4-r5f-sysbios-debug",
+            "configurePreset":"vb4-r5f-sysbios-debug",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4-r5f-sysbios-debug-env",
+            "configurePreset":"vb4-r5f-sysbios-debug-env",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4-r5f-sysbios-release",
+            "configurePreset":"vb4-r5f-sysbios-release",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4-r5f-sysbios-release-env",
+            "configurePreset":"vb4-r5f-sysbios-release-env",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4.3-r5f-freertos-debug",
+            "configurePreset":"vb4.3-r5f-freertos-debug",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4.3-r5f-freertos-debug-env",
+            "configurePreset":"vb4.3-r5f-freertos-debug-env",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4.3-r5f-freertos-release",
+            "configurePreset":"vb4.3-r5f-freertos-release",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4.3-r5f-freertos-release-env",
+            "configurePreset":"vb4.3-r5f-freertos-release-env",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "evm-r5f-freertos-debug",
+            "configurePreset":"evm-r5f-freertos-debug",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "evm-r5f-freertos-debug-env",
+            "configurePreset":"evm-r5f-freertos-debug-env",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "evm-r5f-freertos-release",
+            "configurePreset":"evm-r5f-freertos-release",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "evm-r5f-freertos-release-env",
+            "configurePreset":"evm-r5f-freertos-release-env",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4-a72-linux-debug",
+            "configurePreset":"vb4-a72-linux-debug",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4-a72-linux-debug-env",
+            "configurePreset":"vb4-a72-linux-debug-env",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4-a72-linux-release",
+            "configurePreset":"vb4-a72-linux-release",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4-a72-linux-release-env",
+            "configurePreset":"vb4-a72-linux-release-env",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4.3-a72-linux-debug",
+            "configurePreset":"vb4.3-a72-linux-debug",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4.3-a72-linux-debug-env",
+            "configurePreset":"vb4.3-a72-linux-debug-env",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4.3-a72-linux-release",
+            "configurePreset":"vb4.3-a72-linux-release",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "vb4.3-a72-linux-release-env",
+            "configurePreset":"vb4.3-a72-linux-release-env",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "evm-a72-linux-debug",
+            "configurePreset":"evm-a72-linux-debug",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "evm-a72-linux-debug-env",
+            "configurePreset":"evm-a72-linux-debug-env",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "evm-a72-linux-release",
+            "configurePreset":"evm-a72-linux-release",
+            "targets": ["all", "package"]
+        },
+        {
+            "name": "evm-a72-linux-release-env",
+            "configurePreset":"evm-a72-linux-release-env",
+            "targets": ["all", "package"]
+        }
+    ]
+}

@@ -21,24 +21,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
-cmake_minimum_required(VERSION 3.10)
-
 set(LIBRARY_NAME pytweaklib)
 set(python_module_name tweak2)
 
-find_package(PythonInterp 3 REQUIRED)
-find_package(pybind11 QUIET CONFIG)
+find_package(Python 3 REQUIRED COMPONENTS Interpreter Development)
 
-if(pybind11_FOUND)
-  message(STATUS "pybind11: Using system package version ${pybind11_VERSION}")
+if(CMAKE_CROSSCOMPILING)
+  # SDK package must be used to generate correct library suffix e.g. aarch64
+  # Bundled pybind would only generate host suffix e.g. x86-64
+  find_package(pybind11 REQUIRED)
 else()
   set(PYBIND11_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../extern/pybind11")
   if(NOT EXISTS "${PYBIND11_DIR}/CMakeLists.txt")
     message(
       FATAL_ERROR
-        "pybind11: System package was not found, built-in in also unavailable."
-        " Please init and update all submodules."
-        " Searched ${PYBIND11_DIR}")
+        "pybind11: package was not found."
+        " Please init and update all submodules." " Searched ${PYBIND11_DIR}")
   endif()
 
   add_subdirectory("${PYBIND11_DIR}" ${CMAKE_CURRENT_BINARY_DIR}/pybind11)
@@ -77,27 +75,18 @@ endif()
 # Installation
 # -----------------------------------------------------------------------------
 
-execute_process(
-  COMMAND
-    ${PYTHON_EXECUTABLE} -c "
-from distutils import sysconfig
-print(sysconfig.get_python_lib(prefix=''))
-  "
-  OUTPUT_VARIABLE PYTHON_SITE_DIR
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-if (MSVC)
-    cmake_path(SET PYTHON_SITE_DIR NORMALIZE ${PYTHON_SITE_DIR})
+set(PYTHON_SITE_DIR "${Python_SITEARCH}")
+if (CMAKE_CROSSCOMPILING)
+  string(REPLACE "$ENV{OECORE_NATIVE_SYSROOT}/usr/" "" PYTHON_SITE_DIR ${PYTHON_SITE_DIR})
 endif()
-
 message(STATUS "Python site packages dir: ${PYTHON_SITE_DIR}")
 
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_DIR}/${python_module_name}
+  DESTINATION ${PYTHON_SITE_DIR}/${python_module_name}
   COMPONENT python)
 
 install(
   TARGETS ${LIBRARY_NAME}
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_DIR}/${python_module_name}
+  DESTINATION ${PYTHON_SITE_DIR}/${python_module_name}
   COMPONENT python)

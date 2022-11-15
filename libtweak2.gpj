@@ -41,7 +41,7 @@ $(__TWEAK_DIR)/tweak-pickle/src/tweakpickle_pb_util.c
 $(__TWEAK_DIR)/tweak-pickle/src/tweakpickle_server_pb.c
 $(__TWEAK_DIR)/tweak-common/src/tweakstring.c
 $(__TWEAK_DIR)/tweak-common/src/tweakvariant.c
-$(__TWEAK_DIR)/tweak-common/src/tweaklog_unix.c
+$(__TWEAK_DIR)/tweak-common/src/tweaklog.c
 $(__TWEAK_DIR)/tweak1lib/src/tweakcompat.c
 $(__TWEAK_DIR)/tweak-app/src/tweakmodel_uri_to_tweak_id_index.c
 $(__TWEAK_DIR)/tweak-app/src/tweakmodel.c

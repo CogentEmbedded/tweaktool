@@ -32,13 +32,6 @@ set(LIBRARY_SOVERSION 1)
 # Dependencies
 # ------------------------------------------------------------------------------
 
-set(CMAKE_REQUIRED_LIBRARIES Threads::Threads)
-
-if (NOT MSVC)
-  include(CheckSymbolExists)
-  check_symbol_exists(pthread_threadid_np "pthread.h" PTHREAD_THREADID_NP_EXISTS)
-endif()
-
 set(${LIBRARY_NAME}_DEPENDENCIES ${PROJECT_NAMESPACE}::json)
 
 # ------------------------------------------------------------------------------
@@ -54,18 +47,36 @@ set(${LIBRARY_NAME}_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/tweak2/log.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/tweak2/defaults.h)
 
-set(${LIBRARY_NAME}_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_out_stderr.c
-                            ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_unix.c
+set(${LIBRARY_NAME}_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakbuffer.c
+                            ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog.c
                             ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakstring.c
-                            ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakbuffer.c
                             ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakvariant.c)
 
-if(MSVC)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Concerto")
   list(APPEND ${LIBRARY_NAME}_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_format_time_winapi.c)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_format_time_tda4.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_out_tda4.c)
 else()
+  set(THREADS_PREFER_PTHREAD_FLAG ON)
+  find_package(Threads REQUIRED)
+  list(APPEND ${LIBRARY_NAME}_DEPENDENCIES Threads)
+
+  if (NOT MSVC)
+    include(CheckSymbolExists)
+    check_symbol_exists(pthread_threadid_np "pthread.h" PTHREAD_THREADID_NP_EXISTS)
+  endif()
+
   list(APPEND ${LIBRARY_NAME}_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_format_time_posix.c)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_out_stderr.c)
+
+  if(MSVC)
+    list(APPEND ${LIBRARY_NAME}_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_format_time_winapi.c)
+  else()
+    list(APPEND ${LIBRARY_NAME}_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_format_time_posix.c)
+  endif()
 endif()
 
 if(PTHREAD_THREADID_NP_EXISTS)
@@ -77,6 +88,9 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   list(APPEND ${LIBRARY_NAME}_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_thread_id_common.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_thread_id_linux_syscall.c)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Concerto")
+  list(APPEND ${LIBRARY_NAME}_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_thread_id_sysbios.c)
 elseif(MSVC)
   list(APPEND ${LIBRARY_NAME}_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweaklog_thread_id_winapi.c)
@@ -115,6 +129,9 @@ else()
   elseif(ATOMIC_ADD_VALUE_EXISTS)
     list(APPEND ${LIBRARY_NAME}_SOURCES
                 ${CMAKE_CURRENT_SOURCE_DIR}/src/tweak_id_gen_atomic_add_value.c)
+  elseif(CMAKE_SYSTEM_NAME STREQUAL "Concerto")
+    list(APPEND ${LIBRARY_NAME}_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tweak_id_gen_sysbios.c)
   else()
     list(APPEND ${LIBRARY_NAME}_SOURCES
                 ${CMAKE_CURRENT_SOURCE_DIR}/src/tweak_id_gen_fallback.c)
@@ -138,9 +155,8 @@ if(NOT MSVC)
   target_link_libraries(${LIBRARY_NAME} PRIVATE m)
 endif()
 
-target_link_libraries(${LIBRARY_NAME} PUBLIC
-  ${${LIBRARY_NAME}_DEPENDENCIES}
-  Threads::Threads)
+target_link_libraries(${LIBRARY_NAME} PUBLIC $<$<BOOL:${Threads_FOUND}>:Threads::Threads>
+  PRIVATE ${PROJECT_NAMESPACE}::json)
 
 target_compile_features(${LIBRARY_NAME} PUBLIC c_std_99)
 

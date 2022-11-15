@@ -16,7 +16,7 @@ node('docker') {
                 cmakeBuild (
                     buildType: 'Release',
                     sourceDir: '../',
-                    cmakeArgs: '-DBUILD_GUI=ON -DBUILD_SHARED_LIBS=ON -DPACKAGE_RPM=OFF -DBUILD_TESTS=ON -DWITH_PYTHON=OFF -DCMAKE_INSTALL_PREFIX=/usr',
+                    cmakeArgs: '-DBUILD_GUI=ON -DBUILD_SHARED_LIBS=ON -DPACKAGE_RPM=OFF -DBUILD_TESTS=ON -DWITH_PYTHON=ON -DCMAKE_INSTALL_PREFIX=/usr',
                     cleanBuild: true,
                     installation: 'InSearchPath',
                     steps: [[withCmake: true, args: '--parallel']]

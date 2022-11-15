@@ -1,0 +1,8 @@
+set(SOC_ID SOC_J721S2)
+set(SOC_ID_OUT J721S2)
+
+include(${CMAKE_CURRENT_LIST_DIR}/tda4_bsp_8_cgt_armllvm.cmake)
+
+list(APPEND CMAKE_C_STANDARD_INCLUDE_DIRECTORIES
+    ${BSP_TOPDIR}/pdk_j721s2_08_00_04_09/packages
+)

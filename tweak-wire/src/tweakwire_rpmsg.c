@@ -32,7 +32,9 @@
 #include "tweakwire_rpmsg.h"
 #include "tweakwire_rpmsg_transport.h"
 
+#if defined(TI_ARM_R5F)
 #include <common/app.h> // from vision_apps
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -258,22 +260,21 @@ tweak_wire_connection tweak_wire_create_rpmsg_connection(
 }
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
-enum { CHUNK_NUMBER_OFFSET = 0, CHUNK_COUNT_OFFSET = 1, PAYLOAD_OFFSET = 2};
+#define as_uint16_t(x) (*((uint16_t*)&(x)))
+enum { CHUNK_NUMBER_OFFSET = 0, CHUNK_COUNT_OFFSET = 2, PAYLOAD_OFFSET = 4};
 
 static tweak_wire_error_code send_partitioned(struct tweak_wire_rpmsg_transport *transport,
-    const uint8_t *buffer, uint16_t len)
+    const uint8_t *buffer, size_t len)
 {
     const uint32_t max_chunk_payload_size = tweak_wire_rpmsg_max_chunk_size - PAYLOAD_OFFSET;
-    uint32_t n_chunks = len / max_chunk_payload_size;
-    if ((len % max_chunk_payload_size) != 0) {
-        ++n_chunks;
-    }
-    if (n_chunks >= UINT8_MAX) {
+    uint32_t n_chunks = (len + max_chunk_payload_size - 1) / max_chunk_payload_size;
+    if (n_chunks >= UINT16_MAX) {
+        TWEAK_LOG_ERROR("Cannot send more than %u chunks: %u requested", UINT16_MAX - 1, n_chunks);
         return TWEAK_WIRE_ERROR;
     }
     for (uint32_t n_chunk = 0; n_chunk < n_chunks; n_chunk++) {
-        transport->send_buff[CHUNK_NUMBER_OFFSET] = (uint8_t)(n_chunk + 1); /* start from 1 */
-        transport->send_buff[CHUNK_COUNT_OFFSET] = (uint8_t)n_chunks;
+        as_uint16_t(transport->send_buff[CHUNK_NUMBER_OFFSET]) = (uint16_t)(n_chunk + 1); /* start from 1 */
+        as_uint16_t(transport->send_buff[CHUNK_COUNT_OFFSET]) = (uint16_t)n_chunks;
 
         uint32_t from = n_chunk * max_chunk_payload_size;
         uint32_t to = MIN(len, (n_chunk + 1) * max_chunk_payload_size);
@@ -287,15 +288,14 @@ static tweak_wire_error_code send_partitioned(struct tweak_wire_rpmsg_transport 
             TWEAK_LOG_ERROR("tweak_wire_rpmsg_transport_send failed: %d", error_code);
             return error_code;
         }
-        TWEAK_LOG_TRACE("%u of %u chunks sent",
-            n_chunk + 1, n_chunks);
+        TWEAK_LOG_TRACE("%u of %u chunks sent", n_chunk + 1, n_chunks);
     }
     TWEAK_LOG_DEBUG("sent message: %d bytes", len);
     return TWEAK_WIRE_SUCCESS;
 }
 
 tweak_wire_error_code receive_partitioned(struct tweak_wire_rpmsg_transport *transport,
-    uint8_t *buffer, uint16_t *len)
+    uint8_t *buffer, size_t *len)
 {
     uint32_t bytes_received = 0;
     uint32_t n_prev_chunk = 0;
@@ -311,7 +311,7 @@ tweak_wire_error_code receive_partitioned(struct tweak_wire_rpmsg_transport *tra
             if (n_chunk == 0) {
                 TWEAK_LOG_TRACE("tweak_wire_rpmsg_transport_receive() timeout");
             } else {
-                TWEAK_LOG_WARN("Chunk sequence was abrupted prematurely on chunk %d of %d", n_chunk, n_chunks);
+                TWEAK_LOG_WARN("Chunk sequence stopped prematurely on chunk %d of %d", n_chunk, n_chunks);
             }
             return error_code;
         }
@@ -322,23 +322,25 @@ tweak_wire_error_code receive_partitioned(struct tweak_wire_rpmsg_transport *tra
         }
 
         uint16_t chunk_payload_size = chunk_size - PAYLOAD_OFFSET;
-        n_chunk = transport->recv_buff[CHUNK_NUMBER_OFFSET];
-        n_chunks = transport->recv_buff[CHUNK_COUNT_OFFSET];
+        n_chunk = as_uint16_t(transport->recv_buff[CHUNK_NUMBER_OFFSET]);
+        n_chunks = as_uint16_t(transport->recv_buff[CHUNK_COUNT_OFFSET]);
         if (n_prev_chunk != (n_chunk - 1)) {
-            TWEAK_LOG_WARN("Chunk sequence was corrupted: chunk sequence number %u, prev chunk sequence number %u",
+            TWEAK_LOG_ERROR("Chunk sequence was corrupted: chunk sequence number %u, prev chunk sequence number %u",
                 n_chunk, n_prev_chunk);
             return TWEAK_WIRE_ERROR;
         }
         TWEAK_LOG_TRACE("tweak_wire_rpmsg_transport_receive() ok, %u of %u chunks received", n_chunk, n_chunks);
         n_prev_chunk = n_chunk;
 
+        if (bytes_received + chunk_payload_size > *len) {
+            TWEAK_LOG_ERROR("Buffer is too short, needed at least %u bytes, given %u",
+                            bytes_received + chunk_payload_size,  *len);
+            return TWEAK_WIRE_ERROR;
+        }
+
         memcpy(&buffer[bytes_received], &transport->recv_buff[PAYLOAD_OFFSET], chunk_payload_size);
         bytes_received += chunk_payload_size;
 
-        if (bytes_received > *len) {
-            TWEAK_LOG_ERROR("Buffer is too short, needed at least %u bytes, given %u", *len, bytes_received);
-            return TWEAK_WIRE_ERROR;
-        }
     } while (n_chunk != n_chunks);
 
     /* ...wait for input message */
@@ -349,15 +351,16 @@ tweak_wire_error_code receive_partitioned(struct tweak_wire_rpmsg_transport *tra
 
     return TWEAK_WIRE_SUCCESS;
 }
+#undef as_uint16_t
 
 static void *tweak_wire_rpmsg_receive_thread(void *arg)
 {
     TWEAK_LOG_TRACE_ENTRY("arg = %p", arg);
-    uint16_t len;
+    size_t len;
     struct tweak_wire_connection_rpmsg *connection = (struct tweak_wire_connection_rpmsg *)arg;
     tweak_wire_error_code status;
     do {
-        len = (uint16_t)sizeof(connection->receive_buffer);
+        len = sizeof(connection->receive_buffer);
         status = receive_partitioned(&connection->transport,
             connection->receive_buffer, &len);
         if (status == TWEAK_WIRE_SUCCESS)

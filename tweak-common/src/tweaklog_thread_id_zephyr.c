@@ -1,8 +1,8 @@
 /**
- * @file tweaklog_format_time_tda4.c
+ * @file tweaklog_thread_id_zephyr.c
  * @ingroup tweak-api
  *
- * @brief Routine to get printable ISO 8601 time string for logging.
+ * @brief Routine to get printable thread id for logging.
  *
  * @copyright 2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
@@ -27,7 +27,20 @@
 
 #include <tweak2/log.h>
 
-const char* tweak_common_log_format_time() {
-  /*.. on TDA4 log is automatically prefixed by system monotonic clock by appLogPrintf */
-  return "";
+#include <string.h>
+#include <zephyr/kernel.h>
+
+const char *tweak_common_log_get_thread_id()
+{
+    k_tid_t tid = k_current_get();
+    const char *name = k_thread_name_get(tid);
+
+    if (name != NULL && strlen(name) != 0)
+    {
+        return name;
+    }
+
+    static char buffer[16];
+    sprintf(buffer, "%p", tid);
+    return buffer;
 }

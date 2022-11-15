@@ -1,0 +1,39 @@
+set(CMAKE_SYSTEM_NAME Concerto)
+set(CMAKE_SYSTEM_PROCESSOR TI_ARM_R5F)
+
+set(BSP_TOPDIR "$ENV{PSDKR_PATH}")
+
+set(R5F_OS "FREERTOS")
+
+set(TIARMCGT_LLVM_ROOT ${BSP_TOPDIR}/ti-cgt-armllvm_1.3.0.LTS)
+set(CMAKE_FIND_ROOT_PATH ${TIARMCGT_LLVM_ROOT})
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+set(CMAKE_C_COMPILER ${TIARMCGT_LLVM_ROOT}/bin/tiarmclang)
+set(CMAKE_CXX_COMPILER ${TIARMCGT_LLVM_ROOT}/bin/tiarmclang)
+set(CMAKE_AR ${TIARMCGT_LLVM_ROOT}/bin/tiarmar)
+
+set(CMAKE_C_FLAGS "-D${SOC_ID} -mfloat-abi=hard -mfpu=vfpv3-d16 -mcpu=cortex-r5 -march=armv7-r -fno-strict-aliasing")
+set(CMAKE_CXX_FLAGS ${CMAKE_C_FLAGS})
+
+set(CMAKE_LINKER_FLAGS "-Wl,--diag_suppress=10063-D -Wl,--diag_suppress=10068-D -Wl,--zero_init=on -Wl,--rom_model")
+set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_LINKER_FLAGS})
+
+set(CMAKE_C_CREATE_STATIC_LIBRARY "${CMAKE_AR} -rscu <TARGET> <LINK_FLAGS> <OBJECTS>")
+set(CMAKE_CXX_CREATE_STATIC_LIBRARY ${CMAKE_C_CREATE_STATIC_LIBRARY})
+
+set(CMAKE_C_STANDARD_INCLUDE_DIRECTORIES
+    ${BSP_TOPDIR}/vision_apps
+    ${BSP_TOPDIR}/tiovx/include
+    ${BSP_TOPDIR}/tiovx/kernels/include
+    ${BSP_TOPDIR}/tiovx/kernels_j7/include
+    ${BSP_TOPDIR}/vision_apps/platform/j721e/rtos
+)
+
+set(CMAKE_INSTALL_INCLUDEDIR include)
+set(CMAKE_INSTALL_BINDIR bin)
+string(TOLOWER "${CMAKE_BUILD_TYPE}" BUILD_TYPE)
+set(CMAKE_INSTALL_LIBDIR lib/${SOC_ID_OUT}/R5F/${R5F_OS}/${BUILD_TYPE})

@@ -1,0 +1,6 @@
+name: tweaktool
+build:
+  cmake: zephyr
+  kconfig: zephyr/Kconfig
+  depends:
+    - nng

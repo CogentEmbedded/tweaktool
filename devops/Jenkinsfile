@@ -7,6 +7,9 @@ node() {
     }
 
     def builders = [:]
+    builders['ubuntu22.04'] = {
+        load 'devops/ubuntu22.04/Jenkinsfile'
+    }
     builders['ubuntu20.04'] = {
         load 'devops/ubuntu20.04/Jenkinsfile'
     }

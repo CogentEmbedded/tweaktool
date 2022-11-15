@@ -36,7 +36,7 @@ if(WITH_WIRE_NNG)
   find_package(nng REQUIRED)
 endif()
 
-set(${LIBRARY_NAME}_DEPENDENCIES ${PROJECT_NAMESPACE}::common Threads)
+set(${LIBRARY_NAME}_DEPENDENCIES ${PROJECT_NAMESPACE}::common)
 
 # ------------------------------------------------------------------------------
 # Source files
@@ -52,6 +52,7 @@ if(WITH_WIRE_NNG)
 endif()
 
 if(WIRE_RPMSG_BACKEND STREQUAL TI_API)
+  set(WITH_WIRE_RPMSG ON)
   list(
     APPEND
     ${LIBRARY_NAME}_SOURCES
@@ -60,6 +61,9 @@ if(WIRE_RPMSG_BACKEND STREQUAL TI_API)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg_transport_ti_api.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg.c)
 elseif(WIRE_RPMSG_BACKEND STREQUAL CHRDEV)
+  set(WITH_WIRE_RPMSG ON)
+  find_package(RPMSG REQUIRED)
+  list(APPEND ${LIBRARY_NAME}_DEPENDENCIES RPMSG)
   list(
     APPEND
     ${LIBRARY_NAME}_SOURCES
@@ -68,7 +72,6 @@ elseif(WIRE_RPMSG_BACKEND STREQUAL CHRDEV)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg_transport_linux.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg.c)
 elseif(WIRE_RPMSG_BACKEND STREQUAL OFF)
-
 else()
   message(
     FATAL_ERROR
@@ -92,14 +95,17 @@ endif()
 add_library(${PROJECT_NAMESPACE}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
 
 target_compile_definitions(
-  ${LIBRARY_NAME}
-  PRIVATE $<$<BOOL:${WITH_WIRE_NNG}>:WITH_WIRE_NNG>
-  PRIVATE WIRE_RPMSG_BACKEND_${WIRE_RPMSG_BACKEND})
+  ${LIBRARY_NAME} PRIVATE
+    $<$<BOOL:${WITH_WIRE_NNG}>:WITH_WIRE_NNG>
+    $<$<BOOL:${WITH_WIRE_RPMSG}>:WITH_WIRE_RPMSG>
+    WIRE_RPMSG_BACKEND_${WIRE_RPMSG_BACKEND})
 
 target_link_libraries(
   ${LIBRARY_NAME}
   PUBLIC ${PROJECT_NAMESPACE}::common
-  PRIVATE Threads::Threads $<$<BOOL:${WITH_WIRE_NNG}>:nng::nng>)
+  PRIVATE
+    $<$<BOOL:${WITH_WIRE_NNG}>:nng::nng>
+    $<$<BOOL:${RPMSG_FOUND}>:RPMSG::RPMSG>)
 
 target_compile_features(${LIBRARY_NAME} PUBLIC c_std_99)
 

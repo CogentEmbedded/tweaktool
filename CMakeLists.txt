@@ -25,7 +25,7 @@
 # ------------------------------------------------------------------------------
 # Check CMake version
 # ------------------------------------------------------------------------------
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.16)
 
 # ------------------------------------------------------------------------------
 # Generate project version
@@ -39,6 +39,9 @@ include(cmake/generate_version.cmake)
 if(POLICY CMP0092)
   cmake_policy(SET CMP0092 NEW)
 endif()
+
+# search for additional CMake modules
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # ------------------------------------------------------------------------------
 # Create project
@@ -71,6 +74,7 @@ cmake_dependent_option(BUILD_CLI "Build command line client" ON "NOT MSVC" OFF)
 option(WITH_DOXYGEN    "Enable Doxygen-based documentation"  OFF)
 option(WITH_PYTHON     "Build Python 3 binding"               ON)
 option(WITH_WIRE_NNG   "Build NNG wire backend"               ON)
+option(WITH_TWEAK_GW   "Build Tweak RPMSG<=>NNG Gateway app"  OFF)
 # cmake-format: on
 
 set(WIRE_RPMSG_BACKENDS OFF TI_API CHRDEV)
@@ -91,7 +95,9 @@ set_property(CACHE TWEAK_COMMON_LOG_LEVEL PROPERTY STRINGS
 # Global project configuration
 # ------------------------------------------------------------------------------
 
-set(CMAKE_POSITION_INDEPENDENT_CODE YES)
+if (WITH_PYTHON)
+  set(CMAKE_POSITION_INDEPENDENT_CODE YES)
+endif()
 
 set(PROJECT_VENDOR "Cogent Embedded, Inc.")
 add_definitions(-DPROJECT_VENDOR=\"${PROJECT_VENDOR}\")
@@ -101,6 +107,10 @@ add_definitions(-DPROJECT_DOMAIN=\"${PROJECT_DOMAIN}\")
 add_definitions(-DPROJECT_SUMMARY=\"${PROJECT_SUMMARY}\")
 add_definitions(-DPROJECT_FULL_NAME=\"${PROJECT_FULL_NAME}\")
 
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL "TI_ARM_R5F")
+  add_definitions(-DTI_ARM_R5F)
+endif()
+
 set(PROJECT_NAMESPACE tweak2)
 
 set(GUI_TOOL_NAME tweak-gui)
@@ -108,9 +118,6 @@ set(GUI_TOOL_NAME tweak-gui)
 # ------------------------------------------------------------------------------
 # Dependencies
 # ------------------------------------------------------------------------------
-
-# search for additional CMake modules
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 if(BUILD_TESTS)
 
@@ -145,9 +152,6 @@ include(CMakeDependentOption)
 include(GenerateExportHeader)
 include(AppendToGlobalList)
 include(TweakComponentInstall)
-
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Asan")
   if(MSVC)
@@ -201,7 +205,7 @@ if(NO_DEPRECATED_COPY_SUPPORTED)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy>)
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
+if(CMAKE_BUILD_TYPE STREQUAL "Release" AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "TI")
   include(CheckCXXCompilerFlag)
   check_cxx_compiler_flag(-ffile-prefix-map=${CMAKE_CURRENT_LIST_DIR}=
                           CXX_FILE_PREFIX_MAP_SUPPORTED)
@@ -248,6 +252,10 @@ if(BUILD_GUI)
   add_subdirectory(tweak-gui-qml)
 endif()
 
+if (WITH_TWEAK_GW)
+  add_subdirectory(tweak-gw)
+endif()
+
 # ------------------------------------------------------------------------------
 # Generate CMake infrastructure
 # ------------------------------------------------------------------------------
@@ -271,6 +279,18 @@ install(
         "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAMESPACE}
   COMPONENT dev)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Concerto")
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/concerto.mak.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/concerto.mak
+                 @ONLY)
+
+  install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/concerto.mak"
+    DESTINATION ${CMAKE_INSTALL_PREFIX}
+    COMPONENT dev
+  )
+endif()
 
 # ------------------------------------------------------------------------------
 # Building docs with collected sets of files

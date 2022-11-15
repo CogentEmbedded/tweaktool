@@ -13,7 +13,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 
 RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
 
-RUN echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ bionic main' | tee /etc/apt/sources.list.d/kitware.list >/dev/null
+RUN echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ jammy main' | tee /etc/apt/sources.list.d/kitware.list >/dev/null
 
 RUN apt-get update && apt-get -y install \
     bash \
@@ -56,7 +56,9 @@ RUN apt-get update && apt-get -y install \
     qml-module-qtqml-models2 \
     qml-module-qtquick-* \
     qml-module-qtquick-controls2 \
-    qt5-default \
+    qt5-qmake \
+    qtbase5-dev \
+    qtbase5-dev-tools \
     qtdeclarative5-dev \
     qtquickcontrols2-5-dev \
     scons \

@@ -32,15 +32,44 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <stdio.h>
 #include <sys/eventfd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <utils/ipc/src/app_ipc_linux_priv.h>
-#include <utils/ipc/include/app_ipc.h>
+#include <rproc_id.h>
+#include <ti_rpmsg_char.h>
 
 #define LINUX_ENDPOINT_NAME "rpmsg_chrdev"
+
+static int32_t create_tx_channel(struct tweak_wire_rpmsg_transport *transport)
+{
+    transport->remote_proc = R5F_MAIN0_0;
+
+    int32_t fd = -1;
+    rpmsg_char_dev_t local_dev;
+    char name[32] = { 0 };
+
+    snprintf(name, sizeof(name) - 1, "rpmsg-char-%d-%d", transport->remote_proc, getpid());
+
+    transport->device = rpmsg_char_open(transport->remote_proc,
+                NULL,
+                transport->remote_endpoint,
+                name,
+                0
+    );
+
+    if (transport->device != NULL)
+    {
+        local_dev = *transport->device;
+        transport->local_endpoint = local_dev.endpt;
+
+        fd = local_dev.fd;
+    }
+
+    return fd;
+}
 
 tweak_wire_error_code tweak_wire_rpmsg_init_transport(
     struct tweak_wire_rpmsg_transport *transport, const char* endpoint_name, uint32_t endpoint,
@@ -78,19 +107,9 @@ tweak_wire_error_code tweak_wire_rpmsg_init_transport(
         return TWEAK_WIRE_ERROR;
     }
 
-    /* TODO: Remove dependency on CPU Id */
-    transport->remote_proc = appIpcGetAppCpuId("mcu2_0");
-    transport->remote_endpoint = endpoint;
-
-    /* ...make sure IPC is enabled for remote partner cpu (s) */
-    if (appIpcIsCpuEnabled(transport->remote_proc) == false)
-    {
-        TWEAK_LOG_ERROR("IPC is not enabled for cpu #%u", transport->remote_proc);
-        return TWEAK_WIRE_ERROR;
-    }
-
     /* .. Open RPMSG character device */
-    transport->fd = appIpcCreateTxCh(transport->remote_proc, transport->remote_endpoint, &transport->local_endpoint, &transport->rcdev[0]);
+    transport->remote_endpoint = endpoint;
+    transport->fd = create_tx_channel(transport);
     if (transport->fd < 0)
     {
         TWEAK_LOG_ERROR("failed to create endpoint %d: %m", transport->local_endpoint);
@@ -214,7 +233,7 @@ void tweak_wire_rpmsg_transport_close(struct tweak_wire_rpmsg_transport *transpo
 {
     TWEAK_LOG_TRACE_ENTRY("transport = %p", transport);
 
-    appIpcDeleteCh(transport->rcdev[0]);
+    rpmsg_char_close(transport->device);
     transport->fd = -1;
     transport->remote_endpoint = 0;
     transport->local_endpoint = 0;

@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: MIT
+
+config TWEAKTOOL
+	bool "Enable support for tweaktool"

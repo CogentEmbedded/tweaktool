@@ -77,8 +77,7 @@ if (MSVC)
     COMPILE_FLAGS ${VC_UTHASH_WARNINGS})
 endif()
 
-target_link_libraries(${LIBRARY_NAME} PUBLIC ${${LIBRARY_NAME}_DEPENDENCIES}
-                                             Threads::Threads)
+target_link_libraries(${LIBRARY_NAME} PUBLIC ${${LIBRARY_NAME}_DEPENDENCIES})
 
 target_compile_features(${LIBRARY_NAME} PUBLIC c_std_99)
 

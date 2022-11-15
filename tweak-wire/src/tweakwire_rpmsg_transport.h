@@ -64,10 +64,10 @@ enum
     tweak_wire_rpmsg_max_message_size = 512,
 
     /**
-     * @brief Maximum amount of data that could be sent
-     * is 256 packets having 254 bytes payload each.
+     * @brief Maximum amount of data that could be sent.
+     * Maximum value supported by the protocol is 65535 packets with 252 bytes payload each.
      */
-    tweak_wire_rpmsg_max_packet_size = UINT16_MAX - (2 * UINT8_MAX),
+    tweak_wire_rpmsg_max_packet_size = 256 * 1024,
 
     /**
      * @brief RPMSG seem to reject datagrams larger that this.
@@ -141,7 +141,7 @@ struct tweak_wire_rpmsg_transport
      */
     int eventfd_unblock;
 
-    rpmsg_char_dev_t *rcdev[1];
+    rpmsg_char_dev_t *device;
 #else
 #error Backend type must be defined
 #endif

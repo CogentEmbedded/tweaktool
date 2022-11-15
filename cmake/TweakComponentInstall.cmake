@@ -22,14 +22,6 @@
 # THE SOFTWARE.
 #
 
-# CMake older than than 3.10 does not support find_dependency with PATHS
-# argument, see https://github.com/ros-industrial/abb_librws/issues/84
-if(${CMAKE_VERSION} VERSION_LESS "3.10.0")
-  set(FIND_COMPONENT_COMMAND find_package)
-else()
-  set(FIND_COMPONENT_COMMAND find_dependency)
-endif()
-
 # Installs a tweak component using standard component rules
 macro(tweak_component_install TARGET_NAME)
 
@@ -44,10 +36,6 @@ macro(tweak_component_install TARGET_NAME)
     FILES ${${TARGET_NAME}_HEADERS}
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAMESPACE}
     COMPONENT dev)
-  target_include_directories(
-    ${TARGET_NAME}
-    INTERFACE
-      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
   set(COMPONENT_DEPENDENCIES ${${TARGET_NAME}_DEPENDENCIES})
   install(
@@ -73,6 +61,15 @@ macro(tweak_component_install TARGET_NAME)
       "${PROJECT_BINARY_DIR}/${PROJECT_NAMESPACE}${TARGET_NAME}Config.cmake"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAMESPACE}
     COMPONENT dev)
+
+  foreach(_dependency ${COMPONENT_DEPENDENCIES})
+    set(DEPENDENCY_LOOKUP_MODULE "${PROJECT_SOURCE_DIR}/cmake/Find${_dependency}.cmake")
+    if (EXISTS ${DEPENDENCY_LOOKUP_MODULE})
+      install(FILES ${DEPENDENCY_LOOKUP_MODULE}
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAMESPACE}
+        COMPONENT dev)
+    endif()
+  endforeach()
 
   unset(COMPONENT_DEPENDENCIES)
 

@@ -1,0 +1,63 @@
+#
+# CMake build configuration for Cogent Tweak Tool.
+#
+# Copyright (c) 2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+if(CPACK_GENERATOR MATCHES "TGZ")
+  set(CPACK_SET_DESTDIR ON)
+  set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
+  set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
+elseif(CPACK_GENERATOR MATCHES "DEB")
+  set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_FULL_NAME}")
+  set(CPACK_DEB_COMPONENT_INSTALL ON)
+  set(CPACK_DEBIAN_PACKAGE_HOMEPAGE ${PROJECT_URI})
+  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "info@cogentembedded.com")
+  set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
+  set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS ON)
+  set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS_POLICY ">=")
+  set(CPACK_DEBIAN_python_PACKAGE_DEPENDS "tweaktool python3 python3-numpy")
+  set(CPACK_DEBIAN_tools_PACKAGE_SHLIBDEPS ON)
+  set(CPACK_DEBIAN_dev_PACKAGE_SHLIBDEPS ON)
+elseif(CPACK_GENERATOR MATCHES "RPM")
+  set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_FULL_NAME}")
+  set(CPACK_RPM_COMPONENT_INSTALL ON)
+elseif(CPACK_GENERATOR MATCHES "NSIS")
+  set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_FULL_NAME}")
+  set(CPACK_NSIS_PACKAGE_NAME "${PROJECT_FULL_NAME} ver ${PROJECT_VERSION}")
+  set(CPACK_NSIS_DISPLAY_NAME "${PROJECT_SUMMARY} ver ${PROJECT_VERSION}")
+  set(CPACK_NSIS_HELP_LINK ${PROJECT_URI})
+  set(CPACK_NSIS_CONTACT ${PROJECT_URI})
+  set(CPACK_NSIS_WELCOME_TITLE ${PROJECT_SUMMARY})
+  set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL TRUE)
+  if(BUILD_GUI)
+    set(CPACK_NSIS_CREATE_ICONS_EXTRA
+        "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\${PROJECT_FULL_NAME}.lnk' '$INSTDIR\\\\bin\\\\tweak-gui.exe'"
+        "CreateShortCut '$DESKTOP\\\\${PROJECT_FULL_NAME}.lnk' '$INSTDIR\\\\bin\\\\tweak-gui.exe'"
+    )
+
+    set(CPACK_NSIS_DELETE_ICONS_EXTRA
+        "Delete '$SMPROGRAMS\\\\$START_MENU\\\\${PROJECT_FULL_NAME}.lnk'"
+        "Delete '$DESKTOP\\\\${PROJECT_FULL_NAME}.lnk'")
+  endif()
+else()
+  set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_FULL_NAME}")
+endif()

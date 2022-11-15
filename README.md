@@ -12,279 +12,327 @@ that can be updated using remote GUI or a command line client.
 The protocol is reactive and full duplex by design, so both sides are kept in sync
 and get live updates.
 
-## Installation and Configuration
+## Prebuilt Releases
 
-Two options are available: using docker or local build.
-Docker is better option for making deliveries. With this option, builds are reproducible
-and user's environment doesn't interfere with build process in any way.
+Download location: <https://github.com/CogentEmbedded/tweaktool/releases>
 
-Local builds are better for developers. With this option, user could play with compilation
-options, build program with Debug symbols and/or trace logs.
+## Building from source code
 
-### Step-by-step guide to build tweaktool2 on Ubuntu 20.0
-
-Step 1
-
-Install basic Ubuntu build utilities and Qt developer's packages.
-
-```bash
-sudo apt-get -y install git cmake build-essential \
-    libreadline-dev qt5-default qml-module-qtqml-models2 qml-module-qtquick-controls2 \
-    qml-module-qtquick-* qml-module-qt-labs-settings \
-    qtdeclarative5-dev qtquickcontrols2-5-dev expect
-```
-
-Step 2
-
-Checkout actual tweaktool2 branch.
-
-```bash
-git clone https://github.com/CogentEmbedded/tweaktool.git --recursive
-```
-
-Step 3
-
-Install NNG library for tweaktool 2.
-
-Option A: Install pre-built NNG packages
-
-```bash
-sudo apt-get -y install libmbedtls-dev libmbedcrypto3 libmbedtls12 libmbedx509-0
-sudo dpkg -i ./tweaktool/nng-prebuilt/ubuntu_20_04/libnng1_1.4.0-1build1.1_amd64.deb \
-             ./tweaktool/nng-prebuilt/ubuntu_20_04/libnng-dev_1.4.0-1build1.1_amd64.deb \
-             ./tweaktool/nng-prebuilt/ubuntu_20_04/nng-utils_1.4.0-1build1.1_amd64.deb
-```
-
-Option B: Build NNG packages manually
-
-Infrastructure for deb packaging is needed here.
-This script installs NNG packages being built, thus it requires sudo.
-
-```bash
-sudo apt-get -y install fakeroot devscripts equivs dh-python debhelper-compat ubuntu-dev-tools \
-    scons protobuf-compiler libmbedtls-dev libmbedcrypto3 libmbedtls12 libmbedx509-0
-sudo ../tweaktool/build-nng-debs.sh
-```
-
-Step 4
-
-```bash
-mkdir -p ./tweaktool-build
-
-cd ./tweaktool-build
-```
-
-Step 5
-
-```bash
-../tweaktool/build-debs.sh ../tweaktool
-```
-
-After all these commands user should get all the debs inside ./tweak-build directory.
-
-### Step-by-step guide to build tweaktool2 on Ubuntu 18.04
-
-Step 1
-
-Install basic Ubuntu build utilities and Qt developer's packages.
-
-```bash
-sudo apt-get -y install git cmake build-essential \
-    libreadline-dev qt5-default qml-module-qtqml-models2 qml-module-qtquick-controls2 \
-    qml-module-qtquick-* qml-module-qt-labs-settings \
-    qtdeclarative5-dev qtquickcontrols2-5-dev expect
-```
-
-Step 2
-
-Checkout actual tweaktool2 branch.
-
-```bash
-git clone https://github.com/CogentEmbedded/tweaktool.git --recursive
-```
-
-Step 3
-
-Install NNG library for tweaktool 2.
-
----
-**NOTE**
-There's no step-by-step entry on how to build NNG packages for Ubuntu 18.
-It requires non trivial build environment.
-
-If the user aren't satisfied with prebuilt deb files, one have to refer
-advanced build recipes.
----
-
-```bash
-sudo apt-get -y install libmbedtls-dev libmbedcrypto1 libmbedtls10 libmbedx509-0
-sudo dpkg -i ./tweaktool/nng-prebuilt/ubuntu_18_04/libnng1_1.4.0-1build1.1_amd64.deb \
-             ./tweaktool/nng-prebuilt/ubuntu_18_04/libnng-dev_1.4.0-1build1.1_amd64.deb \
-             ./tweaktool/nng-prebuilt/ubuntu_18_04/nng-utils_1.4.0-1build1.1_amd64.deb
-```
-
-Step 4
-
----
-**NOTE**
-There's currently a defect not allowing to build tweaktool with cmake provided with Ubuntu 18.04
-
-build-debs.sh could fail with error in target "SortFilterProxyModel".
-
-Until there's a solution, there's no option but to upgrade cmake, as in Step 3/Option B.
----
-
-```bash
-mkdir -p ./tweaktool-build
-cd ./tweaktool-build
-../tweaktool/build-debs.sh ../tweaktool
-```
-
-After all these commands user should get all the debs inside ./tweak-build directory.
-
-### Build Using Docker
+Tweak tool uses docker to build external dependencies not available directly from  host OS.
 
 Docker is a framework for creating reproducible environments using lightweight virtual machines.
-This library provides scripts for reproducible builds of its packages for Ubuntu 18.04
-and Ubuntu 20.04.
+This library provides scripts for reproducible builds of its packages for Ubuntu LTS variants: 18.04, 20.04 and 22.04.
 
 First, you have to install docker:
 
 <https://docs.docker.com/get-docker/>
 
-Then, you have to install docker-compose utility:
-<https://docs.docker.com/compose/install/>
+Ensure current user belongs to "docker" group.
 
-Then, start script build-with-docker.sh --build-images-only from project root directory.
-This shall build reproducible build environment. This has to be run only once.
-Since then, existing build environment could be re-used many times.
-When there's build environment available, run build-with-docker.sh without arguments.
-It shall build deb packages in ./docker-build directory.
+### Step-by-step guide to build on Ubuntu LTS variants
 
-Note: If your linux user doesn't belong to "docker" users' group,
-the script build-with-docker.sh won't work without sudo.
+Step 1
 
-## Build on local linux installation
-
-This section covers Ubuntu 18.04 and Ubuntu 20.04 Linux distributions.
-This library is reported to work in Fedora 33. Other modern Linux
-distributions should work with library without any problems.
-
-### Build pre-conditions
+Choose appropriate Ubuntu version (18.04, 20.04, 22.04) and set `VERSION` variable.
+Prepare docker image with dependencies.
 
 ```bash
-sudo apt-get install git build-essential libreadline-dev \
-    qt5-default qml-module-qtqml-models2 qml-module-qtquick-controls2 \
-    qml-module-qtquick-* qml-module-qt-labs-settings \
-    qtdeclarative5-dev qtquickcontrols2-5-dev expect
+export VERSION=18.04
+DOCKER_BUILDKIT=1 docker build -t tweak-builder:${VERSION} devops/ubuntu${VERSION}
 ```
 
-Also, there's dependency on nng v1.4.0 library. Version prior to that version
-are known to have deadlock in nng_close during TCP disconnect.
+To build tweak in host OS install build dependencies as required by `devops/ubuntu${VERSION}/Dockerfile`.
 
-User could run docker build and take libnng and libnng-dev debs from docker build directory,
-thus skipping need for the new step and allowing one to go straight to fetch tweaktool/build tweaktool
-sections.
+Step 2
 
-### Build NNG on Ubuntu 18.04
-
-This library is available on [github](https://github.com/nanomsg/nng).
-
-Ubuntu 18.04 version is known to have older version of cmake that is not sufficient to build NNG.
-User should install cmake from KitWare.
-
-Cmake developers (Kitware) have their own PPA with newer cmake releases.
+Fetch prebuilt NNG library from Docker image.
 
 ```bash
-wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
-sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
-sudo apt-get update
-sudo apt-get install cmake
+mkdir -p nng-prebuilt/${VERSION}
+DOCKER_BUILDKIT=1 docker build -f devops/ubuntu${VERSION}/fetch-nng --output type=local,dest=nng-prebuilt/${VERSION} devops/ubuntu${VERSION}
 ```
 
-Check if cmake has been updated:
+Install pre-built NNG packages
 
 ```bash
-cmake -version
-```
-Version greater than 3.13  is expected.
-
-```bash
-git clone https://github.com/nanomsg/nng.git
-cd ./nng
-git checkout tags/v1.4.0
-mkdir build
-cd ./build
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ..
-make -j
-sudo make install
+sudo apt-get -y install
+sudo dpkg -i nng-prebuilt/${VERSION}/*.deb
 ```
 
----
-**NOTE**
+Step 3
 
-Another and probably more preferred option is to refer script
-[build-nng-deps.sh](build-nng-deps.sh) from project directory
-to build proper Ubuntu-styled deb packages.
-
-Pre-conditions for that script are:
+Checkout source code.
 
 ```bash
-apt-get -y install git build-essential fakeroot devscripts equivs \
-    dh-python debhelper-compat ubuntu-dev-tools libreadline-dev \
-    scons protobuf-compiler python3-protobuf libmbedtls-dev
-```
----
-
-### Build NNG on Ubuntu 20.04
-
-Known issues:
-
-Ubuntu 20.04 LTS cmake 3.16.+ will not create properly export files for default configuration
-(NNG as a static library).
-
-See: <https://gitlab.kitware.com/cmake/cmake/-/issues/20204>
-
-Thus, user have to install cmake from KitWare to build library, selecting focal repository
-
-```bash
-wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
-sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ focal main'
-sudo apt-get update
-sudo apt-get install cmake
-```
-
-Other steps are the same as in Ubuntu 20.04 section. The script build-nng-deps.sh
-works with this Ubuntu version as well.
-
-## Fetch tweaktool sources
-
-```bash
-git clone https://github.com/CogentEmbedded/tweaktool.git --recursive
-```
-
-## Build tweaktool
-
-```bash
+git clone https://github.com/CogentEmbedded/tweaktool.git --recurse-submodules
 cd tweaktool
-mkdir ./build
-cd ./build
-cmake -DBUILD_GUI=ON -DBUILD_TESTS=ON ..
-make -j
-cpack -G DEB
+```
+
+Step 4
+
+----
+
+Optional: if using docker
+
+Create docker image with same user as on host to minimize hassle with file permissions:
+
+```bash
+DOCKER_BUILDKIT=1 docker build \
+    --build-arg USER \
+    --build-arg UID=$(id -u) \
+    --build-arg GID=$(id -g) \
+    -t tweak-user-builder:${VERSION} \
+    -f devops/ubuntu${VERSION}/user-builder \
+    devops/ubuntu${VERSION}
+```
+
+Start temporary docker container with current source code
+
+```bash
+docker run --rm -it -v "$PWD:$PWD" --workdir="$PWD" tweak-user-builder:${VERSION} bash
+```
+
+----
+
+Following steps can be executed inside docker container or on host.
+
+Option 1: if using cmake 3.23+ use preset
+
+```bash
+rm -rf build/pc-linux-release
+cmake --preset pc-linux-release
+cmake --build --preset pc-linux-release
+```
+
+After successful build deb and rpm files are available at build output directory `build/pc-linux-release`.
+
+Option 2: configure build manually according to application needs, e.g. for PC:
+
+```bash
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_GUI=ON ..
+cmake --build .
+cmake --build . --target package
 ```
 
 User could provide additional flags to CMake:
 
- - BUILD_TESTS Adds "make test" target. Default: OFF.
- - BUILD_GUI Builds gui client. Requires Qt5. Default: OFF.
- - WITH_DOXYGEN Run doxygen on source code. Default: OFF.
- - WITH_WIRE_NNG Adds NNG support to connection factory. Default: ON.
- - WITH_WIRE_RPMSG Adds RPMSG support to connection factory. Default: OFF.
+- BUILD_TESTS - Adds "test" target. Default: OFF.
+- BUILD_GUI - Builds Qt GUI client. Default: OFF.
+- BUILD_MOCK - Build mock tweak server. Default: ON.
+- BUILD_CLI - Build console tweak client application. Default: ON, Windows is not supported.
+- WITH_DOXYGEN - Generate tweak2 documentation from source code using Doxygen. Default: OFF.
+- WITH_PYTHON - enable python bindings. Default: ON.
+- WITH_WIRE_NNG - Adds NNG support to connection factory. Default: ON.
 
-# Building on Visual Studio
+For systems with RPMSG IPC:
 
-## Preconditions
+- WIRE_RPMSG_BACKEND - enable specific backend. Default: OFF. Possible values:
+  - OFF - disabled
+  - TI_API - for direct use of TI API
+  - CHRDEV - for Linux RPMSG driver
+- WITH_TWEAK_GW - build gateway application that creates bridge between RPMSG and NNG.
+  It is used in case when tweak server is running on core with RTOS and tweak access is required from Linux host.
+
+### Using CMake Presets
+
+Since CMake v3.23 build presets are available.
+
+If default paths are not valid for cross-build toolchains, create
+new file `CMakeUserPresets.json` at the project root and fill it with custom settings.
+
+Add as many overrides as needed, user defined presets file is not version controlled.
+
+Visual Studio Code with CMake Tools plugin will allow configuration and building via its UI.
+
+From command line it can be invoked as:
+
+```bash
+cmake --preset pc-linux-release
+cmake --build --preset pc-linux-release
+```
+
+For Cogent Embedded VB4 target prebuilt binary version can be generated with following commands:
+
+```bash
+
+cmake --preset vb4-r5f-sysbios-release
+cmake --build --preset vb4-r5f-sysbios-release
+cd build/vb4-r5f-sysbios-release
+DESTDIR=/opt/vb4/ti-processor-sdk-rtos-j721e-evm-07_01_00_11/vision_apps/utils ninja install
+cd -
+
+cmake --preset vb4-a72-linux-release
+cmake --build --preset vb4-a72-linux-release
+for f in build/vb4-a72-linux-release/tweaktool-*.tar.gz; do
+    # Update concerto targetfs
+    sudo tar xf $f -C /opt/vb4/ti-processor-sdk-rtos-j721e-evm-07_01_00_11/targetfs
+    # Update SDK sysroot
+    sudo tar xf $f -C /opt/vb4/ti-processor-sdk-linux-j7-evm-07_01_00_10/linux-devkit/sysroots/aarch64-linux/
+done
+```
+
+Rebuild VB4 BSP afterwards.
+
+List all available presets in command line:
+
+```bash
+cmake --list-presets
+```
+
+### Building for TDA4 EVM targets
+
+#### Prebuilt SDK 8.04
+
+```bash
+export EVM_BSP_PATH=/opt/evm
+
+${DOWNLOADS}/ti-processor-sdk-linux-j7-evm-08_04_00_11-Linux-x86-Install.bin \
+    --mode unattended \
+    --prefix ${EVM_BSP_PATH}/ti-processor-sdk-linux-j7-evm-08_04_00_11
+
+tar xf ${DOWNLOADS}/ti-processor-sdk-rtos-j721e-evm-08_04_00_02.tar.gz
+
+${DOWNLOADS}/ti-processor-sdk-rtos-j721e-evm-08_04_00_02-addon-linux-x64-installer.run \
+    --mode unattended \
+    --prefix ${EVM_BSP_PATH}
+
+tar xf ${DOWNLOADS}/ti-processor-sdk-rtos-j721e-evm-08_04_00_02-prebuilt.tar.gz
+
+# Update Linux development kit sysroot with RTOS components
+
+sudo tar xf ${EVM_BSP_PATH}/ti-processor-sdk-rtos-j721e-evm-08_04_00_02-prebuilt/tisdk-default-image-j7-evm.tar.xz \
+    -C ${EVM_BSP_PATH}/ti-processor-sdk-linux-j7-evm-08_04_00_11/linux-devkit/sysroots/aarch64-linux
+
+sudo cp -a ${EVM_BSP_PATH}/ti-processor-sdk-rtos-j721e-evm-08_04_00_02-prebuilt/rootfs/* \
+    ${EVM_BSP_PATH}/ti-processor-sdk-linux-j7-evm-08_04_00_11/linux-devkit/sysroots/aarch64-linux
+
+```
+
+#### Building NNG
+
+```bash
+# Use mainline after https://github.com/nanomsg/nng/pull/1623 is merged
+git clone https://github.com/CogentEmbedded/nng.git
+cd nng
+
+mkdir build
+cd build
+
+source ${EVM_BSP_PATH}/ti-processor-sdk-linux-j7-evm-08_04_00_11/linux-devkit/environment-setup-aarch64-linux
+
+# Use cmake 3.17+, otherwise exported target files are not valid for static library dependencies, see https://gitlab.kitware.com/cmake/cmake/-/issues/20204
+/usr/bin/cmake \
+    -DCMAKE_TOOLCHAIN_FILE=${OE_CMAKE_TOOLCHAIN_FILE} \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    ..
+
+make -j
+
+# Update BSP SDK
+sudo make DESTDIR=${OECORE_TARGET_SYSROOT} install
+
+# Update Concerto targetfs if apps from BSP build use tweak on Linux
+sudo make DESTDIR=${EVM_BSP_PATH}/ti-processor-sdk-rtos-j721e-evm-08_02_00_05/targetfs install
+
+```
+
+#### Build Tweak for R5F FREERTOS
+
+```bash
+cd tweaktool
+rm -rf build/evm-r5f-freertos-release
+cmake --preset evm-r5f-freertos-release
+cmake --build --preset evm-r5f-freertos-release
+
+```
+
+On successful build `build/evm-r5f-freertos-release/tweaktool-${TWEAK_VERSION}-Concerto-dev.tar.gz` package is generated.
+
+To integrate it into BSP for R5F app development with tweak support:
+
+```bash
+tar xf build/evm-r5f-freertos-release/tweaktool-*-Concerto-dev.tar.gz -C ${VISION_APPS}/utils
+```
+
+Open `${VISION_APPS}/platform/j721e/rtos/mcu2_0/concerto_mcu2_0_inc.mak` in editor
+and add tweak libraries into R5F image:
+
+```mak
+STATIC_LIBS += tweak2app tweak2server tweak2json tweak2metadata tweak2pickle tweak2wire tweak2common
+```
+
+R5F application that uses tweak shall add include search path into its own concerto.mak
+
+```mak
+IDIRS  += $(VISION_APPS_PATH)/utils/cogent_tweaktool/include
+```
+
+Launch `tweak-gw` A72 Linux application on target to initialize RPC gateway and get access to R5F tweak server
+via Linux network.
+
+#### Build Tweak for A72 Linux
+
+```bash
+cd tweaktool
+rm -rf build/evm-a72-linux-release
+cmake --preset evm-a72-linux-release
+cmake --build --preset evm-a72-linux-release
+
+```
+
+Update Linux development kit sysroot to build apps externally and targetfs for concerto system
+
+```bash
+tar xf build/evm-a72-linux-release/tweaktool-*-Linux-dev.tar.gz  -C ${EVM_BSP_PATH}/ti-processor-sdk-linux-j7-evm-08_04_00_11/linux-devkit/sysroots/aarch64-linux
+tar xf build/evm-a72-linux-release/tweaktool-*-Linux-dev.tar.gz  -C ${EVM_BSP_PATH}/targetfs
+```
+
+Unpack tweak tools from `build/evm-a72-linux-release/tweaktool-*-Linux-tools.tar.gz` to target rootfs.
+
+Applications that are built with concerto.mak and use tweak shall add:
+
+```mak
+IDIRS  += $(VISION_APPS_PATH)/utils/cogent_tweaktool/include
+STATIC_LIBS += tweak2app tweak2server tweak2json tweak2metadata tweak2pickle tweak2wire tweak2common nng
+```
+
+
+To build with BSP at non-default location (`/opt/$DEVICE_NAME`) provide `BSP_ROOT` via env.
+
+```bash
+function build_combo()
+{
+    TARGET=$1
+    CPU=$2
+    OS=$3
+    BUILD_TYPE=$4
+    COMBO="${TARGET}-${CPU}-${OS}-${BUILD_TYPE}"
+
+    rm -rf build/${COMBO}-env
+    cmake --preset ${COMBO}-env
+    cmake --build --preset ${COMBO}-env
+}
+
+# Adjust to proper location for VB4
+export BSP_ROOT=/opt/vb4
+build_combo vb4 r5f sysbios release
+build_combo vb4 a72 linux release
+
+# Adjust to proper location for EVM
+export BSP_ROOT=/opt/evm
+build_combo evm r5f freertos release
+build_combo evm a72 linux release
+
+```
+
+## Building on Visual Studio
+
+### Preconditions
 
 - Microsoft Visual Studio Community 2019 or later
 - Integrated vcpkg
@@ -299,7 +347,7 @@ https://github.com/microsoft/vcpkg/issues/16983
 Here, we assume that Qt was installed to C:\Qt\5.15.2 and its bin directory is
 C:\Qt\5.15.2\msvc2019_64
 
-## Compilation
+### Compilation
 
 In MSVC++ IDE, open tweak2 directory with `File/Open folder...` menu, adjust options
 in `Project/CMake` settings, set Qt directories in `Project/CMake` settings for tweak2
@@ -307,14 +355,14 @@ to ones placed in `C:/Qt/5.15.2/msvc2019_64/lib/cmake/`.
 
 There are Qt libraries used:
 
- - Qt5_DIR: C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5
- - Qt5Core_DIR: C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Core
- - Qt5Gui_DIR: C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Gui
- - Qt5Network_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Network
- - Qt5Qml_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Qml
- - Qt5QmlModels_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmakeQt5QmlModels
- - Qt5Quick_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Quick
- - Qt5QuickControls2_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5QuickControls2
+- Qt5_DIR: C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5
+- Qt5Core_DIR: C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Core
+- Qt5Gui_DIR: C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Gui
+- Qt5Network_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Network
+- Qt5Qml_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Qml
+- Qt5QmlModels_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmakeQt5QmlModels
+- Qt5Quick_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Quick
+- Qt5QuickControls2_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5QuickControls2
 
 Adjust project settings, then build and install via `Build` menu in Visual Studio.
 
@@ -324,7 +372,7 @@ Copy Qt files using following command from project root folder from project root
 
 After this, package is ready in `.\out\install\x64-Release` directory.
 
-## Components
+### Components
 
 - `tweak2::server` is a thin wrapper around `tweak2::app`. It provides simple C99 context-less API to create a collection of items, alter item's values and monitor
 changes initiated by client application.

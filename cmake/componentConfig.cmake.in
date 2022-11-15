@@ -1,11 +1,13 @@
 @PACKAGE_INIT@
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+
 include(CMakeFindDependencyMacro)
 foreach(_dependency @COMPONENT_DEPENDENCIES@)
     if (_dependency MATCHES "^tweak2::")
         # An internal dependency
         STRING(REPLACE "tweak2::" "tweak2" _dependency ${_dependency})
-        @FIND_COMPONENT_COMMAND@(${_dependency} PATHS "${CMAKE_CURRENT_LIST_DIR}" NO_CMAKE_FIND_ROOT_PATH)
+        find_dependency(${_dependency} PATHS "${CMAKE_CURRENT_LIST_DIR}" NO_CMAKE_FIND_ROOT_PATH)
     else()
         # An external dependency
         find_dependency(${_dependency})

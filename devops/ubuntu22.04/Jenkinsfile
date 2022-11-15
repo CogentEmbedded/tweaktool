@@ -7,10 +7,10 @@ node('docker') {
     }
     def image
     stage('docker image') {
-        image = docker.build('tweaktool', './devops/ubuntu18.04/')
+        image = docker.build('tweaktool', './devops/ubuntu22.04/')
     }
     image.inside() {
-        dir('build-ubuntu18.04') {
+        dir('build-ubuntu22.04') {
             stage('build') {
                 sh 'ls -l'
                 cmakeBuild (
@@ -42,10 +42,10 @@ node('docker') {
         }
     }
     stage('archive') {
-        dir('build-ubuntu18.04') {
-            sh 'mkdir -p ubuntu-18.04 && mv *.deb ubuntu-18.04'
+        dir('build-ubuntu22.04') {
+            sh 'mkdir -p ubuntu-22.04 && mv *.deb ubuntu-22.04'
             archiveArtifacts (
-                artifacts: 'ubuntu-18.04/*.deb',
+                artifacts: 'ubuntu-22.04/*.deb',
                 fingerprint: true,
                 onlyIfSuccessful: true
             )

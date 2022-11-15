@@ -1,8 +1,8 @@
 /**
- * @file tweaklog_format_time_tda4.c
+ * @file tweak_id_gen_zephyr.c
  * @ingroup tweak-api
  *
- * @brief Routine to get printable ISO 8601 time string for logging.
+ * @brief Utility method to generate tweak ids in multi thread env.
  *
  * @copyright 2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
@@ -25,9 +25,12 @@
  * THE SOFTWARE.
  */
 
-#include <tweak2/log.h>
+#include <tweak2/types.h>
 
-const char* tweak_common_log_format_time() {
-  /*.. on TDA4 log is automatically prefixed by system monotonic clock by appLogPrintf */
-  return "";
+#include <zephyr/sys/atomic.h>
+
+static atomic_t seed = 1UL;
+
+tweak_id tweak_common_genid() {
+    return (tweak_id)atomic_add(&seed, 1);
 }

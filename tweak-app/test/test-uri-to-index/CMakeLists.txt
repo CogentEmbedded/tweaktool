@@ -54,7 +54,7 @@ target_include_directories(
 
 target_compile_features(${BINARY_NAME} PUBLIC c_std_99)
 
-target_link_libraries(${BINARY_NAME} Threads::Threads
+target_link_libraries(${BINARY_NAME}
                       ${PROJECT_NAMESPACE}::common)
 
 # ------------------------------------------------------------------------------
