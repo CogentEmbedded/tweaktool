@@ -4,7 +4,7 @@
  *
  * @brief Text field with validation.
  *
- * @copyright 2021-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2021-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@ import QtQuick 2.0
 import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.2
-import QtQuick.Controls.Universal 2.2
+
 
 ColumnLayout {
     id: dataField

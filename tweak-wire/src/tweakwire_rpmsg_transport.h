@@ -4,7 +4,7 @@
  *
  * @brief RPMessage transport API for tweak wire.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -80,7 +80,12 @@ enum
      * RPMsg transport will block after this many maximum-sized messages are in the queue.
      * This will vary depending on the size of messages.
      */
+#if defined(__QNX__)
+    /* WA: QNX does not block queue but just drop messages */
+    tweak_wire_rpmsg_num_buffers_in_flight = 2048,
+#else
     tweak_wire_rpmsg_num_buffers_in_flight = 256,
+#endif
 };
 
 /**

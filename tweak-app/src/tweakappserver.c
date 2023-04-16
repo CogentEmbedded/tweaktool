@@ -4,7 +4,7 @@
  *
  * @brief part of tweak2 application implementation.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,6 +41,8 @@
 #include <string.h>
 
 enum { TWEAK_APP_SERVER_QUEUE_SIZE = 100 };
+
+static void server_push_changes(tweak_app_context context, tweak_id tweak_id);
 
 struct tweak_app_context_server_impl {
   struct tweak_app_context_base base;
@@ -138,6 +140,7 @@ static void io_loop_subscribe(tweak_id tweak_id, void* cookie) {
       TWEAK_LOG_WARN("tweak_pickle_server_announce_features() returned error %d", call_result);
       return;
     }
+    server_impl->features_announced = false;
   }
 
   tweak_app_context context = &server_impl->base;
@@ -163,6 +166,15 @@ static void push_subscribe(tweak_app_context context) {
   tweak_app_queue_push(context->job_queue, &job);
 }
 
+static void log_remote_features_change(const struct tweak_app_features *old,
+                                       const struct tweak_app_features *new)
+{
+  TWEAK_LOG_TRACE_ENTRY();
+  if (old->vectors != new->vectors && !new->vectors) {
+    TWEAK_LOG_WARN("Vectors option became disabled");
+  }
+}
+
 static void announce_features_impl(tweak_pickle_features* announce_features,
   void *cookie)
 {
@@ -172,11 +184,19 @@ static void announce_features_impl(tweak_pickle_features* announce_features,
 
   struct tweak_app_features features = { 0 };
   bool parse_success = tweak_app_features_from_json(&announce_features->features, &features);
-  tweak_common_mutex_lock(&server_impl->base.conn_state_lock);
+
   if (!parse_success) {
     tweak_app_features_init_default(&features);
     TWEAK_LOG_WARN("Can't parse server features, using scalar tweaks only");
   }
+
+  tweak_common_mutex_lock(&server_impl->base.conn_state_lock);
+  features = tweak_app_features_combine(
+          &server_impl->base.remote_peer_features,
+          &features);
+
+  log_remote_features_change(&server_impl->base.remote_peer_features, &features);
+
   server_impl->base.remote_peer_features = features;
   server_impl->features_announced = parse_success;
   tweak_common_mutex_unlock(&server_impl->base.conn_state_lock);
@@ -203,7 +223,10 @@ static void change_item_pickle_impl(tweak_pickle_change_item *change, void *cook
     tweak_variant_swap(&item->current_value, &change->value);
     TWEAK_LOG_TRACE("Item with tweak_id = %" PRId64 " has been updated", change->id);
     id = item->id;
-    if (server_impl->server_callbacks.on_current_value_changed) {
+
+    bool changed = !tweak_variant_is_equal(&item->current_value, &change->value);
+
+    if (changed && server_impl->server_callbacks.on_current_value_changed) {
       value = tweak_variant_copy(&item->current_value);
       emit_change_event = true;
     }
@@ -217,6 +240,8 @@ static void change_item_pickle_impl(tweak_pickle_change_item *change, void *cook
       id, &value, server_impl->server_callbacks.cookie);
     tweak_variant_destroy(&value);
   }
+
+  server_push_changes(&server_impl->base, id);
 }
 
 static void connection_state_pickle_impl(tweak_pickle_connection_state connection_state,
@@ -229,7 +254,7 @@ static void connection_state_pickle_impl(tweak_pickle_connection_state connectio
   case TWEAK_PICKLE_CONNECTED:
     TWEAK_LOG_TRACE("Client connected.");
     tweak_common_mutex_lock(&server_impl->base.conn_state_lock);
-    tweak_app_features_init_minimal(&server_impl->base.remote_peer_features);
+    tweak_app_features_init_default(&server_impl->base.remote_peer_features);
     tweak_common_mutex_unlock(&server_impl->base.conn_state_lock);
     break;
   case TWEAK_PICKLE_DISCONNECTED:
@@ -271,7 +296,7 @@ static void io_loop_append(tweak_id tweak_id, void* cookie) {
   }
   tweak_common_rwlock_write_unlock(&model->model_lock);
   if (item) {
-    TWEAK_LOG_TRACE("Progagating add_item request to client = %" PRIu64 "", item->id);
+    TWEAK_LOG_TRACE("Propagating add_item request to client = %" PRIu64 "", item->id);
     tweak_pickle_call_result call_result =
       tweak_pickle_server_add_item(server_impl->rpc_endpoint, &pickle_add_item);
     if (call_result != TWEAK_PICKLE_SUCCESS) {
@@ -307,7 +332,7 @@ static void io_loop_change(tweak_id tweak_id, void* cookie) {
   }
   tweak_common_rwlock_read_unlock(&model->model_lock);
   if (should_push_change) {
-    TWEAK_LOG_TRACE("Progagating change_item request to client = %" PRIu64 "", item->id);
+    TWEAK_LOG_TRACE("Propagating change_item request to client = %" PRIu64 "", item->id);
     tweak_pickle_change_item change = {
       .id = tweak_id,
       .value = value

@@ -4,7 +4,7 @@
  *
  * @brief Tree Model for of Tweak QML Application Model.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,23 +27,22 @@
 
 #include "TweakTreeModel.hpp"
 
-#include <QtDebug>
 #include <QLinkedList>
+#include <QtDebug>
 
 namespace tweak2
 {
 
-TweakTreeModel::TweakTreeModel(QObject *parent)
-    : QAbstractItemModel(parent)
+TweakTreeModel::TweakTreeModel(QObject *parent) : QAbstractItemModel(parent)
 {
-    connect(&tree, &TweakUriTree::beforeNewItem,
-            this, &TweakTreeModel::beforeNewItemAddedToTree, Qt::DirectConnection);
-    connect(&tree, &TweakUriTree::afterNewItem,
-            this, &TweakTreeModel::afterNewItemAddedToTree, Qt::DirectConnection);
-    connect(&tree, &TweakUriTree::beforeRemovingItem,
-            this, &TweakTreeModel::beforeRemovingItemFromTree, Qt::DirectConnection);
-    connect(&tree, &TweakUriTree::afterRemovingItem,
-            this, &TweakTreeModel::afterRemovingItemFromTree, Qt::DirectConnection);
+    connect(&tree, &TweakUriTree::beforeNewItem, this,
+            &TweakTreeModel::beforeNewItemAddedToTree, Qt::DirectConnection);
+    connect(&tree, &TweakUriTree::afterNewItem, this,
+            &TweakTreeModel::afterNewItemAddedToTree, Qt::DirectConnection);
+    connect(&tree, &TweakUriTree::beforeRemovingItem, this,
+            &TweakTreeModel::beforeRemovingItemFromTree, Qt::DirectConnection);
+    connect(&tree, &TweakUriTree::afterRemovingItem, this,
+            &TweakTreeModel::afterRemovingItemFromTree, Qt::DirectConnection);
 
     tree.addTweak("/Favorites/*", {-1, TWEAK_INVALID_ID});
 }
@@ -72,7 +71,8 @@ int TweakTreeModel::rowCount(const QModelIndex &parent) const
     }
 
     qDebug() << "rowCount "
-             << "parent=" << (parentItem ? tree.itemUri(parentItem) : QUrl("null"))
+             << "parent="
+             << (parentItem ? tree.itemUri(parentItem) : QUrl("null"))
              << " count=" << count;
 
     return count;
@@ -86,13 +86,6 @@ int TweakTreeModel::columnCount(const QModelIndex &parent) const
 
 QVariant TweakTreeModel::data(const QModelIndex &index, int role) const
 {
-    if (role != TreeItemRole)
-    {
-        qWarning() << "Invalid role requested from data(): "
-                   << role;
-        return QVariant();
-    }
-
     QString itemName;
     ItemType itemType;
 
@@ -104,7 +97,8 @@ QVariant TweakTreeModel::data(const QModelIndex &index, int role) const
             itemName = tree.itemDisplayName(Item);
             const QUrl itemUrl = tree.itemUri(Item);
 
-            if (itemUrl.matches(QUrl("/Favorites"), QUrl::UrlFormattingOption::None))
+            if (itemUrl.matches(QUrl("/Favorites"),
+                                QUrl::UrlFormattingOption::None))
             {
                 itemType = ItemType::Favorites;
             }
@@ -128,10 +122,21 @@ QVariant TweakTreeModel::data(const QModelIndex &index, int role) const
         itemType = ItemType::Root;
     }
 
-    return QVariantMap({
-                           {"itemType" , QVariant::fromValue(itemType)},
-                           {"name", itemName},
-                       });
+    switch (role)
+    {
+    case TreeItemRole:
+        return QVariantMap({
+            {"itemType", QVariant::fromValue(itemType)},
+            {"name", itemName},
+        });
+
+    case NameRole:
+        return itemName;
+
+    default:
+        qWarning() << "Invalid role requested from data(): " << role;
+        return QVariant();
+    }
 }
 
 QModelIndex TweakTreeModel::index(int row, int column,
@@ -157,16 +162,15 @@ QModelIndex TweakTreeModel::index(int row, int column,
     }
     else
     {
-        /*.. TODO: Sometings invalid indicies are produced, this is very bad */
+        /*.. TODO: Sometimes invalid indicies are produced, this is very bad */
         qWarning() << "Invalid child index for " << tree.itemUri(parentItem)
-                   << " :" << row
-                   << " max: " << count;
+                   << " :" << row << " max: " << count;
     }
 
     qDebug() << "index"
-             << "childItem=" << (childItem ? tree.itemUri(childItem) : QUrl("null"))
-             << "row=" << row
-             << "column=" << column;
+             << "childItem="
+             << (childItem ? tree.itemUri(childItem) : QUrl("null"))
+             << "row=" << row << "column=" << column;
 
     if (childItem != nullptr)
     {
@@ -183,6 +187,7 @@ QModelIndex TweakTreeModel::index(int row, int column,
 QHash<int, QByteArray> TweakTreeModel::roleNames() const
 {
     return {
+        {NameRole, "name"},
         {TreeItemRole, "item"},
     };
 }
@@ -253,7 +258,8 @@ QModelIndex TweakTreeModel::itemParent(const QModelIndex index) const
     return parent(index);
 }
 
-void TweakTreeModel::beforeNewItemAddedToTree(const void *parent, unsigned int index)
+void TweakTreeModel::beforeNewItemAddedToTree(const void *parent,
+                                              unsigned int index)
 {
     qDebug() << "Before adding item: parent=" << tree.itemUri(parent)
              << ", index=" << index;
@@ -261,14 +267,16 @@ void TweakTreeModel::beforeNewItemAddedToTree(const void *parent, unsigned int i
     beginInsertRows(parentIndex, index, index);
 }
 
-void TweakTreeModel::afterNewItemAddedToTree(const void *parent, unsigned int index)
+void TweakTreeModel::afterNewItemAddedToTree(const void *parent,
+                                             unsigned int index)
 {
     qDebug() << "After adding item: parent=" << tree.itemUri(parent)
              << ", index=" << index;
     endInsertRows();
 }
 
-void TweakTreeModel::beforeRemovingItemFromTree(const void *parent, unsigned int index)
+void TweakTreeModel::beforeRemovingItemFromTree(const void *parent,
+                                                unsigned int index)
 {
     qDebug() << "Removing item: parent=" << tree.itemUri(parent)
              << ", index=" << index;
@@ -299,8 +307,10 @@ QModelIndex TweakTreeModel::parent(const QModelIndex &index) const
     const void *parentItem = tree.parentItem(childItem);
 
     qDebug() << "parent"
-             << " childItem=" << (childItem ? tree.itemUri(childItem) : QUrl("null"))
-             << " parentItem=" << (parentItem ? tree.itemUri(parentItem) : QUrl("null"));
+             << " childItem="
+             << (childItem ? tree.itemUri(childItem) : QUrl("null"))
+             << " parentItem="
+             << (parentItem ? tree.itemUri(parentItem) : QUrl("null"));
 
     if (parentItem == tree.rootItem())
     {
@@ -314,7 +324,7 @@ QModelIndex TweakTreeModel::parent(const QModelIndex &index) const
              << " row=" << row;
 
     /*.. const_cast<>() is a workaround for legacy API in Qt. The actual pointer
-         * and data never change later */
+     * and data never change later */
     return createIndex(row, 0, const_cast<void *>(parentItem));
 }
 
@@ -322,9 +332,12 @@ QModelIndex TweakTreeModel::itemIndex(const void *item) const
 {
     Q_ASSERT(item);
 
-    if (tree.isRootItem(item)) {
+    if (tree.isRootItem(item))
+    {
         return QModelIndex();
-    } else {
+    }
+    else
+    {
         const void *parent = tree.parentItem(item);
         unsigned int row = tree.childIndex(parent, item);
         return index(row, 0, itemIndex(parent));

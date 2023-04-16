@@ -1,7 +1,7 @@
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+# Copyright (c) 2018-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,14 +26,22 @@
 # ------------------------------------------------------------------------------
 
 set(LIBRARY_NAME wire)
-set(LIBRARY_SOVERSION 0)
+set(LIBRARY_SOVERSION 1)
 
 # ------------------------------------------------------------------------------
 # Dependencies
 # ------------------------------------------------------------------------------
 
-if(WITH_WIRE_NNG)
+include(CheckIncludeFiles)
+
+if (WITH_WIRE_NNG AND NOT TARGET nng::nng)
   find_package(nng REQUIRED)
+
+  list(APPEND CMAKE_REQUIRED_INCLUDES "${NNG_INCLUDE_DIRS}")
+  CHECK_INCLUDE_FILES("nng.h;protocol/hub0/hub.h" HAVE_NNG_HUB_PROTO)
+  if (NOT HAVE_NNG_HUB_PROTO)
+    message(FATAL_ERROR "Tweaktool required NNG with supported HUB protocol")
+  endif()
 endif()
 
 set(${LIBRARY_NAME}_DEPENDENCIES ${PROJECT_NAMESPACE}::common)
@@ -60,6 +68,11 @@ if(WIRE_RPMSG_BACKEND STREQUAL TI_API)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg_transport.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg_transport_ti_api.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tweakwire_rpmsg.c)
+
+  if(NOT CMAKE_SYSTEM_NAME STREQUAL "Concerto")
+    find_package(TIOVX REQUIRED)
+  endif()
+
 elseif(WIRE_RPMSG_BACKEND STREQUAL CHRDEV)
   set(WITH_WIRE_RPMSG ON)
   find_package(RPMSG REQUIRED)
@@ -105,7 +118,8 @@ target_link_libraries(
   PUBLIC ${PROJECT_NAMESPACE}::common
   PRIVATE
     $<$<BOOL:${WITH_WIRE_NNG}>:nng::nng>
-    $<$<BOOL:${RPMSG_FOUND}>:RPMSG::RPMSG>)
+    $<$<BOOL:${RPMSG_FOUND}>:RPMSG::RPMSG>
+    $<$<BOOL:${TIOVX_FOUND}>:TIOVX::TIOVX>)
 
 target_compile_features(${LIBRARY_NAME} PUBLIC c_std_99)
 
@@ -115,9 +129,9 @@ set_target_properties(
              OUTPUT_NAME ${PROJECT_NAME}${LIBRARY_NAME}
              VERSION "${PROJECT_NUMERIC_VERSION}")
 
-# INSTALL_INTERFACE header path is specified during installation
 target_include_directories(
-  ${LIBRARY_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+  ${LIBRARY_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # ------------------------------------------------------------------------------
 # Documentation

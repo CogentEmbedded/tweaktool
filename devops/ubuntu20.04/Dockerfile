@@ -63,6 +63,9 @@ RUN apt-get update && apt-get -y install \
     ubuntu-dev-tools
 
 # Build and install nng
+ADD ce_baseline.patch ./
+ADD ce_nng_hub.patch ./
+ADD ce_fix_mbedtls_lookup.patch ./
 ADD build-nng-debs.sh ./
 RUN chmod +x ./build-nng-debs.sh && \
     ./build-nng-debs.sh

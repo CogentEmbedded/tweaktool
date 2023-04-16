@@ -4,7 +4,7 @@
  *
  * @brief Metadata instance factory.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -81,7 +81,7 @@ typedef enum {
     TWEAK_METADATA_CONTROL_SLIDER,
     TWEAK_METADATA_CONTROL_COMBOBOX,
     TWEAK_METADATA_CONTROL_BUTTON,
-    TWEAK_METADATA_CONTROL_EDIT,
+    TWEAK_METADATA_CONTROL_EDITBOX,
     TWEAK_METADATA_CONTROL_TABLE
 } tweak_metadata_control_type;
 

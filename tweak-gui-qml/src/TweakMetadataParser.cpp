@@ -4,7 +4,7 @@
  *
  * @brief Metdata parser for Tweak QML GUI.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,9 @@
 #include "QTweakVariant.hpp"
 
 #include <QTextStream>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QRegularExpression>
 
 namespace tweak2
 {
@@ -39,10 +42,17 @@ TweakMetadata::TweakMetadata(QObject *parent)
     , m_options(nullptr)
 {}
 
-TweakMetadata::TweakMetadata(tweak_metadata metadata, QObject *parent)
+TweakMetadata::TweakMetadata(tweak_variant_type item_type,
+                             tweak_metadata metadata,
+                             QString json,
+                             std::unique_ptr<TweakFixedPointInfo> info,
+                             QObject *parent)
     : QObject(parent)
+    , m_item_type(item_type)
     , m_metadata(metadata)
     , m_options(nullptr)
+    , m_json(json)
+    , m_info(std::move(info))
 {
     tweak_metadata_options options = tweak_metadata_get_options(m_metadata);
     if (options) {
@@ -66,6 +76,10 @@ TweakMetadata::ControlType TweakMetadata::getControlType() const {
         return tweak2::TweakMetadata::ControlType::Combobox;
     case TWEAK_METADATA_CONTROL_BUTTON:
         return tweak2::TweakMetadata::ControlType::Button;
+    case TWEAK_METADATA_CONTROL_TABLE:
+        return tweak2::TweakMetadata::ControlType::Table;
+    case TWEAK_METADATA_CONTROL_EDITBOX:
+        return tweak2::TweakMetadata::ControlType::Editbox;
     default:
         break;
     }
@@ -96,9 +110,28 @@ QString TweakMetadata::getCaption() const {
     return QString(tweak_variant_string_c_str(tweak_metadata_get_caption(m_metadata)));
 }
 
+QString TweakMetadata::getUnit() const {
+    return QString(tweak_variant_string_c_str(tweak_metadata_get_unit(m_metadata)));
+}
+
+QString TweakMetadata::getJson() const {
+    return m_json;
+}
+
 OptionsModel* TweakMetadata::getOptions() const {
     return m_options;
 }
+
+tweak_variant_type TweakMetadata::getTweakType() const
+{
+    return m_item_type;
+}
+
+TweakFixedPointInfo *TweakMetadata::getFixedPointInfo() const
+{
+    return m_info.get();
+}
+
 
 OptionsModel::OptionsModel(QObject *parent)
     : QAbstractListModel(parent)
@@ -176,7 +209,105 @@ TweakMetadataParser::TweakMetadataParser(QObject *parent)
 {}
 
 TweakMetadata* TweakMetadataParser::parse(tweak_variant_type item_type, QString meta) const {
-    return new TweakMetadata(tweak_metadata_create(item_type, 1, meta.toUtf8().constData()), nullptr);
+    std::unique_ptr<TweakFixedPointInfo> info = nullptr;
+
+    /*.. parsing of extra fields in the metadata must be done manually */
+    QJsonParseError error;
+    QJsonDocument doc =  QJsonDocument::fromJson(meta.toUtf8(), &error);
+    QJsonObject obj = doc.object();
+    if (obj.contains("fixed_point") && obj["fixed_point"].isString())
+    {
+        QString type_name = obj["fixed_point"].toString();
+        static QRegularExpression reg("^(L?)([us]?)(\\d+)(q|a|sm|z)(\\d+)$");
+
+        auto match = reg.match(type_name);
+
+        if (match.hasMatch())
+        {
+            bool is_signed = (match.captured(1) == "s");
+            unsigned integer_bits = match.captured(2).toULong();
+            QString fp_type = match.captured(3);
+            unsigned fraction_bits = match.captured(4).toULong();
+
+            TweakFixedPointInfo::FixedPointType fpt;
+            if (fp_type == "q")
+            {
+                fpt = TweakFixedPointInfo::FixedPointType::TwosComplement;
+            }
+            else if (fp_type == "a")
+            {
+                fpt = TweakFixedPointInfo::FixedPointType::Apical;
+            }
+            else if (fp_type == "sm")
+            {
+                fpt = TweakFixedPointInfo::FixedPointType::SignMantissa;
+            }
+            else if (fp_type == "z")
+            {
+                fpt = TweakFixedPointInfo::FixedPointType::OnesComplement;
+            }
+            else
+            {
+                //  Q_UNREACHABLE();
+                qWarning("Unknown fp_type: %s", fp_type.toStdString().c_str());
+            }
+
+            info = std::make_unique<TweakFixedPointInfo>(is_signed, fpt, integer_bits, fraction_bits);
+        }
+    }
+
+    return new TweakMetadata(item_type,
+                             tweak_metadata_create(item_type, 1, meta.toUtf8().constData()),
+                             meta,
+                             std::move(info),
+                             nullptr);
+}
+
+TweakFixedPointInfo::TweakFixedPointInfo(bool is_signed,
+                                         TweakFixedPointInfo::FixedPointType fpt,
+                                         unsigned integer_bits,
+                                         unsigned fraction_bits)
+    : m_is_signed(is_signed)
+    , m_fpt(fpt)
+    , m_integer_bits(integer_bits)
+    , m_fraction_bits(fraction_bits)
+{
+
+}
+
+TweakFixedPointInfo::~TweakFixedPointInfo()
+{
+
+}
+
+bool TweakFixedPointInfo::getIsSigned() const
+{
+    return m_is_signed;
+}
+
+TweakFixedPointInfo::FixedPointType TweakFixedPointInfo::getFpt() const
+{
+    return m_fpt;
+}
+
+unsigned TweakFixedPointInfo::getIntegerBits() const
+{
+    return m_integer_bits;
+}
+
+unsigned TweakFixedPointInfo::getFractionBits() const
+{
+    return m_fraction_bits;
+}
+
+QVariant TweakFixedPointInfo::getMin() const
+{
+    return 0;
+}
+
+QVariant TweakFixedPointInfo::getMax() const
+{
+    return 0;
 }
 
 }

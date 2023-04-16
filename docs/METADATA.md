@@ -120,6 +120,7 @@ array or a map.
 | TWEAK_VARIANT_TYPE_VECTOR_UINT64            | Vector of Integer      |
 | TWEAK_VARIANT_TYPE_VECTOR_FLOAT             | Vector of Float        |
 | TWEAK_VARIANT_TYPE_VECTOR_DOUBLE            | Vector of Float        |
+| TWEAK_VARIANT_TYPE_STRING                   | String                 |
 
 *Note* Default values for "min" and "max" are deduced from bit width and
 signedness of each tweak type. For floating point, `-FLT_MAX`..`FLT_MAX`
@@ -283,25 +284,27 @@ This code would produce the following 3D structure:
 | Float              | Y        | Y   | Y   | Y        | Y    | -       | -      | slider         |
 | Vector of Integer  | Y        | Y   | Y   | Y        | Y    | -       | Y      | table          |
 | Vector of Float    | Y        | Y   | Y   | Y        | Y    | -       | Y      | table          |
+| String             | Y        | -   | -   | -        | -    | -       | -      | editbox           |
 
-*Note* "N" in this table means that setting shall be ignored and GUI warning shall be issued.
+*Note* "-" in this table means that setting shall be ignored and GUI warning shall be issued.
 
 ## Editor availability for each respective data flavour
 
 User might use custom editor for some data flavours. For instance, he could
 choose combobox with two options for a boolean variable.
 
-| Data flavour       | checkbox | spinbox | slider | combobox | button | table |
-|--------------------|----------|---------|--------|----------|--------|-------|
-| Boolean            | Y        | Y       | -      | Y        | Y      | -     |
-| Integer            | -        | Y       | Y      | Y        | -      | -     |
-| Float              | -        | Y       | Y      | -        | -      | -     |
-| Vector of Integer  | -        | -       | -      | -        | -      | Y     |
-| Vector of Float    | -        | -       | -      | -        | -      | Y     |
+| Data flavour       | checkbox | spinbox | slider | combobox | button | table | editbox |
+|--------------------|----------|---------|--------|----------|--------|-------|------|
+| Boolean            | Y        | Y       | -      | Y        | Y      | -     | -    |
+| Integer            | -        | Y       | Y      | Y        | -      | -     | Y    |
+| Float              | -        | Y       | Y      | -        | -      | -     | Y    |
+| Vector of Integer  | -        | -       | -      | -        | -      | Y     | -    |
+| Vector of Float    | -        | -       | -      | -        | -      | Y     | -    |
+| String             | -        | -       | -      | -        | -      | -     | Y    |
 
 *Note* Combobox could only be selected by providing "options" setting to metadata.
 
-*Note* "N" in this table means that setting shall be ignored and, Qt warning
+*Note* "-" in this table means that setting shall be ignored and, Qt warning
 shall be issued, and default editor shall be used.
 
 ## Metadata JSON Format
@@ -381,7 +384,7 @@ Metadata for custom boolean editor.
 {}
 ```
 
-Could be NULL as well. GUI app will choose generic read/write checkbox to edit a tweak.
+Could be NULL as well. GUI app will choose generic read/write checkbox to editbox a tweak.
 
 ### Button
 
@@ -417,7 +420,7 @@ GUI will use a combobox instead of default checkbox.
 {}
 ```
 
-Could be NULL as well. GUI app will choose a generic read/write spinbox to edit a tweak.
+Could be NULL as well. GUI app will choose a generic read/write spinbox to editbox a tweak.
 For `int32` tweak, the lowest permitted value will be `INT32_MIN`, the highest one will be `INT32_MAX`.
 
 ### Read-Only Integer Tweak
@@ -426,7 +429,7 @@ For `int32` tweak, the lowest permitted value will be `INT32_MIN`, the highest o
 {"readonly": true}
 ```
 
-GUI will display a number and wouldn't provide an interface to edit it.
+GUI will display a number and wouldn't provide an interface to editbox it.
 
 ### Limited-Range Integer Tweak
 
@@ -435,7 +438,7 @@ GUI will display a number and wouldn't provide an interface to edit it.
 ```
 
 Simplest recommended way to configure an input field for a signed integer variable.
-GUI app will choose a generic read/write spinbox to edit this tweak. Lowest value
+GUI app will choose a generic read/write spinbox to editbox this tweak. Lowest value
 permitted will be `-100`, the highest one will be `100`. This metadata also describe
 units of measurement as a free form string being shown as an additional hint in
 client program.
@@ -575,3 +578,12 @@ It would produce the following array structure
 |------------|-------------------|-------------------|-------------------|
 | **Row 1**  | Memory offset = 0 | Memory offset = 2 | Memory offset = 4 |
 | **Row 2**  | Memory offset = 1 | Memory offset = 3 | Memory offset = 5 |
+
+
+### String
+
+```json
+{
+    "control": "editbox"
+}
+```

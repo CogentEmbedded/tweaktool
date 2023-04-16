@@ -4,7 +4,7 @@
  *
  * @brief Tree Model for of Tweak QML Application Model.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -59,6 +59,7 @@ public:
     enum Roles
     {
         TreeItemRole = Qt::UserRole + 1,
+        NameRole,
     };
 
     void newItem(QString uri, TweakControlId tweakControlId);

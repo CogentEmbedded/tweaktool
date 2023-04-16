@@ -38,42 +38,44 @@ RUN git config --global core.longpaths true
 RUN git config --global --add safe.directory *
 
 # Download vcpkg
+ARG VCPKG_SHA=0
 RUN git clone https://github.com/Microsoft/vcpkg.git
+
+RUN git clone https://github.com/CogentEmbedded/vcpkg.git ce-vcpkg
+
 # Install vcpkg
 RUN cd .\vcpkg `
     && .\bootstrap-vcpkg.bat -disableMetrics `
     && .\vcpkg integrate install
 
-# Install zstd
+# Install zstd, getopt
 RUN cd .\vcpkg `
-    && .\vcpkg install --triplet x64-windows zstd
+    && .\vcpkg install --triplet x64-windows-release zstd getopt
 
-# Install nng, getopt
+# Install nng
 RUN cd .\vcpkg `
-    && .\vcpkg install --triplet x64-windows nng getopt
+    && .\vcpkg install --triplet x64-windows-release --overlay-ports=../ce-vcpkg/ports/nng nng
 
 # Install qt5-base
 RUN cd .\vcpkg `
-    && .\vcpkg install --triplet x64-windows qt5-base
+    && .\vcpkg install --triplet x64-windows-release qt5-base
 
 # Install qt5-declarative
 RUN cd .\vcpkg `
-    && .\vcpkg install --triplet x64-windows qt5-declarative
+    && .\vcpkg install --triplet x64-windows-release qt5-declarative
 
 # Install qt5-quickcontrols qt5-quickcontrols2
 RUN cd .\vcpkg `
-    && .\vcpkg install --triplet x64-windows qt5-quickcontrols qt5-quickcontrols2
+    && .\vcpkg install --triplet x64-windows-release qt5-quickcontrols qt5-quickcontrols2
 
 # Install qt5-tools
 RUN cd .\vcpkg `
-    && .\vcpkg install --triplet x64-windows qt5-tools
+    && .\vcpkg install --triplet x64-windows-release qt5-tools
 
-ENV CMAKE_TOOLCHAIN_FILE "c:\vcpkg\scripts\buildsystems\vcpkg.cmake"
-ENV VCPKG_TARGET_TRIPLET x64-windows
-ENV VCPKG_PATH %cd%\vcpkg
+ENV VCPKG_TARGET_TRIPLET x64-windows-release
 ENV VC_ENV_SETUP="C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat"
-RUN setx path "%path%;%cd%\vcpkg\installed\x64-windows\tools\qt5-tools\bin"
-RUN setx path "%path%;%cd%\vcpkg\installed\x64-windows\tools\qt5\bin"
+RUN setx VCPKG_ROOT "%cd%\vcpkg"
+RUN setx path "%path%;%VCPKG_ROOT%;%cd%\vcpkg\installed\x64-windows-release\tools\qt5-tools\bin;%cd%\vcpkg\installed\x64-windows-release\tools\qt5\bin"
 
 # Install NSIS
 RUN `

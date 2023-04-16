@@ -1,0 +1,34 @@
+diff --git a/cmake/nng-config.cmake.in b/cmake/nng-config.cmake.in
+index c5419961..adc23fef 100644
+--- a/cmake/nng-config.cmake.in
++++ b/cmake/nng-config.cmake.in
+@@ -18,7 +18,16 @@ include("${CMAKE_CURRENT_LIST_DIR}/nng-targets.cmake")
+ 
+ # Make sure we find packages for our dependencies
+ foreach(_PKG IN ITEMS @NNG_PKGS@)
+-	find_package(${_PKG} REQUIRED)
++    if (${_PKG} STREQUAL "mbedTLS")
++        # Workaround to use FindmbedTLS.cmake from installed location
++        set(BACKUP_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH})
++        get_filename_component(NNG_CONFIG_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
++        set(CMAKE_MODULE_PATH ${NNG_CONFIG_DIR})
++        find_package(${_PKG} REQUIRED)
++        set(CMAKE_MODULE_PATH ${BACKUP_CMAKE_MODULE_PATH})
++    else()
++        find_package(${_PKG} REQUIRED)
++    endif()
+ endforeach ()
+ 
+ set(NNG_LIBRARY nng::nng)
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 20a7bef0..2f9ad957 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -94,6 +94,6 @@ configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config
+         INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+         PATH_VARS INCLUDE_INSTALL_DIRS)
+ 
+-install(FILES "${project_config}" "${version_config}"
++install(FILES "${project_config}" "${version_config}" ${PROJECT_SOURCE_DIR}/cmake/FindmbedTLS.cmake
+         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+         COMPONENT Library)

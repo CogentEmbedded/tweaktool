@@ -69,6 +69,6 @@ for folder in "${folders[@]}"; do
         -print |
         grep -v 'tweak-pickle/src/autogen/' |
         while IFS= read -r filename; do
-            check_file cmake "$filename"
+            check_file py "$filename"
         done
 done

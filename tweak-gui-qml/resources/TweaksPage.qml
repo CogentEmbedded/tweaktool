@@ -4,7 +4,7 @@
  *
  * @brief Main page with tweak controls.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.2
 import QtQuick.Controls.Universal 2.2
+
 import Qt.labs.settings 1.0
 
 import SortFilterProxyModel 0.2
@@ -37,9 +38,6 @@ import TweakApplication 1.0
 
 SplitView {
     id: mainSpace
-
-    /*.. width of all property editors, should fit large numbers */
-    property int editorWidth: 120
 
     Layout.fillWidth: true
     Layout.fillHeight: true
@@ -51,6 +49,7 @@ SplitView {
     property string favoritesRegEx: tweak.favoritesRegEx
     property string cutUrl: ""
     property bool favoritesAreSelected: false
+    property alias displayDescription: settings.displayDescription
 
     Settings {
         id: settings
@@ -58,10 +57,26 @@ SplitView {
 
         /// Show children tweaks in parent nodes, off by default
         property bool showChildrenInParent: false
+
+        /// Split view internal state
+        property var splitView
+
+        /// Number of columns in tweakGrid
+        property int gridColumns: 1
+
+        /// Show description for each tweak
+        property bool displayDescription: true
+    }
+
+    Component.onCompleted: function () {
+        mainSpace.restoreState(settings.splitView)
+    }
+    Component.onDestruction: function () {
+        settings.splitView = mainSpace.saveState()
     }
 
     function updateFilter() {
-        var index = tweakTree.currentIndex
+        var index = treeProxyModel.mapToSource(tweakTree.currentIndex)
         var selectionFilter = tweak.tree.selectionToRegExp(index)
 
         if (selectionFilter === "^/Favorites/") {
@@ -83,10 +98,19 @@ SplitView {
         Layout.fillHeight: true
         Layout.minimumWidth: 150
 
+        SortFilterProxyModel {
+            id: treeProxyModel
+
+            sourceModel: tweak.tree
+
+            delayed: true
+            sortRoleName: "name"
+        }
+
         TreeView {
             id: tweakTree
 
-            model: tweak.tree
+            model: treeProxyModel
 
             Layout.fillHeight: true
             Layout.fillWidth: true
@@ -155,6 +179,7 @@ SplitView {
 
             id: cogentLogo
             source: "qrc:/images/cogent-logo.png"
+            antialiasing: true
         }
     }
 
@@ -164,12 +189,20 @@ SplitView {
         sourceModel: tweak
 
         delayed: true
-        dynamicSortFilter: false
+        sortRoleName: "uri"
 
-        filters: RegExpFilter {
-            roleName: "uri"
-            pattern: listFilter
-        }
+        filters: [
+            RegExpFilter {
+                roleName: "uri"
+                pattern: listFilter
+            },
+            RegExpFilter {
+                id: userUriFilter
+                roleName: "uri"
+                caseSensitivity: Qt.CaseInsensitive
+                enabled: !!this.pattern
+            }
+        ]
     }
 
     ColumnLayout {
@@ -182,34 +215,28 @@ SplitView {
             Layout.minimumHeight: 32
             z: 1
 
+            background: Rectangle {
+                implicitHeight: 40
+                color: Universal.background
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    anchors.top: parent.top
+                    color: "transparent"
+                    border.color: Universal.accent
+                }
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    anchors.bottom: parent.bottom
+                    color: "transparent"
+                    border.color: Universal.accent
+                }
+            }
+
             RowLayout {
-                Layout.fillWidth: true
-
-                TweakToolButton {
-                    text: "List"
-                    iconSource: "qrc:/images/button-grid.png"
-
-                    onClicked: {
-                        tweakList.columns = 1
-                    }
-
-                    checkable: true
-                    checked: tweakList.columns == 1
-                }
-                ToolSeparator {}
-                TweakToolButton {
-                    text: "Grid"
-                    iconSource: "qrc:/images/button-list.png"
-
-                    onClicked: {
-                        tweakList.columns = 5
-                    }
-                    checkable: true
-                    checked: tweakList.columns > 1
-                }
-                ToolSeparator {
-                    visible: !favoritesAreSelected
-                }
+                anchors.fill: parent
                 TweakToolButton {
                     text: "Show children"
                     visible: !favoritesAreSelected
@@ -219,6 +246,16 @@ SplitView {
                     onClicked: {
                         settings.showChildrenInParent = checked
                         mainSpace.updateFilter()
+                    }
+                }
+                TweakToolButton {
+                    text: "Show info"
+                    visible: !favoritesAreSelected
+                    checkable: true
+                    checked: settings.displayDescription
+                    iconSource: checked ? "qrc:/images/button-info-on.png" : "qrc:/images/button-info-off.png"
+                    onClicked: {
+                        settings.displayDescription = checked
                     }
                 }
                 ToolSeparator {
@@ -234,39 +271,31 @@ SplitView {
                         tweak.clearFavorites()
                     }
                 }
+                ToolSeparator { }
+                TextField {
+                    Layout.fillWidth: true
+                    placeholderText: qsTr("Enter a uri filter regexp ...")
+                    hoverEnabled: true
+                    onTextChanged: {
+                        userUriFilter.pattern = this.text
+                    }
+                    color: "black"
+                    background: Rectangle {
+                       color: userUriFilter.enabled ? "#eeffee" : "#ffffff"
+                    }
+                }
             }
         }
 
-        GridView {
+        TweaksList {
             id: tweakList
+            /*.. Integration */
             Layout.fillHeight: true
             Layout.fillWidth: true
             Layout.minimumWidth: 450
 
-            property int scrollBarThickness: 15
-
-            boundsBehavior: Flickable.StopAtBounds
-
-            property int columns: 1
-            property real minWidth: 700
-            property int workAreaWidth: width - tweakList.scrollBarThickness
-
-            cellWidth: workAreaWidth / Math.min(
-                           columns, Math.floor(workAreaWidth / minWidth) + 1)
-            cellHeight: 50
-
-            ScrollBar.vertical: TweakScrollBar {
-                barThickness: tweakList.scrollBarThickness
-                snapMode: "SnapAlways"
-            }
-
+            /*.. Model */
             model: tweakProxyModel
-
-            delegate: AutoSelectControl {
-                anchors.margins: tweakList.columns > 0 ? 40 : 0
-                width: tweakList.cellWidth
-                height: tweakList.cellHeight
-            }
 
             visible: tweakProxyModel.count > 0
         }

@@ -4,7 +4,7 @@
  *
  * @brief test suite for tweak wire library.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,10 +39,15 @@
 #include <string.h>
 #include <acutest.h>
 
+#define TEST_CLIENTS 2U
+
 static tweak_common_mutex s_lock = { 0 };
 static tweak_common_cond s_cond = { 0 };
 static tweak_wire_connection_state s_server_conn_state = TWEAK_WIRE_DISCONNECTED;
-static tweak_wire_connection_state s_client_conn_state = TWEAK_WIRE_DISCONNECTED;
+static tweak_wire_connection_state s_client_conn_state[TEST_CLIENTS] =
+    { TWEAK_WIRE_DISCONNECTED };
+static unsigned int server_conn_cb_cnt = 0U;
+static unsigned int client_conn_cb_cnt[TEST_CLIENTS] = { 0U };
 
 struct receive_buff {
   tweak_common_mutex lock;
@@ -88,6 +93,7 @@ static void server_connection_state_listener(tweak_wire_connection connection,
   (void) cookie;
   tweak_common_mutex_lock(&s_lock);
   s_server_conn_state = conn_state;
+  server_conn_cb_cnt++;
   tweak_common_cond_broadcast(&s_cond);
   tweak_common_mutex_unlock(&s_lock);
 }
@@ -105,16 +111,18 @@ static void client_connection_state_listener(tweak_wire_connection connection,
                                              void *cookie)
 {
   (void) connection;
-  (void) cookie;
+  size_t index = (size_t)cookie;
+
   tweak_common_mutex_lock(&s_lock);
-  s_client_conn_state = conn_state;
+  s_client_conn_state[index] = conn_state;
+  client_conn_cb_cnt[index]++;
   tweak_common_cond_broadcast(&s_cond);
   tweak_common_mutex_unlock(&s_lock);
 }
 
-static void client_wait_connection(void) {
+static void client_wait_connection(size_t index) {
   tweak_common_mutex_lock(&s_lock);
-  while (s_client_conn_state != TWEAK_WIRE_CONNECTED) {
+  while (s_client_conn_state[index] != TWEAK_WIRE_CONNECTED) {
     tweak_common_cond_wait(&s_cond, &s_lock);
   }
   tweak_common_mutex_unlock(&s_lock);
@@ -132,20 +140,26 @@ static void finalize(void) {
 
 void test_wire(void) {
   initialize();
-  tweak_wire_connection server_context = NULL, client_context = NULL;
+  tweak_wire_connection server_context = NULL;
+  tweak_wire_connection client_context[TEST_CLIENTS] = { NULL };
+
   struct receive_buff server_buff = {
     .has_value = false
   };
-  struct receive_buff client_buff = {
-    .has_value = false
-  };
+  struct receive_buff client_buff[TEST_CLIENTS];
+
+  tweak_wire_connection_state server_conn_state;
+  unsigned int cb_cnt;
 
   tweak_common_cond_init(&server_buff.cond);
   tweak_common_mutex_init(&server_buff.lock);
-  tweak_common_cond_init(&client_buff.cond);
-  tweak_common_mutex_init(&client_buff.lock);
 
-  tweak_wire_connection_state server_conn_state;
+  for(size_t i = 0U; i < TEST_CLIENTS; i++) {
+    tweak_common_cond_init(&client_buff[i].cond);
+    tweak_common_mutex_init(&client_buff[i].lock);
+    client_buff[i].has_value = false;
+  }
+
   tweak_common_mutex_lock(&s_lock);
   server_conn_state = s_server_conn_state;
   tweak_common_mutex_unlock(&s_lock);
@@ -161,65 +175,101 @@ void test_wire(void) {
 
   puts("Transmit datagram from server to non-existing client...");
   uint8_t lost[] = "Lost!";
-  TEST_CHECK(tweak_wire_transmit(server_context, lost, sizeof(lost)) == TWEAK_WIRE_ERROR_TIMEOUT);
-  puts("Got timeout error, SUCCESS");
+  TEST_CHECK(tweak_wire_transmit(server_context, lost, sizeof(lost)) == TWEAK_WIRE_SUCCESS);
+  puts("Got SUCCESS");
 
-  puts("Create connector node...");
-  client_context = tweak_wire_create_connection("nng", "role=client",
+  puts("Create connector 1 node...");
+  client_context[0] = tweak_wire_create_connection("nng", "role=client",
     TWEAK_DEFAULT_ENDPOINT, &client_connection_state_listener,
-    NULL, &test_receive_listener, &client_buff);
-  TEST_CHECK(client_context != TWEAK_WIRE_INVALID_CONNECTION);
+    (void*)0, &test_receive_listener, &client_buff[0]);
+  TEST_CHECK(client_context[0] != TWEAK_WIRE_INVALID_CONNECTION);
   puts("SUCCESS");
 
   puts("Wait for connection...");
   server_wait_connection();
-  client_wait_connection();
+  client_wait_connection(0);
   puts("Connection established");
 
   tweak_common_mutex_lock(&s_lock);
   server_conn_state = s_server_conn_state;
+  cb_cnt = server_conn_cb_cnt;
   tweak_common_mutex_unlock(&s_lock);
 
   TEST_CHECK(server_conn_state == TWEAK_WIRE_CONNECTED);
 
-  puts("Transmit datagram from client to server...");
-  const char *data= "Hello!";
-  tweak_wire_transmit(client_context, (const uint8_t*)data, strlen(data));
-  wait_buffer(&server_buff);
+  for(size_t i = 1U; i < TEST_CLIENTS; i++) {
+    puts("Create connector next node...");
+    client_context[i] = tweak_wire_create_connection("nng", "role=client",
+      TWEAK_DEFAULT_ENDPOINT, &client_connection_state_listener,
+      (void*)i, &test_receive_listener, &client_buff[i]);
+    TEST_CHECK(client_context[i] != TWEAK_WIRE_INVALID_CONNECTION);
+    puts("SUCCESS");
 
-  TEST_CHECK(strncmp(data, (const char *)server_buff.buffer, server_buff.size) == 0);
-  puts("SUCCESS");
+    puts("Wait for connection...");
+    client_wait_connection(i);
+    puts("Connection established");
 
-  clear_wait_buffer(&server_buff);
+    bool check;
+    tweak_common_mutex_lock(&s_lock);
+    server_conn_state = s_server_conn_state;
+    check = cb_cnt == server_conn_cb_cnt;
+    tweak_common_mutex_unlock(&s_lock);
 
-  puts("Transmit datagram from server to client...");
+    TEST_CHECK(server_conn_state == TWEAK_WIRE_CONNECTED);
+    TEST_CHECK(check);
+  }
+
+  for(size_t i = 0U; i < TEST_CLIENTS; i++) {
+    printf("Transmit datagram from client %zu to server...\n", i);
+    const char *data = "Hello!";
+    tweak_wire_transmit(client_context[i], (const uint8_t*)data, strlen(data));
+    wait_buffer(&server_buff);
+
+    TEST_CHECK(strncmp(data, (const char *)server_buff.buffer, server_buff.size) == 0);
+    puts("SUCCESS");
+
+    clear_wait_buffer(&server_buff);
+  }
+
+  puts("Transmit datagram from server to clients...");
   const char *atad = "!olleH";
   tweak_wire_transmit(server_context, (const uint8_t*)atad, strlen(atad));
-  wait_buffer(&client_buff);
 
-  TEST_CHECK(strncmp(atad, (const char *)client_buff.buffer, client_buff.size) == 0);
-  puts("SUCCESS");
+  for(size_t i = 0U; i < TEST_CLIENTS; i++) {
+    wait_buffer(&client_buff[i]);
 
-  clear_wait_buffer(&client_buff);
+    TEST_CHECK(strncmp(atad, (const char *)client_buff[i].buffer, client_buff[i].size) == 0);
+    printf("Client %zu received\n", i);
 
-  puts("Shut down replica node...");
-  tweak_wire_destroy_connection(client_context);
-  puts("SUCCESS");
+    clear_wait_buffer(&client_buff[i]);
+  }
+
+  for(size_t i = 0U; i < TEST_CLIENTS; i++) {
+    printf("Shut down client %zu...\n", i);
+    tweak_wire_destroy_connection(client_context[i]);
+    puts("SUCCESS");
+  }
   tweak_common_sleep(1000);
 
+  bool check;
   tweak_common_mutex_lock(&s_lock);
   server_conn_state = s_server_conn_state;
+  check = cb_cnt + 1 == server_conn_cb_cnt;
   tweak_common_mutex_unlock(&s_lock);
 
   puts("Shut down master node...");
   TEST_CHECK(server_conn_state == TWEAK_WIRE_DISCONNECTED);
+  TEST_CHECK(check);
   tweak_wire_destroy_connection(server_context);
   puts("SUCCESS");
 
   tweak_common_mutex_destroy(&server_buff.lock);
   tweak_common_cond_destroy(&server_buff.cond);
-  tweak_common_mutex_destroy(&client_buff.lock);
-  tweak_common_cond_destroy(&client_buff.cond);
+
+  for(size_t i = 0U; i < TEST_CLIENTS; i++) {
+    tweak_common_mutex_destroy(&client_buff[i].lock);
+    tweak_common_cond_destroy(&client_buff[i].cond);
+  }
   finalize();
 }
 

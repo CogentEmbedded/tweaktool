@@ -1,0 +1,42 @@
+#!/usr/bin/env groovy
+
+node('docker') {
+    stage('checkout') {
+        cleanWs()
+        checkout scm
+    }
+    def image
+    stage('docker image') {
+        image = docker.build('tweaktool-qnx700', './devops/qnx700/')
+    }
+    image.inside() {
+        dir('build-qnx700') {
+            stage('build') {
+                sh 'ls -l'
+                cmakeBuild(
+                    buildType: 'Release',
+                    sourceDir: '../',
+                    cmakeArgs: '-DWITH_NNG_SUBMODULE=ON -DBUILD_GUI=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF -DWITH_PYTHON=OFF -DBUILD_CLI=OFF -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_TOOLCHAIN_FILE=../cmake/qnx_7.0.0_linux_x86_64.cmake',
+                    cleanBuild: true,
+                    installation: 'InSearchPath',
+                    steps: [[withCmake: true, args: '--parallel']]
+                )
+            }
+            stage('pack') {
+                sh 'make package'
+            }
+            stage('move') {
+                sh 'mkdir -p qnx700 && mv *.tar.gz qnx700'
+            }
+        }
+    }
+    stage('archive') {
+        dir('build-qnx700') {
+            archiveArtifacts (
+                artifacts: 'qnx700/*.tar.gz',
+                fingerprint: true,
+                onlyIfSuccessful: true
+            )
+        }
+    }
+}

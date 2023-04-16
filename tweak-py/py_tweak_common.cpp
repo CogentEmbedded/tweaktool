@@ -4,7 +4,7 @@
  *
  * @brief Tweak 2 Python 3 bindings.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -44,6 +44,10 @@
 #include <sstream>
 #include <unordered_map>
 #include <stdint.h>
+
+#if defined (_MSC_BUILD)
+typedef __int64 ssize_t;
+#endif
 
 namespace {
 template<typename Q>
@@ -444,6 +448,8 @@ const char* translate_app_error_code(tweak_app_error_code arg) {
         return "TWEAK_APP_INVALID_ARGUMENT";
     case TWEAK_APP_PEER_DISCONNECTED:
         return "TWEAK_APP_PEER_DISCONNECTED";
+    case TWEAK_APP_TIMEOUT:
+        return "TWEAK_APP_TIMEOUT";
     }
     TWEAK_FATAL("Unknown app error code: %d", arg);
     return NULL;

@@ -4,7 +4,7 @@
  *
  * @brief Part of test suite to test tweak2 application implementation.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -78,6 +78,7 @@ struct client_control {
   tweak_common_cond pairs_cond;
   struct id_value_pair* pairs;
   uint32_t pairs_count;
+  bool count_server_changes;
 };
 
 static void initialize_client_control(struct client_control* client_control, const char* uri) {
@@ -128,17 +129,9 @@ static void wait_client_change_items(struct client_control* client_control, twea
   tweak_common_mutex_unlock(&client_control->lock);
 }
 
-static uint32_t get_client_item_count(struct client_control* client_control) {
-  uint32_t result;
+static void update_client_item_count(struct client_control* client_control, int32_t item_diff) {
   tweak_common_mutex_lock(&client_control->lock);
-  result = client_control->items_count;
-  tweak_common_mutex_unlock(&client_control->lock);
-  return result;
-}
-
-static void update_client_item_count(struct client_control* client_control, uint32_t item_count) {
-  tweak_common_mutex_lock(&client_control->lock);
-  client_control->items_count = item_count;
+  client_control->items_count += item_diff;
   tweak_common_cond_broadcast(&client_control->wait_items_cond);
   tweak_common_mutex_unlock(&client_control->lock);
 }
@@ -270,6 +263,12 @@ static void clear_change_counter(struct client_control* client_control) {
   tweak_common_mutex_unlock(&client_control->lock);
 }
 
+static void set_pair_counter_owner(struct client_control* client_control, bool test_server) {
+  tweak_common_mutex_lock(&client_control->lock);
+  client_control->count_server_changes = test_server;
+  tweak_common_mutex_unlock(&client_control->lock);
+}
+
 static void wait_change_count(struct client_control* client_control, uint32_t count) {
   tweak_common_mutex_lock(&client_control->lock);
   while (client_control->pairs_count != count) {
@@ -281,7 +280,7 @@ static void wait_change_count(struct client_control* client_control, uint32_t co
 bool compare_pairs_set(struct id_value_pair* set1, struct id_value_pair* set2, uint32_t count) {
   for (uint32_t ix = 0; ix < count; ++ix) {
     for (uint32_t iy = 0; iy < count; ++iy) {
-      if (set1[ix].tweak_id == set1[iy].tweak_id) {
+      if (set1[ix].tweak_id == set2[iy].tweak_id) {
         if (set1[ix].value.type != TWEAK_VARIANT_TYPE_FLOAT)
             return false;
 
@@ -296,17 +295,38 @@ bool compare_pairs_set(struct id_value_pair* set1, struct id_value_pair* set2, u
   return true;
 }
 
-static void item_changed_handler(tweak_app_context context,
+static void client_item_changed_handler(tweak_app_context context,
   tweak_id id, tweak_variant* value, void *cookie)
 {
   (void)context;
   struct client_control* client_control = cookie;
   tweak_common_mutex_lock(&client_control->lock);
-  client_control->pairs = realloc(client_control->pairs, (client_control->pairs_count + 1) * sizeof(*client_control->pairs));
-  client_control->pairs[client_control->pairs_count].tweak_id = id;
-  client_control->pairs[client_control->pairs_count].value = tweak_variant_copy(value);
-  ++client_control->pairs_count;
-  tweak_common_cond_broadcast(&client_control->pairs_cond);
+
+  if (!client_control->count_server_changes) {
+    client_control->pairs = realloc(client_control->pairs, (client_control->pairs_count + 1) * sizeof(*client_control->pairs));
+    client_control->pairs[client_control->pairs_count].tweak_id = id;
+    client_control->pairs[client_control->pairs_count].value = tweak_variant_copy(value);
+    ++client_control->pairs_count;
+    tweak_common_cond_broadcast(&client_control->pairs_cond);
+  }
+
+  tweak_common_mutex_unlock(&client_control->lock);
+}
+
+static void server_item_changed_handler(tweak_app_context context,
+  tweak_id id, tweak_variant* value, void *cookie)
+{
+  (void)context;
+  struct client_control* client_control = cookie;
+  tweak_common_mutex_lock(&client_control->lock);
+  if (client_control->count_server_changes) {
+    client_control->pairs = realloc(client_control->pairs, (client_control->pairs_count + 1) * sizeof(*client_control->pairs));
+    client_control->pairs[client_control->pairs_count].tweak_id = id;
+    client_control->pairs[client_control->pairs_count].value = tweak_variant_copy(value);
+    ++client_control->pairs_count;
+    tweak_common_cond_broadcast(&client_control->pairs_cond);
+  }
+
   tweak_common_mutex_unlock(&client_control->lock);
 }
 
@@ -329,7 +349,7 @@ void test_app(void) {
 
   tweak_app_server_callbacks server_callbacks = {
     .cookie = &client_control,
-    .on_current_value_changed = &item_changed_handler
+    .on_current_value_changed = &server_item_changed_handler
   };
 
   tweak_app_server_context server_context = tweak_app_create_server_context(
@@ -370,6 +390,7 @@ void test_app(void) {
   item_count = wait_client_item_count(&client_control, NUM_TWEAKS - NUM_TWEAKS / 5, WAIT_MILLIS);
   TEST_CHECK(item_count == NUM_TWEAKS - NUM_TWEAKS / 5);
 
+  set_pair_counter_owner(&client_control, false);
   for (uint32_t itr_no = 0; itr_no < CHANGE_ITERATIONS; ++itr_no) {
     TWEAK_LOG_TEST("Change items iteration %d..\n", itr_no);
     tweak_id tweak_ids[CHANGE_BATCH_SIZE];
@@ -414,8 +435,7 @@ static void client_loop_item_added(tweak_app_context context,
   (void)context;
   (void)id;
   struct client_control* client_control = cookie;
-  uint32_t c = get_client_item_count(client_control);
-  update_client_item_count(client_control, c + 1);
+  update_client_item_count(client_control, 1);
 }
 
 static void client_loop_item_removed(tweak_app_context context,
@@ -424,8 +444,7 @@ static void client_loop_item_removed(tweak_app_context context,
   (void)context;
   (void)id;
   struct client_control* client_control = cookie;
-  uint32_t c = get_client_item_count(client_control);
-  update_client_item_count(client_control, c - 1);
+  update_client_item_count(client_control, -1);
 }
 
 static void check_metadata(tweak_app_client_context client_context, tweak_id id)
@@ -453,7 +472,7 @@ static void* client_loop(void *arg) {
   tweak_app_client_callbacks client_callbacks = {
     .cookie = client_control,
     .on_new_item = &client_loop_item_added,
-    .on_current_value_changed = &item_changed_handler,
+    .on_current_value_changed = &client_item_changed_handler,
     .on_item_removed = &client_loop_item_removed
   };
 
@@ -463,7 +482,15 @@ static void* client_loop(void *arg) {
 
   wait_client_change_items(client_control, TWEAK_COMMON_TIMESPAN_INFINITE);
 
+  set_pair_counter_owner(client_control, true);
   for (uint32_t itr_no = 0; itr_no < CHANGE_ITERATIONS; ++itr_no) {
+
+    /* Time to let server transmit changes back.
+     * It is WA for simultaneous update same tweak
+     * from server and client
+     */
+    tweak_common_sleep(50);
+
     TWEAK_LOG_TEST("Change items iteration %d..\n", itr_no);
     tweak_id tweak_ids[CHANGE_BATCH_SIZE] = { 0 };
     struct id_value_pair pairs[CHANGE_BATCH_SIZE] = { 0 };

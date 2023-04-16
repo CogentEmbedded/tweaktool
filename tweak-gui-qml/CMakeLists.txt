@@ -1,7 +1,7 @@
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+# Copyright (c) 2018-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -100,7 +100,7 @@ target_link_libraries(
 
 set_target_properties(${LIBRARY_NAME} PROPERTIES AUTOMOC ON AUTORCC ON)
 
-target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_11)
+target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_14)
 
 # ------------------------------------------------------------------------------
 # Binary
@@ -129,7 +129,7 @@ target_link_libraries(${BINARY_NAME} ${LIBRARY_NAME})
 
 set_target_properties(${BINARY_NAME} PROPERTIES AUTOMOC ON AUTORCC ON)
 
-target_compile_features(${BINARY_NAME} PUBLIC cxx_std_11)
+target_compile_features(${BINARY_NAME} PUBLIC cxx_std_14)
 
 # ------------------------------------------------------------------------------
 # Installation

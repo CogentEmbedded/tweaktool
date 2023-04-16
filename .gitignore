@@ -1,7 +1,9 @@
-.vscode/*
-.vs/*
-/build/*
-/build-test/*
+.vscode
+.vs
+.venv/
+build*/
+_skbuild/
+*.egg-info/
 /out/*
 /docker-build/*
 CMakeSettings.json

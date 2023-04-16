@@ -4,7 +4,7 @@
  *
  * @brief Tweak wire transport layer implementation, NNG backend.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@
 #include <string.h>
 
 #include <nng/nng.h>
-#include <nng/protocol/pair0/pair.h>
+#include <nng/protocol/hub0/hub.h>
 
 #include <inttypes.h>
 
@@ -106,6 +106,14 @@ struct tweak_wire_connection_nng
    * Discriminator for the following union.
    */
     bool is_server;
+    /**
+     * Peer count guard
+     */
+    tweak_common_mutex peers_lock;
+    /**
+     * Peers counter
+     */
+    unsigned int peers_count;
     /*
    * This union contains data
    * specific for client
@@ -196,19 +204,26 @@ tweak_wire_connection tweak_wire_create_nng_connection(
 
   struct tweak_wire_connection_nng *connection = calloc(1, sizeof(*connection));
 
+  int rv = tweak_common_mutex_init(&connection->peers_lock);
+  if (rv != TWEAK_COMMON_THREAD_SUCCESS) {
+    free(connection);
+    return TWEAK_WIRE_INVALID_CONNECTION;
+  }
   connection->state_listener = connection_state_listener;
   connection->state_listener_cookie = connection_state_cookie;
 
   connection->receive_listener = receive_listener;
   connection->receive_listener_cookie = receive_listener_cookie;
 
- if (server_role) {
+  if (server_role) {
     if (start_listener(connection, uri) != TWEAK_WIRE_SUCCESS) {
+      tweak_common_mutex_destroy(&connection->peers_lock);
       free(connection);
       return TWEAK_WIRE_INVALID_CONNECTION;
     }
   } else {
     if (start_dialer(connection, uri) != TWEAK_WIRE_SUCCESS) {
+      tweak_common_mutex_destroy(&connection->peers_lock);
       free(connection);
       return TWEAK_WIRE_INVALID_CONNECTION;
     }
@@ -230,9 +245,9 @@ static tweak_wire_error_code initialize_transport(struct transport* transport,
     transport, uri, aio_cookie);
 
   int rv;
-  rv = nng_pair0_open(&transport->socket);
+  rv = nng_hub_open(&transport->socket);
   if (rv != 0) {
-    TWEAK_LOG_ERROR("nng_pair0_open returned %d", rv);
+    TWEAK_LOG_ERROR("nng_hub_open returned %d", rv);
     return TWEAK_WIRE_ERROR;
   }
 
@@ -344,8 +359,14 @@ static void on_new_connection(nng_pipe pipe, nng_pipe_ev ev, void* arg) {
   struct tweak_wire_connection_nng *connection_nng = arg;
   void *cookie = connection_nng->state_listener_cookie;
   tweak_wire_connection_state_listener listener;
+  unsigned int peers;
+
+  tweak_common_mutex_lock(&connection_nng->peers_lock);
+  peers = connection_nng->peers_count++;
+  tweak_common_mutex_unlock(&connection_nng->peers_lock);
+
   listener = connection_nng->state_listener;
-  if (listener != NULL) {
+  if (listener != NULL && !peers) {
     listener(&connection_nng->base, TWEAK_WIRE_CONNECTED, cookie);
   }
 }
@@ -360,7 +381,17 @@ static void on_connection_lost(nng_pipe pipe, nng_pipe_ev ev, void* arg) {
   void *cookie = connection_nng->state_listener_cookie;
   tweak_wire_connection_state_listener listener;
   listener = connection_nng->state_listener;
-  if (listener != NULL) {
+  unsigned int peers;
+
+  tweak_common_mutex_lock(&connection_nng->peers_lock);
+
+  assert(connection_nng->peers_count > 0);
+  connection_nng->peers_count--;
+
+  peers = connection_nng->peers_count;
+  tweak_common_mutex_unlock(&connection_nng->peers_lock);
+
+  if (listener != NULL && !peers) {
     TWEAK_LOG_TRACE("Invoking user connection state listener %p,"
       " state = TWEAK_WIRE_DISCONNECTED, cookie = %p", listener, cookie);
     listener(&connection_nng->base, TWEAK_WIRE_DISCONNECTED, cookie);
@@ -520,5 +551,6 @@ void tweak_wire_destroy_nng_connection(tweak_wire_connection connection) {
     nng_dialer_close(connection_nng->connection_watchdog.dialer);
     TWEAK_LOG_TRACE("After nng_dialer_close");
   }
+  tweak_common_mutex_destroy(&connection_nng->peers_lock);
   free(connection_nng);
 }

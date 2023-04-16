@@ -1,10 +1,10 @@
 /**
- * @file TweakButton.qml
+ * @file TweaksList.qml
  * @ingroup GUI
  *
- * @brief Button control.
+ * @brief List of tweak controls.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,30 +24,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.obtaining a copy
  */
-
 import QtQuick 2.0
-import QtQuick.Controls 2.2
+import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
-import QtQuick.Controls.Universal 2.2
+import QtQuick.Controls 2.2
+
+import Qt.labs.settings 1.0
+
+import SortFilterProxyModel 0.2
 
 import TweakApplication 1.0
 
-Tweak {
-    columns: 4
+ListView {
+    id: tweakList
 
-    Item {
-        Layout.fillWidth: true
+    /*.. this is cut from the beginning of the URI */
+    property var filter: RegExp(mainSpace.cutUrl)
+
+    /*.. Layout */
+    spacing: 0
+
+    /*.. Scrolling */
+    clip: true
+    property int scrollBarThickness: 15
+    snapMode: ListView.SnapToRow
+    boundsBehavior: Flickable.StopAtBounds
+    ScrollBar.vertical: TweakScrollBar {
+        barThickness: parent.scrollBarThickness
+        snapMode: ScrollBar.SnapAlways
     }
 
-    Button {
-        text: meta.caption
-        Layout.minimumWidth: mainSpace.editorWidth + 80
-        Layout.maximumWidth: mainSpace.editorWidth + 80
-        onPressed: {
-            tweakValue = true;
-        }
-        onReleased: {
-            tweakValue = false;
-        }
+    /*.. Grid layout */
+    property real minCellWidth: 700
+    property int workAreaWidth: width - scrollBarThickness - 5
+    property int cellWidth: workAreaWidth
+    property int cellHeight: 45
+
+    /*.. Model */
+    delegate: Tweak {
+        color: userUriFilter.enabled ? "#eeffee" : "#ffffff"
     }
 }

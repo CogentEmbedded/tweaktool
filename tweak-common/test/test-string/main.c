@@ -3,7 +3,7 @@
  * @ingroup tweak-api
  * @brief test suite for common library.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -178,15 +178,30 @@ void test_common(void) {
   tweak_assign_string(&test1, large_sting_literal1);
   {
     tweak_variant_string test2 = { 0 };
+    tweak_variant_string test3 = tweak_variant_string_copy(&test1);
+    bool check;
+
     tweak_variant_swap_string(&test1, &test2);
     TEST_CHECK(!tweak_variant_is_small_string(&test2));
+    TEST_CHECK(tweak_variant_is_small_string(&test1));
     TEST_CHECK(tweak_variant_string_c_str(&test2) != NULL);
     TEST_CHECK(strcmp(tweak_variant_string_c_str(&test2), large_sting_literal1) == 0);
+
+    check = !tweak_variant_str_is_equal(&test1, &test2);
+    TEST_CHECK(check);
+
+    check = tweak_variant_str_is_equal(&test2, &test3);
+    TEST_CHECK(check);
+
+    check = tweak_variant_str_is_equal(&test3, &test3);
+    TEST_CHECK(check);
+
     tweak_variant_destroy_string(&test2);
+    tweak_variant_destroy_string(&test3);
   }
-  TEST_CHECK(tweak_variant_is_small_string(&test1));
+
   tweak_variant_destroy_string(&test1); /* Does nothing,
-                                           But if client of the code modelled
+                                           But if client of the code modeled
                                            by the nested block above
                                            didn't claim ownership of the string,
                                            real deallocation would happen here.

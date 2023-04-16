@@ -1,7 +1,7 @@
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+# Copyright (c) 2018-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@ if(NOT EXPECT_BINARY)
   message(
     FATAL_ERROR
       "expect is required for ${BINARY_NAME} tests.\n"
-      "Please disable tests or install expect with 'sudo aapt-get install expect'."
+      "Please disable tests or install expect with 'sudo apt-get install expect'."
   )
 endif()
 
@@ -50,3 +50,4 @@ tweak_app_cl_test_case(help)
 tweak_app_cl_test_case(disconnected)
 tweak_app_cl_test_case(list)
 tweak_app_cl_test_case(reconnect)
+tweak_app_cl_test_case(multiconnect)

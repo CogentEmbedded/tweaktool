@@ -4,7 +4,7 @@
  *
  * @brief string relater routines.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -143,6 +143,20 @@ void tweak_variant_swap_string(tweak_variant_string* string1, tweak_variant_stri
   tweak_variant_string tmp = *string1;
   *string1 = *string2;
   *string2 = tmp;
+}
+
+bool tweak_variant_str_is_equal(
+    tweak_variant_string *s1, tweak_variant_string *s2)
+{
+  assert(s1);
+  assert(s2);
+
+  if (s1 == s2) {
+    return true;
+  }
+
+  return strcmp(tweak_variant_string_c_str(s1),
+      tweak_variant_string_c_str(s2)) == 0;
 }
 
 const char* tweak_variant_string_c_str(const tweak_variant_string* string) {

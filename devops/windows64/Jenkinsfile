@@ -7,7 +7,12 @@ node('docker_win') {
     }
     def image
     stage('docker image') {
-        image = docker.build('tweaktool', './devops/windows64/')
+        VCPKG_SHA = powershell(
+            script: "(git ls-remote https://github.com/Microsoft/vcpkg.git HEAD).Split()[0]",
+            returnStdout: true
+        ).trim()
+
+        image = docker.build('tweaktool-win64', '--build-arg ${VCPKG_SHA} ./devops/windows64/', )
     }
     image.inside() {
         stage('build') {

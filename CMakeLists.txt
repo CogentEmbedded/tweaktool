@@ -1,7 +1,7 @@
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+# Copyright (c) 2018-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@ cmake_minimum_required(VERSION 3.16)
 # ------------------------------------------------------------------------------
 # Generate project version
 # ------------------------------------------------------------------------------
-set(PROJECT_NUMERIC_VERSION "2.1.2") # fallback
+set(PROJECT_NUMERIC_VERSION "2.1.7") # fallback
 include(cmake/generate_version.cmake)
 
 # ------------------------------------------------------------------------------
@@ -74,6 +74,7 @@ cmake_dependent_option(BUILD_CLI "Build command line client" ON "NOT MSVC" OFF)
 option(WITH_DOXYGEN    "Enable Doxygen-based documentation"  OFF)
 option(WITH_PYTHON     "Build Python 3 binding"               ON)
 option(WITH_WIRE_NNG   "Build NNG wire backend"               ON)
+option(WITH_NNG_SUBMODULE   "Build NNG as submodule"          OFF)
 option(WITH_TWEAK_GW   "Build Tweak RPMSG<=>NNG Gateway app"  OFF)
 # cmake-format: on
 
@@ -162,24 +163,14 @@ if(CMAKE_BUILD_TYPE STREQUAL "Asan")
   endif()
 endif()
 
-# Prefer system version of uthash packages. Use a submodule if not available.
-find_package(uthash)
-if(UTHASH_INCLUDE_DIR)
-  message(STATUS "Using system uthash: ${UTHASH_INCLUDE_DIR}")
-else()
-  find_path(
-    UTHASH_INCLUDE_DIR
-    NAMES "uthash.h"
-    PATHS "${CMAKE_CURRENT_LIST_DIR}/extern/uthash/include/"
-    NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
+find_path(
+  UTHASH_INCLUDE_DIR
+  NAMES "uthash.h"
+  PATHS "${CMAKE_CURRENT_LIST_DIR}/extern/uthash/include/"
+  NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
 
-  if(UTHASH_INCLUDE_DIR)
-    message(STATUS "Using uthash from a submodule: ${UTHASH_INCLUDE_DIR}")
-  else()
-    message(
-      FATAL_ERROR "uthash.h is NOT FOUND, please init and update all submodules"
-    )
-  endif()
+if(NOT UTHASH_INCLUDE_DIR)
+  message(FATAL_ERROR "uthash.h is NOT FOUND, please init and update all submodules")
 endif()
 
 if(BUILD_TESTS)
@@ -220,6 +211,15 @@ endif()
 # ------------------------------------------------------------------------------
 
 add_subdirectory(tweak-common)
+
+# ------------------------------------------------------------------------------
+# Add NNG as submodule (should be used for OS like Ubuntu)
+# ------------------------------------------------------------------------------
+if (WITH_NNG_SUBMODULE)
+  set(NNG_TESTS OFF CACHE BOOL "Build and run tests.")
+  add_subdirectory(extern/nng)
+  add_library(nng::nng ALIAS nng)
+endif()
 
 add_subdirectory(tweak-wire)
 

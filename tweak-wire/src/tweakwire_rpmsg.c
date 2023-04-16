@@ -4,7 +4,7 @@
  *
  * @brief Implementation of tweak wire API interface for TI RP Messaging.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -93,6 +93,16 @@ struct tweak_wire_connection_rpmsg
      * @brief Flag indicating whether remote RPMSG peer considered disconnected.
      */
     tweak_wire_connection_state connection_state;
+
+    /**
+     * @brief Global id for sended messages
+     */
+    uint32_t send_msg_id;
+
+    /**
+     * @brief Global id for received messages
+     */
+    uint32_t recv_msg_id;
 };
 
 static tweak_wire_error_code tweak_wire_rpmsg_transmit(tweak_wire_connection connection_base,
@@ -186,6 +196,11 @@ exit:
   return rv;
 }
 
+static uint32_t inc_global_id(uint32_t id)
+{
+    id++;
+    return (id) ? id : id + 1;
+}
 
 tweak_wire_connection tweak_wire_create_rpmsg_connection(
     const char *connection_type, const char *params, const char *uri,
@@ -235,6 +250,9 @@ tweak_wire_connection tweak_wire_create_rpmsg_connection(
     connection->receive_listener = receive_listener;
     connection->receive_listener_cookie = receive_listener_cookie;
 
+    connection->send_msg_id = 0u;
+    connection->recv_msg_id = 0u;
+
     if (tweak_wire_rpmsg_init_transport(&connection->transport, endpoint_name, endpoint, params)
          != TWEAK_WIRE_SUCCESS)
     {
@@ -261,11 +279,15 @@ tweak_wire_connection tweak_wire_create_rpmsg_connection(
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 #define as_uint16_t(x) (*((uint16_t*)&(x)))
-enum { CHUNK_NUMBER_OFFSET = 0, CHUNK_COUNT_OFFSET = 2, PAYLOAD_OFFSET = 4};
+#define as_uint32_t(x) (*((uint32_t*)&(x)))
+#define MAGIC (0xDEADBEEF)
 
-static tweak_wire_error_code send_partitioned(struct tweak_wire_rpmsg_transport *transport,
+enum { MAGIC_OFFSET = 0, CHUNK_NUMBER_OFFSET = 4, CHUNK_COUNT_OFFSET = 6, CNT_OFFSET = 8, PAYLOAD_OFFSET = 12};
+
+static tweak_wire_error_code send_partitioned(struct tweak_wire_connection_rpmsg *connection,
     const uint8_t *buffer, size_t len)
 {
+    struct tweak_wire_rpmsg_transport *transport = &connection->transport;
     const uint32_t max_chunk_payload_size = tweak_wire_rpmsg_max_chunk_size - PAYLOAD_OFFSET;
     uint32_t n_chunks = (len + max_chunk_payload_size - 1) / max_chunk_payload_size;
     if (n_chunks >= UINT16_MAX) {
@@ -273,8 +295,11 @@ static tweak_wire_error_code send_partitioned(struct tweak_wire_rpmsg_transport 
         return TWEAK_WIRE_ERROR;
     }
     for (uint32_t n_chunk = 0; n_chunk < n_chunks; n_chunk++) {
+        uint32_t msg_id = inc_global_id(connection->send_msg_id);
         as_uint16_t(transport->send_buff[CHUNK_NUMBER_OFFSET]) = (uint16_t)(n_chunk + 1); /* start from 1 */
         as_uint16_t(transport->send_buff[CHUNK_COUNT_OFFSET]) = (uint16_t)n_chunks;
+        as_uint32_t(transport->send_buff[MAGIC_OFFSET]) = MAGIC;
+        as_uint32_t(transport->send_buff[CNT_OFFSET]) = msg_id;
 
         uint32_t from = n_chunk * max_chunk_payload_size;
         uint32_t to = MIN(len, (n_chunk + 1) * max_chunk_payload_size);
@@ -288,19 +313,23 @@ static tweak_wire_error_code send_partitioned(struct tweak_wire_rpmsg_transport 
             TWEAK_LOG_ERROR("tweak_wire_rpmsg_transport_send failed: %d", error_code);
             return error_code;
         }
+        connection->send_msg_id = msg_id;
         TWEAK_LOG_TRACE("%u of %u chunks sent", n_chunk + 1, n_chunks);
     }
     TWEAK_LOG_DEBUG("sent message: %d bytes", len);
     return TWEAK_WIRE_SUCCESS;
 }
 
-tweak_wire_error_code receive_partitioned(struct tweak_wire_rpmsg_transport *transport,
+static tweak_wire_error_code receive_partitioned(struct tweak_wire_connection_rpmsg *connection,
     uint8_t *buffer, size_t *len)
 {
     uint32_t bytes_received = 0;
     uint32_t n_prev_chunk = 0;
     uint32_t n_chunk = 0;
     uint32_t n_chunks = 0;
+
+    struct tweak_wire_rpmsg_transport *transport = &connection->transport;
+
     do {
         uint16_t chunk_size = sizeof(transport->recv_buff);
         tweak_wire_error_code error_code =
@@ -322,11 +351,36 @@ tweak_wire_error_code receive_partitioned(struct tweak_wire_rpmsg_transport *tra
         }
 
         uint16_t chunk_payload_size = chunk_size - PAYLOAD_OFFSET;
+        uint32_t recv_msg_id = as_uint32_t(transport->recv_buff[CNT_OFFSET]);
+        uint32_t magic = as_uint32_t(transport->recv_buff[MAGIC_OFFSET]);
         n_chunk = as_uint16_t(transport->recv_buff[CHUNK_NUMBER_OFFSET]);
         n_chunks = as_uint16_t(transport->recv_buff[CHUNK_COUNT_OFFSET]);
+
+        if (!connection->recv_msg_id)
+        {
+            connection->recv_msg_id = recv_msg_id;
+        }
+        else
+        {
+            connection->recv_msg_id = inc_global_id(connection->recv_msg_id);
+        }
+
+        if (magic != MAGIC)
+        {
+            TWEAK_LOG_ERROR("Receive message with incorrect magic 0x%x != 0x%x", magic, MAGIC);
+            return TWEAK_WIRE_ERROR;
+        }
+
+        if (connection->recv_msg_id != recv_msg_id)
+        {
+            TWEAK_LOG_ERROR("Receive message with incorrect global id 0x%x != 0x%x", connection->recv_msg_id, recv_msg_id);
+            connection->recv_msg_id = recv_msg_id;
+            return TWEAK_WIRE_ERROR;
+        }
+
         if (n_prev_chunk != (n_chunk - 1)) {
-            TWEAK_LOG_ERROR("Chunk sequence was corrupted: chunk sequence number %u, prev chunk sequence number %u",
-                n_chunk, n_prev_chunk);
+            TWEAK_LOG_ERROR("Chunk sequence was corrupted: chunk sequence number %u, prev chunk sequence number %u, id %u",
+                n_chunk, n_prev_chunk, recv_msg_id);
             return TWEAK_WIRE_ERROR;
         }
         TWEAK_LOG_TRACE("tweak_wire_rpmsg_transport_receive() ok, %u of %u chunks received", n_chunk, n_chunks);
@@ -352,6 +406,7 @@ tweak_wire_error_code receive_partitioned(struct tweak_wire_rpmsg_transport *tra
     return TWEAK_WIRE_SUCCESS;
 }
 #undef as_uint16_t
+#undef as_uint32_t
 
 static void *tweak_wire_rpmsg_receive_thread(void *arg)
 {
@@ -361,8 +416,7 @@ static void *tweak_wire_rpmsg_receive_thread(void *arg)
     tweak_wire_error_code status;
     do {
         len = sizeof(connection->receive_buffer);
-        status = receive_partitioned(&connection->transport,
-            connection->receive_buffer, &len);
+        status = receive_partitioned(connection, connection->receive_buffer, &len);
         if (status == TWEAK_WIRE_SUCCESS)
         {
             bool has_escape = len >= 1 && (connection->receive_buffer[0] == TWEAKWIRE_RPMSG_ESCAPE[0]);
@@ -404,7 +458,7 @@ static void *tweak_wire_rpmsg_receive_thread(void *arg)
 
     TWEAK_LOG_TRACE("Sending \"disconnect\" service datagram to remote peer");
     char disconnect_datagram[] = TWEAKWIRE_RPMSG_SEND_DISCONNECTED;
-    send_partitioned(&connection->transport, (uint8_t *)disconnect_datagram, sizeof(disconnect_datagram));
+    send_partitioned(connection, (uint8_t *)disconnect_datagram, sizeof(disconnect_datagram));
 
     /*.. Report that we are disconnected */
     if (connection->state_listener != NULL)
@@ -431,7 +485,7 @@ static tweak_wire_error_code tweak_wire_rpmsg_transmit(tweak_wire_connection con
     bool have_to_shield_escape = size >= 1 && (buffer[0] == TWEAKWIRE_RPMSG_ESCAPE[0]);
     TWEAK_LOG_TRACE("Sending datagram to remote peer");
     if (!have_to_shield_escape) {
-        return send_partitioned(&connection->transport, buffer, size);
+        return send_partitioned(connection, buffer, size);
     } else {
         TWEAK_LOG_TRACE("Datagram starts with escape byte, prepending it with prefix");
         uint8_t *tmp_buffer = malloc(size + 1);
@@ -440,7 +494,7 @@ static tweak_wire_error_code tweak_wire_rpmsg_transmit(tweak_wire_connection con
         }
         memcpy(tmp_buffer + 1, buffer, size);
         tmp_buffer[0] = TWEAKWIRE_RPMSG_ESCAPE[0];
-        tweak_wire_error_code error_code = send_partitioned(&connection->transport, (uint8_t *)tmp_buffer, size + 1);
+        tweak_wire_error_code error_code = send_partitioned(connection, (uint8_t *)tmp_buffer, size + 1);
         free(tmp_buffer);
         return error_code;
     }

@@ -4,7 +4,7 @@
  *
  * @brief Tweak 2 Python 3 bindings.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -403,8 +403,10 @@ Equivalent to list(lambda uri: True)
 
 } // namespace
 
+#if !defined (_MSC_BUILD)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 PYBIND11_PLUGIN(tweak2) {
     using tweak2::TweakClient;
     using tweak2::TweakServer;
@@ -820,5 +822,6 @@ PYBIND11_PLUGIN(tweak2) {
         m.add_object("_cleanup", py::capsule(&TweakServerSingleton::finalize_library));
     return m.ptr();
 }
+#if !defined (_MSC_BUILD)
 #pragma GCC diagnostic pop
-
+#endif

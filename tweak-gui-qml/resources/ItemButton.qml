@@ -1,10 +1,10 @@
 /**
- * @file TweakLabel.qml
+ * @file ItemButton.qml
  * @ingroup GUI
  *
- * @brief Readonly tweak control.
+ * @brief Small tool button for tweak controls.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,33 +24,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.obtaining a copy
  */
-
 import QtQuick 2.0
-import QtQuick.Controls 2.2
+import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
-import QtQuick.Controls.Universal 2.2
+import QtQuick.Controls 2.2
 
-import TweakApplication 1.0
+Button {
+    property int imageSize: 24
+    property string imageSource
+    property string toolTip
 
-Tweak {
-    columns: 4
+    width: imageSize
+    height: imageSize
 
-    Item {
-        Layout.fillWidth: true
+    Layout.minimumHeight: imageSize
+    Layout.maximumHeight: imageSize
+    Layout.minimumWidth: imageSize
+    Layout.maximumWidth: imageSize
+
+    contentItem: Image {
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectFit
+        source: parent.imageSource
     }
 
-    TextField {
-        property int decimals: meta.decimals
-        text: Number(tweakValue).toLocaleString(locale, 'f', decimals)
+    ToolTip {
+        text: toolTip
+        visible: toolTip ? ma.containsMouse : false
+        delay: 1000
+    }
 
-        Layout.leftMargin: 40
-        Layout.rightMargin: 40
-        Layout.minimumWidth: mainSpace.editorWidth
-        Layout.maximumWidth: mainSpace.editorWidth
+    MouseArea {
+        id: ma
+        anchors.fill: parent
+        hoverEnabled: true
 
-        readOnly: true
-        horizontalAlignment: Qt.AlignRight
-
-        selectByMouse: true
+        onClicked: parent.clicked()
+        onPressed: parent.pressed()
+        onReleased: parent.released()
     }
 }

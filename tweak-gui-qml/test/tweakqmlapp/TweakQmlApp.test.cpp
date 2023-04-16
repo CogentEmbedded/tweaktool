@@ -4,7 +4,7 @@
  *
  * @brief test suite for TweakQml component.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,7 @@
 
 #include <stdexcept>
 #include <vector>
+#include <random>
 #include <errno.h>
 
 namespace tweak2
@@ -237,7 +238,9 @@ class TestTweakApplication : public QObject
             for (uint32_t item_no = 0; item_no < TEST_ITEM_COUNT; item_no++) {
                 indices[item_no] = item_no;
             }
-            std::random_shuffle(indices.begin(), indices.end());
+            std::random_device rd;
+            std::mt19937 urbg(rd());
+            std::shuffle(indices.begin(), indices.end(), urbg);
             std::vector<uint32_t> indices1 = indices;
 
              for (uint32_t item_no = 0; item_no < TEST_ITEM_COUNT; item_no++) {

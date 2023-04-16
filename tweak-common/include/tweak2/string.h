@@ -4,7 +4,7 @@
  *
  * @brief Arbitrary length string for use within pickle and app layer APIs.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -149,6 +149,17 @@ void tweak_string_format(tweak_variant_string* string, const char* format, ...);
  * @param[in] string2 This value will be replaced with string1.
  */
 void tweak_variant_swap_string(tweak_variant_string* string1, tweak_variant_string* string2);
+
+/**
+ * @brief Compare two strings.
+ *
+ * @param[in] s1 the first string for comparison.
+ * @param[in] s2 the second string for comparison.
+ *
+ * @return true if strings are equal
+ */
+bool tweak_variant_str_is_equal(
+    tweak_variant_string *s1, tweak_variant_string *s2);
 
 /**
  * @brief Get pointer to underlying buffer to pass into external API.

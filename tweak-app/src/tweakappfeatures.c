@@ -4,7 +4,7 @@
  *
  * @brief part of tweak2 application implementation.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -104,4 +104,12 @@ bool tweak_app_features_check_type_compatibility(const struct tweak_app_features
   }
   TWEAK_FATAL("Unknown type: %d", type);
   return false;
+}
+
+struct tweak_app_features tweak_app_features_combine(
+    const struct tweak_app_features* arg1, const struct tweak_app_features* arg2)
+{
+  struct tweak_app_features res = *arg1;
+  res.vectors &= arg2->vectors;
+  return res;
 }

@@ -1,7 +1,7 @@
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+# Copyright (c) 2018-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,11 @@
 # SOFTWARE.
 #
 
-set(INSTALL_COMPONENTS dev tools python)
+if (WITH_PYTHON)
+  set(INSTALL_COMPONENTS dev tools python)
+else()
+  set(INSTALL_COMPONENTS dev tools)
+endif()
 
 if(APPLE)
   set(GEN_PACKAGES DragNDrop)
@@ -60,7 +64,8 @@ set(CPACK_STRIP_FILES TRUE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 
-set(CPACK_PROJECT_CONFIG_FILE ${CMAKE_CURRENT_LIST_DIR}/generators.cmake)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/generators.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/generators.cmake @ONLY)
+set(CPACK_PROJECT_CONFIG_FILE ${CMAKE_CURRENT_BINARY_DIR}/generators.cmake)
 
 if(BUILD_GUI
    AND NOT MSVC

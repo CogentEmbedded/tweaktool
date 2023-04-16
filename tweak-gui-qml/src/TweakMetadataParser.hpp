@@ -4,7 +4,7 @@
  *
  * @brief Metdata parser for Tweak QML GUI.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,8 @@
 #include <QVariantMap>
 #include <QAbstractListModel>
 
+#include <memory>
+
 #include <tweak2/metadata.h>
 
 namespace tweak2
@@ -58,6 +60,46 @@ public:
     QHash<int, QByteArray> roleNames() const Q_DECL_OVERRIDE;
 };
 
+class TweakFixedPointInfo
+{
+    Q_GADGET
+public:
+    enum class FixedPointType {
+        TwosComplement,
+        SignMantissa,
+        Apical,
+        OnesComplement
+    };
+    Q_ENUM(FixedPointType);
+
+private:
+    bool m_is_signed;
+    FixedPointType m_fpt;
+    unsigned m_integer_bits;
+    unsigned m_fraction_bits;
+public:
+    TweakFixedPointInfo(bool is_signed,
+                        FixedPointType fpt,
+                        unsigned integer_bits,
+                        unsigned fraction_bits);
+
+    ~TweakFixedPointInfo();
+
+    bool getIsSigned() const;
+        FixedPointType getFpt() const;
+        unsigned getIntegerBits() const;
+        unsigned getFractionBits() const;
+      QVariant getMin() const;
+      QVariant getMax() const;
+
+    Q_PROPERTY(bool is_signed READ getIsSigned CONSTANT)
+    Q_PROPERTY(FixedPointType fpt READ getFpt CONSTANT)
+    Q_PROPERTY(unsigned integer_bits READ getIntegerBits CONSTANT)
+    Q_PROPERTY(unsigned fraction_bits READ getFractionBits CONSTANT)
+    Q_PROPERTY(QVariant min READ getMin CONSTANT)
+    Q_PROPERTY(QVariant max READ getMax CONSTANT)
+};
+
 /**
  * @brief Metadata information about individual tweak control that is used to select
  *        proper elements in the GUI.
@@ -65,8 +107,11 @@ public:
 class TweakMetadata : public QObject
 {
     Q_OBJECT
+    tweak_variant_type m_item_type;
     tweak_metadata m_metadata;
     OptionsModel* m_options;
+    QString m_json;
+    std::unique_ptr<TweakFixedPointInfo> m_info;
 public:
     enum class ControlType {
         Unknown,
@@ -74,11 +119,17 @@ public:
         Button,
         Spinbox,
         Slider,
-        Combobox
+        Combobox,
+        Table,
+        Editbox
     };
     Q_ENUM(ControlType);
     TweakMetadata(QObject *parent = nullptr);
-    TweakMetadata(tweak_metadata metadata, QObject *parent = nullptr);
+    TweakMetadata(tweak_variant_type item_type,
+                  tweak_metadata metadata,
+                  QString json,
+                  std::unique_ptr<TweakFixedPointInfo> info,
+                  QObject *parent = nullptr);
     ~TweakMetadata();
 
     ControlType getControlType() const;
@@ -89,6 +140,10 @@ public:
     QVariant getStep() const;
     QString getCaption() const;
     OptionsModel* getOptions() const;
+    QString getUnit() const;
+    QString getJson() const;
+    tweak_variant_type getTweakType() const;
+    TweakFixedPointInfo* getFixedPointInfo() const;
 
     Q_PROPERTY(ControlType controlType READ getControlType CONSTANT)
     Q_PROPERTY(QVariant min READ getMin CONSTANT)
@@ -98,6 +153,10 @@ public:
     Q_PROPERTY(quint32 decimals READ getDecimals CONSTANT)
     Q_PROPERTY(QString caption READ getCaption CONSTANT)
     Q_PROPERTY(OptionsModel* options READ getOptions CONSTANT)
+    Q_PROPERTY(QString unit READ getUnit CONSTANT)
+    Q_PROPERTY(QString json READ getJson CONSTANT)
+    Q_PROPERTY(tweak_variant_type tweak_type READ getTweakType CONSTANT)
+    Q_PROPERTY(TweakFixedPointInfo* fixed_point READ getFixedPointInfo CONSTANT)
 };
 
 class TweakMetadataParser : public QObject
@@ -117,6 +176,8 @@ public:
 
 }
 
+Q_DECLARE_METATYPE(tweak2::TweakFixedPointInfo*)
 Q_DECLARE_METATYPE(tweak2::TweakMetadata*)
+Q_DECLARE_METATYPE(tweak_variant_type);
 
 #endif // TWEAKMETADATAPARSER_HPP

@@ -1,4 +1,28 @@
 #
+# CMake build configuration for Cogent Tweak Tool.
+#
+# Copyright (c) 2022-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+#
 # Finds the TIOVX framework includes and libraries
 #
 #  TIOVX_FOUND      - True if TIOVX framework was found
@@ -84,6 +108,13 @@ if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_NAME STREQUAL QNX)
       PATHS "${BSP_TOPDIR}/vision_apps/out/J7/A72/QNX/${TI_BUILD_PROFILE}"
       NO_DEFAULT_PATH
       NO_CMAKE_FIND_ROOT_PATH)
+
+   find_path(PDK_QNX_DIR
+      NAMES ti/drv/ipc/ipc.h
+      PATHS ${BSP_TOPDIR}/psdkqa/pdk/packages
+      NO_DEFAULT_PATH
+      NO_CMAKE_FIND_ROOT_PATH)
+
   else()
     find_library(TIOVX_LIBRARY
       tivision_apps
@@ -156,6 +187,10 @@ set(TIOVX_INCLUDE_DIRS
 # It is used on selected platforms, append if found
 if (CE_IMAGING_INCLUDE_DIR)
   list(APPEND TIOVX_INCLUDE_DIRS ${CE_IMAGING_INCLUDE_DIR})
+endif()
+
+if (CMAKE_SYSTEM_NAME STREQUAL QNX)
+  list(APPEND TIOVX_INCLUDE_DIRS ${PDK_QNX_DIR})
 endif()
 
 # SDK 8.01 or later

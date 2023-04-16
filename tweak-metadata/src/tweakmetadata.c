@@ -4,7 +4,7 @@
  *
  * @brief implementation of metadata instance factory.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -292,7 +292,7 @@ IMPLEMENT_DEFAULT_METADATA_INITIALIZER(
 
 static void fill_with_defaults_string(struct tweak_metadata_base *blank_metadata) {
     memset(blank_metadata, 0, sizeof(*blank_metadata));
-    blank_metadata->control_type = TWEAK_METADATA_CONTROL_EDIT;
+    blank_metadata->control_type = TWEAK_METADATA_CONTROL_EDITBOX;
     tweak_variant_assign_string(&blank_metadata->min, "");
     tweak_variant_assign_string(&blank_metadata->max, "");
     blank_metadata->decimals = 0;
@@ -698,7 +698,7 @@ static bool validate_metadata_float(struct tweak_metadata_base* user_settings) {
 static bool validate_metadata_string(struct tweak_metadata_base* user_settings) {
     assert(user_settings);
     switch (user_settings->control_type) {
-    case TWEAK_METADATA_CONTROL_EDIT:
+    case TWEAK_METADATA_CONTROL_EDITBOX:
         break;
     default:
         return false;
@@ -857,6 +857,9 @@ static void parse_control_type(tweak_metadata_control_type* dst, const struct tw
             return;
         } else if (strcmp("button", str) == 0) {
             *dst = TWEAK_METADATA_CONTROL_BUTTON;
+            return;
+        }  else if (strcmp("editbox", str) == 0) {
+            *dst = TWEAK_METADATA_CONTROL_EDITBOX;
             return;
         }
     }

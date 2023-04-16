@@ -1,10 +1,10 @@
 /**
- * @file TweakEnum.qml
+ * @file TweakEditorEnum.qml
  * @ingroup GUI
  *
  * @brief ComboBox control.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,24 +28,29 @@
 import QtQuick 2.0
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
-import QtQuick.Controls.Universal 2.2
+
 
 import TweakApplication 1.0
 
-Tweak {
-    columns: 4
+TweakEditorBase {
+    columns: commonColumns + 2
 
     property bool isEnabled: false
 
     Item {
+        Layout.row: 0
+        Layout.column: commonColumns + 0
         Layout.fillWidth: true
     }
 
     ComboBox {
         model: options
         currentIndex: model ? model.find(tweakValue) : -1
-        Layout.minimumWidth: mainSpace.editorWidth + 80
-        Layout.maximumWidth: mainSpace.editorWidth + 80
+
+        Layout.row: 0
+        Layout.column: commonColumns + 1
+        width: defaultEditorWidth + 80
+
         textRole: "text"
         onActivated: {
             tweakValue = model.get(currentIndex)

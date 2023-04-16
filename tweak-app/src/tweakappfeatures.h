@@ -4,7 +4,7 @@
  *
  * @brief part of tweak2 application implementation.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -86,5 +86,16 @@ tweak_variant_string tweak_app_features_to_json(const struct tweak_app_features*
  * @return true if type supported by remote peer exposing given features.
  */
 bool tweak_app_features_check_type_compatibility(const struct tweak_app_features* arg, tweak_variant_type type);
+
+/**
+ * @brief Function creates features structure with common features of arguments.
+ *
+ * @param arg1 feature one.
+ * @param arg2 feature two.
+
+ * @return combination of arg1 and arg2.
+ */
+struct tweak_app_features tweak_app_features_combine(
+    const struct tweak_app_features* arg1, const struct tweak_app_features* arg2);
 
 #endif

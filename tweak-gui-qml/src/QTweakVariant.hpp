@@ -4,7 +4,7 @@
  *
  * @brief Qt binding for Tweak Variant.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -154,6 +154,9 @@ static inline void to_tweak_variant(tweak_variant *dest, tweak_variant_type dest
         break;
     case TWEAK_VARIANT_TYPE_DOUBLE:
         dest->value.fp64 = static_cast<double>(src.toDouble());
+        break;
+    case TWEAK_VARIANT_TYPE_STRING:
+        tweak_assign_string(&dest->value.string, src.toString().toUtf8().constData());
         break;
     case TWEAK_VARIANT_TYPE_VECTOR_SINT8:
     case TWEAK_VARIANT_TYPE_VECTOR_SINT16:

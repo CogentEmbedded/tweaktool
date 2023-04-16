@@ -4,7 +4,7 @@
  *
  * @brief part of tweak2 application implementation.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -126,14 +126,14 @@ static bool invoke_item_removed_callback(const char *uri, tweak_id id, void* coo
   return true;
 }
 
-static void call_remove_callback_for_all_items(struct tweak_app_context_client_impl* client_impl) {
+static void call_remove_callback_for_all_items(
+		struct tweak_app_context_client_impl* client_impl,
+		tweak_model_uri_to_tweak_id_index index) {
   TWEAK_LOG_TRACE_ENTRY();
-  struct tweak_model_impl* model = &client_impl->base.model_impl;
+
   if (client_impl->client_callbacks.on_item_removed) {
     TWEAK_LOG_TRACE("Invoking on_item_removed for all items");
-    tweak_common_rwlock_read_lock(&model->model_lock);
-    tweak_model_uri_to_tweak_id_index_walk(model->index, &invoke_item_removed_callback, client_impl);
-    tweak_common_rwlock_read_unlock(&model->model_lock);
+    tweak_model_uri_to_tweak_id_index_walk(index, &invoke_item_removed_callback, client_impl);
   } else {
     TWEAK_LOG_TRACE("on_item_removed is NULL");
   }
@@ -151,8 +151,6 @@ static void reset_model(struct tweak_app_context_client_impl* client_impl) {
     TWEAK_FATAL("Can't recreate new model index upon reconnect");
   }
 
-  call_remove_callback_for_all_items(client_impl);
-
   struct tweak_model_impl* model = &client_impl->base.model_impl;
   tweak_model old_model = model->model;
   tweak_model_uri_to_tweak_id_index old_index = model->index;
@@ -161,6 +159,8 @@ static void reset_model(struct tweak_app_context_client_impl* client_impl) {
   model->model = new_model;
   model->index = new_index;
   tweak_common_rwlock_write_unlock(&model->model_lock);
+
+  call_remove_callback_for_all_items(client_impl, old_index);
 
   tweak_model_destroy(old_model);
   tweak_model_uri_to_tweak_id_index_destroy(old_index);
@@ -220,35 +220,6 @@ static void client_connection_state_pickle_impl(tweak_pickle_connection_state co
   wait_context_notify_all(&client_impl->wait_context);
 }
 
-static tweak_model_index_result update_index(tweak_model_uri_to_tweak_id_index index,
-  const char *old_uri, const char *uri, tweak_id tweak_id)
-{
-  TWEAK_LOG_TRACE_ENTRY();
-  uint64_t bound_id = tweak_model_uri_to_tweak_id_index_lookup(index, old_uri);
-  tweak_model_index_result rv = TWEAK_MODEL_INDEX_KEY_NOT_FOUND;
-  if (bound_id == tweak_id) {
-    if (strcmp(old_uri, uri) == 0) {
-      rv = TWEAK_MODEL_INDEX_SUCCESS;
-    } else {
-      tweak_model_index_result index_result = tweak_model_uri_to_tweak_id_index_insert(index, uri, tweak_id);
-      if (index_result == TWEAK_MODEL_INDEX_SUCCESS) {
-        index_result = tweak_model_uri_to_tweak_id_index_remove(index, old_uri);
-        assert(index_result == TWEAK_MODEL_INDEX_SUCCESS);
-      }
-      rv = index_result;
-    }
-  } else if (bound_id == TWEAK_INVALID_ID) {
-    rv = tweak_model_uri_to_tweak_id_index_insert(index, uri, tweak_id);
-  }
-  if (rv == TWEAK_MODEL_INDEX_SUCCESS) {
-    TWEAK_LOG_TRACE("Index entry for item with tweak_id = %" PRId64 " has been updated", tweak_id);
-  } else {
-    TWEAK_LOG_TRACE("Index entry for item with tweak_id = %" PRId64 " hasn't been updated,"
-      " error_code = %d", tweak_id, rv);
-  }
-  return rv;
-}
-
 static tweak_id add_item_to_model(struct tweak_model_impl* model, tweak_pickle_add_item *add_item) {
   TWEAK_LOG_TRACE_ENTRY();
 
@@ -271,25 +242,15 @@ static tweak_id add_item_to_model(struct tweak_model_impl* model, tweak_pickle_a
   return add_item->id;
 }
 
-static tweak_id update_item_in_model(struct tweak_model_impl* model,
-  tweak_item* item, tweak_pickle_add_item *add_item)
+bool is_add_item_correct(tweak_pickle_add_item *add_item, tweak_item* item)
 {
-  TWEAK_LOG_TRACE_ENTRY();
-  tweak_model_index_result result = update_index(model->index,
-    tweak_variant_string_c_str(&item->uri), tweak_variant_string_c_str(&add_item->uri),
-    add_item->id);
-
-  if (result == TWEAK_MODEL_INDEX_SUCCESS) {
-    tweak_variant_swap_string(&item->uri, &add_item->uri);
-    tweak_variant_swap_string(&item->description, &add_item->description);
-    tweak_variant_swap_string(&item->meta, &add_item->meta);
-    tweak_variant_swap(&item->current_value, &add_item->current_value);
-    tweak_variant_swap(&item->default_value, &add_item->default_value);
-    item->current_value.type = add_item->current_value.type;
-    return add_item->id;
-  } else {
-    return TWEAK_INVALID_ID;
-  }
+  return (
+      item->id == add_item->id &&
+      tweak_variant_str_is_equal(&item->uri, &add_item->uri) &&
+      tweak_variant_str_is_equal(&item->description, &add_item->description) &&
+      tweak_variant_str_is_equal(&item->meta, &add_item->meta) &&
+      tweak_variant_is_equal(&item->default_value, &add_item->default_value)
+  );
 }
 
 static void client_add_item_pickle_impl(tweak_pickle_add_item *add_item, void *cookie) {
@@ -297,19 +258,66 @@ static void client_add_item_pickle_impl(tweak_pickle_add_item *add_item, void *c
   struct tweak_app_context_client_impl* client_impl = cookie;
   struct tweak_model_impl* model = &client_impl->base.model_impl;
 
+  enum change_item_status {
+    TWEAK_APP_ITEM_NO_CHANGE = 0,
+    TWEAK_APP_ITEM_CREATED,
+    TWEAK_APP_ITEM_VALUE_UPDATED,
+  };
+
   tweak_common_rwlock_write_lock(&model->model_lock);
-  tweak_item* item = tweak_model_find_item_by_id(model->model, add_item->id);
-  tweak_id tweak_id = item
-    ? update_item_in_model(model, item, add_item)
-    : add_item_to_model(model, add_item);
+
+  tweak_variant value = TWEAK_VARIANT_INIT_EMPTY;
+  enum change_item_status status;
+  tweak_id tweak_id = tweak_model_uri_to_tweak_id_index_lookup(model->index,
+                          tweak_variant_string_c_str(&add_item->uri));
+
+  if (tweak_id != TWEAK_INVALID_ID) {
+    tweak_item* item = tweak_model_find_item_by_id(model->model, tweak_id);
+    if (!is_add_item_correct(add_item, item)) {
+      TWEAK_FATAL("Client model is inconsistent. uri = %s id = %" PRIu64,
+        tweak_variant_string_c_str(&add_item->uri), add_item->id);
+    }
+
+    if (!tweak_variant_is_equal(&item->current_value, &add_item->current_value)) {
+      tweak_variant_swap(&item->current_value, &add_item->current_value);
+      value = tweak_variant_copy(&item->current_value);
+      status = TWEAK_APP_ITEM_VALUE_UPDATED;
+    } else {
+      status = TWEAK_APP_ITEM_NO_CHANGE;
+    }
+  } else {
+    tweak_id = add_item_to_model(model, add_item);
+    if (tweak_id == TWEAK_INVALID_ID) {
+      TWEAK_FATAL("Unable to add item %" PRIu64, add_item->id);
+    }
+    status = TWEAK_APP_ITEM_CREATED;
+  }
+
   tweak_common_rwlock_write_unlock(&model->model_lock);
   wait_context_notify_all(&client_impl->wait_context);
-  if (tweak_id != TWEAK_INVALID_ID && client_impl->client_callbacks.on_new_item) {
-    TWEAK_LOG_TRACE("Invoking client callback %p", client_impl->client_callbacks.on_new_item);
-    client_impl->client_callbacks.on_new_item(&client_impl->base,
-      tweak_id, client_impl->client_callbacks.cookie);
-  } else {
-    TWEAK_LOG_TRACE("on_new_item is NULL");
+
+  switch (status) {
+  case TWEAK_APP_ITEM_CREATED:
+    if (client_impl->client_callbacks.on_new_item) {
+      TWEAK_LOG_TRACE("Invoking client callback %p", client_impl->client_callbacks.on_new_item);
+      client_impl->client_callbacks.on_new_item(&client_impl->base,
+        tweak_id, client_impl->client_callbacks.cookie);
+    } else {
+      TWEAK_LOG_TRACE("on_new_item is NULL");
+    }
+    break;
+  case TWEAK_APP_ITEM_VALUE_UPDATED:
+    TWEAK_LOG_TRACE("Invoking on_current_value_changed");
+    if (client_impl->client_callbacks.on_current_value_changed) {
+      client_impl->client_callbacks.on_current_value_changed(&client_impl->base,
+        tweak_id, &value, client_impl->client_callbacks.cookie);
+    } else {
+      TWEAK_LOG_TRACE("on_current_value_changed is NULL");
+    }
+    tweak_variant_destroy(&value);
+    break;
+  case TWEAK_APP_ITEM_NO_CHANGE:
+    break;
   }
 }
 
@@ -327,8 +335,10 @@ static void client_change_item_pickle_impl(tweak_pickle_change_item *change, voi
     TWEAK_LOG_TRACE("item with id = %" PRIu64 " updated", change->id);
     id = item->id;
     if (client_impl->client_callbacks.on_current_value_changed) {
-      value = tweak_variant_copy(&item->current_value);
-      emit_change_event = true;
+      if (!tweak_variant_is_equal(&item->current_value, &change->value)) {
+        value = tweak_variant_copy(&item->current_value);
+        emit_change_event = true;
+      }
     } else {
       TWEAK_LOG_TRACE("on_current_value_changed is NULL");
     }
@@ -450,10 +460,14 @@ static void client_destroy_context(struct tweak_app_context_base* context) {
   if (client_impl->base.job_queue) {
     tweak_app_queue_stop(client_impl->base.job_queue);
   }
-  call_remove_callback_for_all_items(client_impl);
+
   if (client_impl->rpc_endpoint) {
     tweak_pickle_destroy_client_endpoint(client_impl->rpc_endpoint);
+    client_impl->rpc_endpoint = NULL;
   }
+
+  call_remove_callback_for_all_items(client_impl, client_impl->base.model_impl.index);
+
   tweak_app_context_private_destroy_base(&client_impl->base);
   destroy_wait_context(&client_impl->wait_context);
   free(context);

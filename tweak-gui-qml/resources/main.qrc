@@ -3,13 +3,13 @@
         <file>main.qml</file>
         <file>Tweak.qml</file>
         <file>TweaksPage.qml</file>
-        <file>TweakScalar.qml</file>
+        <file>TweakEditorScalar.qml</file>
         <file>AutoSelectControl.qml</file>
-        <file>TweakLabel.qml</file>
+        <file>TweakEditorLabel.qml</file>
         <file>images/cogent-logo.png</file>
         <file>images/tweak-icon.png</file>
-        <file>TweakToggle.qml</file>
-        <file>TweakEnum.qml</file>
+        <file>TweakEditorToggle.qml</file>
+        <file>TweakEditorEnum.qml</file>
         <file>ConnectionsPage.qml</file>
         <file>images/button-minus.png</file>
         <file>images/button-plus.png</file>
@@ -22,9 +22,18 @@
         <file>images/tree-connection.png</file>
         <file>images/button-clear-all.png</file>
         <file>ValidatedTextField.qml</file>
-        <file>TweakButton.qml</file>
+        <file>TweakEditorButton.qml</file>
         <file>images/button-tree-off.png</file>
         <file>images/button-tree-on.png</file>
         <file>TweakScrollBar.qml</file>
+        <file>ItemButton.qml</file>
+        <file>images/button-details.png</file>
+        <file>TweaksList.qml</file>
+        <file>TweakDetails.qml</file>
+        <file>TweakEditorBox.qml</file>
+        <file>TweakEditorBase.qml</file>
+        <file>qtquickcontrols2.conf</file>
+        <file>images/button-info-off.png</file>
+        <file>images/button-info-on.png</file>
     </qresource>
 </RCC>

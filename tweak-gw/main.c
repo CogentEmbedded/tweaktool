@@ -3,7 +3,7 @@
  *
  * @brief Gateway application for Cogent Tweak Tool.
  *
- * @copyright (c) 2020-2022 Cogent Embedded, Inc.
+ * @copyright (c) 2020-2023 Cogent Embedded, Inc.
  * ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,8 +29,6 @@
 #include <tweak2/log.h>
 #include <tweak2/thread.h>
 #include <tweak2/wire.h>
-
-#include <TI/tivx.h>
 
 #include <app_init.h>
 #include <utils/console_io/include/app_log.h>
@@ -100,9 +98,6 @@ static int32_t app_init()
 static int32_t app_deinit()
 {
     TWEAK_LOG_TRACE_ENTRY();
-
-    appRemoteServiceDeInit();
-    appIpcDeInit();
     appCommonDeInit();
     return 0;
 }

@@ -14,11 +14,17 @@ function CheckExecutionResult {
 }
 
 #### Directories
+"Triplet=$Env:VCPKG_TARGET_TRIPLET"
+"VCPKG_ROOT=$Env:VCPKG_ROOT"
 "PATH=$Env:path"
 $install_dir=[IO.Path]::Combine($PWD.Path, 'install')
 
+vcpkg list
+
 #### Configure
 cmake -G Ninja `
+    -DCMAKE_TOOLCHAIN_FILE="$Env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+    -DVCPKG_TARGET_TRIPLET="$Env:VCPKG_TARGET_TRIPLET" `
     -DCMAKE_BUILD_TYPE=Release `
     -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON `
     -DWITH_PYTHON=OFF `

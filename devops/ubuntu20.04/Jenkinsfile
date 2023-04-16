@@ -7,13 +7,13 @@ node('docker') {
     }
     def image
     stage('docker image') {
-        image = docker.build('tweaktool', './devops/ubuntu20.04/')
+        image = docker.build('tweaktool-u20.04', './devops/ubuntu20.04/')
     }
     image.inside() {
         dir('build-ubuntu20.04') {
             stage('build') {
                 sh 'ls -l'
-                cmakeBuild (
+                cmakeBuild(
                     buildType: 'Release',
                     sourceDir: '../',
                     cmakeArgs: '-DBUILD_GUI=ON -DBUILD_SHARED_LIBS=ON -DPACKAGE_RPM=OFF -DBUILD_TESTS=ON -DWITH_PYTHON=ON -DCMAKE_INSTALL_PREFIX=/usr',
@@ -25,7 +25,7 @@ node('docker') {
             stage('test') {
                 try {
                     // Allow tests to fail until they are stable
-                    ctest (
+                    ctest(
                         arguments: '-T test --no-compress-output --output-on-failure',
                         installation: 'InSearchPath'
                     )
@@ -39,11 +39,14 @@ node('docker') {
                     installation: 'InSearchPath'
                 )
             }
+            stage('move') {
+                sh 'mkdir -p ubuntu-20.04 && mv *.deb ubuntu-20.04'
+                sh 'mkdir -p ubuntu-20.04 && cp /*.deb ubuntu-20.04'
+            }
         }
     }
     stage('archive') {
         dir('build-ubuntu20.04') {
-            sh 'mkdir -p ubuntu-20.04 && mv *.deb ubuntu-20.04'
             archiveArtifacts (
                 artifacts: 'ubuntu-20.04/*.deb',
                 fingerprint: true,

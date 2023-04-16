@@ -4,7 +4,7 @@
  *
  * @brief Main application window.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,8 @@
 
 import QtQuick 2.0
 import QtQuick.Controls 2.2
-import QtQuick.Layouts 1.3
 import QtQuick.Controls.Universal 2.2
+import QtQuick.Layouts 1.3
 
 import TweakApplication 1.0
 
@@ -43,7 +43,7 @@ ApplicationWindow {
 
     title: Qt.application.name
 
-    header:     TabBar{
+    header: TabBar {
         Layout.fillWidth: true
 
         id: bar
@@ -57,10 +57,6 @@ ApplicationWindow {
         TabButton {
             text: "Tweaks"
         }
-
-        TabButton {
-            text: "Scripts"
-        }
     }
 
     StackLayout {
@@ -69,22 +65,31 @@ ApplicationWindow {
 
         currentIndex: bar.currentIndex
 
-        ConnectionsPage {
-        }
+        ConnectionsPage {}
 
-        TweaksPage {
-        }
-
-        Item {
-
-        }
+        TweaksPage {}
     }
 
     footer: ToolBar {
+        background: Rectangle {
+                implicitHeight: 40
+                color: Universal.background
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    anchors.top: parent.top
+                    color: "transparent"
+                    border.color: Universal.accent
+                }
+            }
 
         RowLayout {
             anchors.fill: parent
-            Label { text: Qt.application.name + ": " + Qt.application.version }
+            Label {
+                color: Universal.foreground
+                text: Qt.application.name + ": " + Qt.application.version
+            }
         }
     }
 }

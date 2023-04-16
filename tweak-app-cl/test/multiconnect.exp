@@ -1,0 +1,79 @@
+#!/usr/bin/expect -f
+
+# ##############################################################################
+#
+# Tests for command-line client of Cogent Tweak Tool.
+#
+# Copyright (c) 2022-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# ##############################################################################
+
+source fixture.exp
+
+proc test_get {id val} {
+    # Test get command
+    send_user "Get value from app-cl: $id\n"
+    set spawn_id $id
+    run_command "wait /test/test"
+    expect_output "Wait success\. Item ID = \\d+"
+    run_command "get /test/test"
+    expect_output "$val"
+}
+
+proc test_set {id val} {
+    # Test set command
+    send_user "Set value from app-cl: $id\n"
+    set spawn_id $id
+    run_command "wait /test/test"
+    expect_output "Wait success\. Item ID = \\d+"
+    run_command "set /test/test $val"
+    expect_output "Ok"
+}
+
+run_server
+
+spawn $TWEAK_APP_CL -t $connection_type -u $uri -L $LOG_DIR/$argv0-tweak-app-cl1.log
+set app_cl_1 $spawn_id
+send_user "\nStarted APP-CL - 1 : $app_cl_1\n"
+
+#Test that the second app get correct value on connect
+test_get $app_cl_1 42
+test_set $app_cl_1 43
+
+spawn $TWEAK_APP_CL -t $connection_type -u $uri -L $LOG_DIR/$argv0-tweak-app-cl2.log
+set app_cl_2 $spawn_id
+send_user "\nStarted APP-CL - 2 : $app_cl_2\n"
+
+test_get $app_cl_2 43
+test_get $app_cl_1 43
+
+#Test changing values from each client
+test_set $app_cl_2 44
+test_get $app_cl_1 44
+
+test_set $app_cl_1 45
+test_get $app_cl_2 45
+
+#End test
+set spawn_id $app_cl_1
+run_command exit
+set spawn_id $app_cl_2
+run_command exit
+stop_server

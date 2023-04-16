@@ -19,6 +19,9 @@ node() {
     builders['windows64'] = {
         load 'devops/windows64/Jenkinsfile'
     }
+    builders['qnx700'] = {
+        load 'devops/qnx700/Jenkinsfile'
+    }
 
     parallel builders
 }

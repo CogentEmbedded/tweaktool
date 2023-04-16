@@ -4,7 +4,7 @@
  *
  * @brief Tweak variant type.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -112,7 +112,7 @@ static inline bool tweak_variant_is_valid(const tweak_variant* arg) {
 }
 
 /**
- * @brief Swaps variants. Needed for move sematics to pass ownership
+ * @brief Swaps variants. Needed for move semantics to pass ownership
  * of the variant value.
  *
  * @param[in] variant1 pointer to value being replaced by @p variant2.

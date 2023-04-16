@@ -4,7 +4,7 @@
  *
  * @brief Simple REPL based user client for tweak protocol.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -779,8 +779,6 @@ static void clear_uri_list(tweak_app_context context, tweak_id id, void *cookie)
   tweak_app_cl_destroy_sorted_tweak_uris_list(tweak_uri_list->uris_list);
   tweak_uri_list->uris_list = NULL;
   tweak_common_mutex_unlock(&tweak_uri_list->lock);
-  tweak_app_item_snapshot *snapshot = tweak_app_item_get_snapshot(context, id);
-  tweak_app_release_snapshot(context, snapshot);
 }
 
 static void check_id_and_clear_uri_list(tweak_app_context context, tweak_id id, void *cookie) {

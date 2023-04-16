@@ -1,10 +1,10 @@
 /**
- * @file TweakToggle.qml
+ * @file TweakDetails.qml
  * @ingroup GUI
  *
- * @brief Boolean tweak editor control.
+ * @brief Detailed view of tweakl.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,30 +24,71 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.obtaining a copy
  */
-
 import QtQuick 2.0
-import QtQuick.Controls 2.2
+import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
-import QtQuick.Controls.Universal 2.2
+import QtQuick.Controls 2.2
+
 
 import TweakApplication 1.0
 
-Tweak {
-    columns: 4
+GridLayout {
+    rows: 2
+    columns: 2
 
-    property bool isEnabled: false
-
-    Item {
-        Layout.fillWidth: true
+    Label {
+        Layout.column: 0
+        Layout.row: 0
+        text: qsTr("URI:")
     }
 
-    Switch {
-        checked: tweakValue
+    TextField {
+        Layout.column: 1
+        Layout.row: 0
+        Layout.fillWidth: true
 
-        onToggled: {
-            tweakValue = checked ? 1 : 0;
+        text: uri
+        readOnly: true
+
+        selectByMouse: true
+    }
+
+    Label {
+        Layout.column: 0
+        Layout.row: 1
+        text: qsTr("Raw value:")
+    }
+
+    TextField {
+        Layout.column: 1
+        Layout.row: 1
+        Layout.fillWidth: true
+
+        text: tweakValue
+        selectByMouse: true
+
+        onAccepted: {
+            tweakValue = text
         }
+    }
 
-        enabled: isEnabled
+    Label {
+        Layout.column: 0
+        Layout.row: 2
+        text: qsTr("Meta:")
+    }
+
+    TextField {
+        Layout.column: 1
+        Layout.row: 2
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+
+        text: meta.json
+        readOnly: true
+        selectByMouse: true
+        verticalAlignment: TextInput.AlignTop
+
+        placeholderText: qsTr("<none>")
     }
 }

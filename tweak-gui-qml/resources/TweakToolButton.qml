@@ -4,7 +4,7 @@
  *
  * @brief Custom button for the toolbar.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.obtaining a copy
  */
-
 import QtQuick 2.0
 import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
@@ -72,4 +71,18 @@ ToolButton {
             elide: Text.ElideRight
         }
     }
+
+    background: Rectangle {
+          implicitWidth: 40
+          implicitHeight: 40
+
+          color: tweakTB.enabled && (tweakTB.highlighted || tweakTB.checked) ? tweakTB.Universal.accent : "transparent"
+
+          Rectangle {
+              width: parent.width
+              height: parent.height
+              visible: tweakTB.down || tweakTB.hovered
+              color: tweakTB.down ? tweakTB.Universal.listMediumColor : tweakTB.Universal.listLowColor
+          }
+      }
 }

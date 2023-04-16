@@ -4,7 +4,7 @@
  *
  * @brief Template for tweak editor control.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,89 +24,109 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.obtaining a copy
  */
-
 import QtQuick 2.0
 import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.2
-import QtQuick.Controls.Universal 2.2
+
 
 import TweakApplication 1.0
 
-GridLayout {
-    columns: 2
+Rectangle {
+    id: tweakRectangle
 
-    property bool nameVisible: true
-    property string name: uri
-    property string filter: mainSpace.cutUrl
+    /*.. Layout */
+    property bool displayDescription: description && description != "" ? mainSpace.displayDescription : false
+    property bool displayDetails: false
+    property int editorRows: 1 /*.. until matrices are supported */
+    property int descriptionRows: displayDescription ? 1 : 0
+    property int detailsRows: displayDetails ? 4 : 0
 
-    columnSpacing: 10
+    /* .. Dimensions */
+    property int rows: editorRows + descriptionRows + detailsRows
+    property int rowHeight: ListView.view.cellHeight
+    width: ListView.view.cellWidth
+    height: rowHeight * rows
 
-    Button {
-        id: favoritesAdd
-        property int imageSize: 24
+    /*.. Highlighting on mouse move */
+    Rectangle {
+        anchors.fill: parent
 
-        visible: !isFavorite
+        visible: ma.containsMouse
+        color: Qt.darker(parent.color, 1.05)
+    }
 
-        Layout.minimumHeight: imageSize
-        Layout.maximumHeight: imageSize
-        Layout.minimumWidth: imageSize
-        Layout.maximumWidth: imageSize
+    MouseArea {
+        id: ma
+        anchors.fill: parent
+        hoverEnabled: true
 
-        contentItem: Image {
+        ColumnLayout {
             anchors.fill: parent
-            fillMode: Image.PreserveAspectFit
-            source: "qrc:/images/button-favorites-add.png"
-        }
 
-        onPressed: {
-            tweak.addFavorite(name)
+            AutoSelectControl {
+                id: tweakEditor
+
+                Layout.fillWidth: true
+                Layout.minimumHeight: rowHeight * editorRows
+                Layout.maximumHeight: rowHeight * editorRows
+                Layout.alignment: Qt.AlignTop
+            }
+
+            Text {
+                id: descriptionText
+
+                visible: displayDescription
+
+                Layout.fillWidth: true
+                Layout.minimumHeight: rowHeight * descriptionRows
+                Layout.maximumHeight: rowHeight * descriptionRows
+                Layout.topMargin: -5
+
+                text: description
+
+                wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                verticalAlignment: Text.AlignTop
+                minimumPointSize: 10
+                fontSizeMode: Text.Fit
+
+                color: "darkgray"
+            }
+
+            TweakDetails {
+                id: detailsView
+
+                Layout.fillWidth: true
+                height: rowHeight * detailsRows
+
+                visible: displayDetails
+            }
         }
     }
 
-    Button {
-        id: favoritesRemove
-        property int imageSize: 24
-
-        visible: isFavorite
-
-        Layout.minimumHeight: imageSize
-        Layout.maximumHeight: imageSize
-        Layout.minimumWidth: imageSize
-        Layout.maximumWidth: imageSize
-
-        contentItem: Image {
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectFit
-            source: "qrc:/images/button-favorites-remove.png"
+    states: [
+        State {
+            name: "expanded"
+            PropertyChanges {
+                target: tweakRectangle
+                displayDetails: true
+            }
+            PropertyChanges {
+                target: tweakList
+                interactive: false
+            }
+            //            PropertyChanges {
+            //                target: tweakList
+            //                restoreEntryValues: false
+            //                // (tweakList.contentY + tweakList.contentHeight) - (tweakRectangle.y + tweakRectangle.height)
+            ////                contentY: tweakList.contentY + tweakList.contentHeight < tweakRectangle.y + tweakRectangle.height ?
+            ////                          tweakList.contentY + 250 : tweakList.contentY
+            //                contentY: tweakRectangle.y
+            //            }
+            PropertyChanges {
+                target: tweakList.ScrollBar.vertical
+                visible: false
+            }
         }
-
-        onPressed: {
-            tweak.removeFavorite(name)
-        }
-    }
-
-    Text {
-        id: nameText
-
-        visible: nameVisible
-
-        Layout.row: 0
-        Layout.column: 1
-        Layout.minimumWidth: 200
-
-        text: name.replace(RegExp(filter), "")
-
-        ToolTip {
-            text: description
-            visible: description ? ma.containsMouse : false
-            delay: 1000
-        }
-
-        MouseArea {
-            id: ma
-            anchors.fill: parent
-            hoverEnabled: true
-        }
-    }
+    ]
 }

@@ -4,7 +4,7 @@
  *
  * @brief Main QML GUI application.
  *
- * @copyright 2020-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+ * @copyright 2020-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -79,6 +79,7 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("tweak", tweakApp);
+    engine.rootContext()->setContextProperty("app_version", "2.0.5");
     tweakApp = nullptr;
 
     engine.load("qrc:/main.qml");

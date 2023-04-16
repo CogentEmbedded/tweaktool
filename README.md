@@ -16,7 +16,7 @@ and get live updates.
 
 Download location: <https://github.com/CogentEmbedded/tweaktool/releases>
 
-## Building from source code
+## Building from Source Code
 
 Tweak tool uses docker to build external dependencies not available directly from  host OS.
 
@@ -330,49 +330,32 @@ build_combo evm a72 linux release
 
 ```
 
-## Building on Visual Studio
+### Building on Visual Studio
 
-### Preconditions
+#### Preconditions
 
 - Microsoft Visual Studio Community 2019 or later
 - Integrated vcpkg
-- Installed vcpkg packages: nng, getopt
-- Installed external Qt5
+- Installed vcpkg packages:
+  - zstd
+  - nng
+  - getopt
+  - qt5-base
+  - qt5-declarative
+  - qt5-quickcontrols
+  - qt5-quickcontrols2
+  - qt5-tools
+- NSIS installer for packaging
 
-At this moment, Qt5 from vcpkg is broken and its install target doesn't compile all
-the necessary files.
+#### Compilation
 
-https://github.com/microsoft/vcpkg/issues/16983
+In MSVC++ IDE, open tweak2 directory with `File/Open folder...` menu.
 
-Here, we assume that Qt was installed to C:\Qt\5.15.2 and its bin directory is
-C:\Qt\5.15.2\msvc2019_64
+Choose build configuration preset: "PC Windows Release Config" (or debug variant).
 
-### Compilation
+Build project.
 
-In MSVC++ IDE, open tweak2 directory with `File/Open folder...` menu, adjust options
-in `Project/CMake` settings, set Qt directories in `Project/CMake` settings for tweak2
-to ones placed in `C:/Qt/5.15.2/msvc2019_64/lib/cmake/`.
-
-There are Qt libraries used:
-
-- Qt5_DIR: C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5
-- Qt5Core_DIR: C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Core
-- Qt5Gui_DIR: C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Gui
-- Qt5Network_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Network
-- Qt5Qml_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Qml
-- Qt5QmlModels_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmakeQt5QmlModels
-- Qt5Quick_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Quick
-- Qt5QuickControls2_DIR C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5QuickControls2
-
-Adjust project settings, then build and install via `Build` menu in Visual Studio.
-
-Copy Qt files using following command from project root folder from project root, assuming current configuration is `x64-Release`
-
-`C:\Qt\5.15.2\msvc2019_64\bin\windeployqt.exe --qmldir .\tweak-gui-qml\resources .\out\install\x64-Release\bin\tweak-gui.exe`
-
-After this, package is ready in `.\out\install\x64-Release` directory.
-
-### Components
+#### Components
 
 - `tweak2::server` is a thin wrapper around `tweak2::app`. It provides simple C99 context-less API to create a collection of items, alter item's values and monitor
 changes initiated by client application.
@@ -402,6 +385,23 @@ Only NNG and RPMSG backends are supported at the moment. Serial and CAN could be
 This application can be installed using deb or rpm package
 managers. User can build deb and rpb packages using cmake,
 see "Build tweaktool" section.
+
+### Building for QNX 7.x
+
+Build is done using standard cmake cross compilation routines:
+
+- Make sure that you have `$QNX_HOST` and `$QNX_TARGET` set properly.
+  This can be done by sourcing the appropriate QNX SDP environment file, for example `source /opt/qnx700//qnxsdp-env.sh`.
+- Then cross compile Tweak Tool with nng as a submodule:
+
+```bash
+cd tweaktool
+rm -rf build/qnx-x86_64-release
+cmake --preset qnx-x86_64-release
+cmake --build --preset qnx-x86_64-release
+```
+
+After that, Tweak Tool is built. User could check tweak-mock-server on target platform.
 
 ## License
 

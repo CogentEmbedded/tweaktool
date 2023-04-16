@@ -1,7 +1,7 @@
 #
 # CMake build configuration for Cogent Tweak Tool.
 #
-# Copyright (c) 2018-2022 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
+# Copyright (c) 2018-2023 Cogent Embedded, Inc. ALL RIGHTS RESERVED.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@
 # ------------------------------------------------------------------------------
 
 set(LIBRARY_NAME common)
-set(LIBRARY_SOVERSION 1)
+set(LIBRARY_SOVERSION 2)
 
 # ------------------------------------------------------------------------------
 # Dependencies
@@ -166,9 +166,9 @@ set_target_properties(
              OUTPUT_NAME ${PROJECT_NAME}${LIBRARY_NAME}
              VERSION "${PROJECT_NUMERIC_VERSION}")
 
-# INSTALL_INTERFACE header path is specified during installation
 target_include_directories(
-  ${LIBRARY_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+  ${LIBRARY_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # ------------------------------------------------------------------------------
 # Options
