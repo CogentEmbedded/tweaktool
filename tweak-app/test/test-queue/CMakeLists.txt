@@ -25,7 +25,8 @@
 # Dependencies
 # ------------------------------------------------------------------------------
 
-find_package(Threads REQUIRED)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads)
 
 # ------------------------------------------------------------------------------
 # Common settings
@@ -59,7 +60,7 @@ target_include_directories(${BINARY_NAME}
 
 target_compile_features(${BINARY_NAME} PUBLIC c_std_99)
 
-target_link_libraries(${BINARY_NAME} Threads::Threads
+target_link_libraries(${BINARY_NAME} $<$<BOOL:${Threads_FOUND}>:Threads::Threads>
                       ${PROJECT_NAMESPACE}::common)
 
 # ------------------------------------------------------------------------------

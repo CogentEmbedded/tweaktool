@@ -69,37 +69,46 @@ else()
     target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_14)
 endif()
 
-configure_file(__init__.py.in __init__.py)
+configure_file(__init__.py __init__.py)
 
 # -----------------------------------------------------------------------------
 # Tests
 # -----------------------------------------------------------------------------
-
 if(BUILD_TESTS)
   add_test(
     NAME ${PROJECT_NAME}-python-test
     COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
-            ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test.py
+            ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test.py
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
 # -----------------------------------------------------------------------------
 # Installation
 # -----------------------------------------------------------------------------
-if (NOT MSVC)
-    set(PYTHON_SITE_DIR "${Python_SITEARCH}")
-    if (CMAKE_CROSSCOMPILING)
-      string(REPLACE "$ENV{OECORE_NATIVE_SYSROOT}/usr/" "" PYTHON_SITE_DIR ${PYTHON_SITE_DIR})
-    endif()
-    message(STATUS "Python site packages dir: ${PYTHON_SITE_DIR}")
+if(NOT MSVC)
+  set(PYTHON_SITE_DIR "${Python_SITEARCH}")
 
-    install(
-      FILES ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
-      DESTINATION ${PYTHON_SITE_DIR}/${python_module_name}
-      COMPONENT python)
+  if(CMAKE_CROSSCOMPILING)
+    string(REPLACE "$ENV{OECORE_NATIVE_SYSROOT}/usr/" "" PYTHON_SITE_DIR
+                   ${PYTHON_SITE_DIR})
+  endif()
 
-    install(
-      TARGETS ${LIBRARY_NAME}
-      DESTINATION ${PYTHON_SITE_DIR}/${python_module_name}
-      COMPONENT python)
+  message(STATUS "Python site packages dir: ${PYTHON_SITE_DIR}")
+
+  if(SKBUILD)
+    # C extension is a root package built from a subpackage
+    set(PYTHON_MODULE_DESTDIR ${python_module_name}/..)
+  else()
+    set(PYTHON_MODULE_DESTDIR "${PYTHON_SITE_DIR}/${python_module_name}")
+  endif()
+
+  install(
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+    DESTINATION ${PYTHON_MODULE_DESTDIR}
+    COMPONENT python)
+
+  install(
+    TARGETS ${LIBRARY_NAME}
+    DESTINATION ${PYTHON_MODULE_DESTDIR}
+    COMPONENT python)
 endif()

@@ -130,6 +130,7 @@ else()
                   processor_sdk/tidl_j7_02_00_00_07/ti_dl/inc # PSDK 7.03
                   processor_sdk/tidl_j7_08_00_00_10/ti_dl/inc # PSDK 8.00
                   processor_sdk/tidl_j7/ti_dl/inc # Symlink since PSDK 8.01
+                  processor_sdk/tidl_j721e_08_04_00_12/ti_dl/inc # Symlink since PSDK 8.01
   )
 
   find_path(TIOVX_COMMON_INCLUDE_DIR
@@ -144,14 +145,16 @@ else()
     NAMES app_init.h
     PATH_SUFFIXES
       processor_sdk/vision_apps/apps/basic_demos/app_tirtos/tirtos_linux/mpu1 # PSDK 7.x
-      processor_sdk/vision_apps/utils/app_init/include # PSDK 8
+      processor_sdk/vision_apps/apps/basic_demos/app_rtos/rtos_linux/mpu1 # PSDK 8.00
+      processor_sdk/vision_apps/utils/app_init/include # PSDK 8+
   )
 
   find_path(VISION_APPS_RTOS_INCLUDE_DIR
     NAMES common/app.h
     PATH_SUFFIXES
       processor_sdk/vision_apps/apps/basic_demos/app_tirtos # PSDK 7.x
-      processor_sdk/vision_apps/platform/j721e/rtos # PSDK 8
+      processor_sdk/vision_apps/apps/basic_demos/app_rtos # PSDK 8.00
+      processor_sdk/vision_apps/platform/j721e/rtos # PSDK 8+
   )
 
   find_path(IMAGING_INCLUDE_DIR
@@ -206,8 +209,9 @@ get_filename_component(TIOVX_LIBRARY_EXT ${TIOVX_LIBRARY_REALPATH} EXT)
 
 if (TIOVX_LIBRARY_EXT MATCHES "^\\.so\\..+$")
   string(REGEX REPLACE "^\\.so\\.([0-9]+)\\.[0-9]+\\.[0-9]+$" "\\1" PSDK_MAJOR_VERSION ${TIOVX_LIBRARY_EXT})
-  message(STATUS "PSDK MAJOR VERSION: ${PSDK_MAJOR_VERSION}")
-  if (PSDK_MAJOR_VERSION LESS "8")
+  string(REGEX REPLACE "^\\.so\\.[0-9]+\\.([0-9]+)\\.[0-9]+$" "\\1" PSDK_MINOR_VERSION ${TIOVX_LIBRARY_EXT})
+  message(STATUS "PSDK VERSION: ${PSDK_MAJOR_VERSION}.${PSDK_MINOR_VERSION}")
+  if (PSDK_MAJOR_VERSION LESS "8" OR (PSDK_MAJOR_VERSION EQUAL "8" AND PSDK_MINOR_VERSION EQUAL "0"))
     add_definitions(-DHAS_TIOVX_J7_INCLUDE)
   endif()
 else()
@@ -239,13 +243,18 @@ if(TIOVX_FOUND)
       find_package(Python QUIET COMPONENTS Interpreter Development)
       if (Python_FOUND)
         string(REPLACE x86_64-arago-linux aarch64-linux TARGET_SITELIB ${Python_SITELIB})
-        find_library(DLR_LIBRARY dlr ${TARGET_SITELIB}/dlr)
+        find_library(DLR_LIBRARY dlr
+          ${TDA_PLATFORM_DIR}/usr/lib/python3.8/site-packages/dlr
+          ${TARGET_SITELIB}/dlr
+        )
         if (DLR_LIBRARY)
           target_link_options(TIOVX::TIOVX INTERFACE
             "-Wl,-rpath=/usr/lib/python3.8/site-packages/dlr"
             "-Wl,-rpath-link=${TDA_PLATFORM_DIR}/usr/lib/python3.8/site-packages/dlr"
           )
           target_link_libraries(TIOVX::TIOVX INTERFACE ${DLR_LIBRARY})
+        else()
+          message(WARNING "dlr library: not found")
         endif()
       endif()
     else()

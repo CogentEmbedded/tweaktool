@@ -8,3 +8,5 @@ _skbuild/
 /docker-build/*
 CMakeSettings.json
 CMakeUserPresets.json
+/dist/
+/.eggs/

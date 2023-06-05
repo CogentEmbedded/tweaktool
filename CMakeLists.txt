@@ -30,7 +30,7 @@ cmake_minimum_required(VERSION 3.16)
 # ------------------------------------------------------------------------------
 # Generate project version
 # ------------------------------------------------------------------------------
-set(PROJECT_NUMERIC_VERSION "2.1.7") # fallback
+set(PROJECT_NUMERIC_VERSION "2.1.8") # fallback
 include(cmake/generate_version.cmake)
 
 # ------------------------------------------------------------------------------

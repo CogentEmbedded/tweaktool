@@ -16,7 +16,7 @@ node('docker') {
                 cmakeBuild(
                     buildType: 'Release',
                     sourceDir: '../',
-                    cmakeArgs: '-DWITH_NNG_SUBMODULE=ON -DBUILD_GUI=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF -DWITH_PYTHON=OFF -DBUILD_CLI=OFF -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_TOOLCHAIN_FILE=../cmake/qnx_7.0.0_linux_x86_64.cmake',
+                    cmakeArgs: '--debug-find --debug-trycompile -DWITH_NNG_SUBMODULE=ON -DBUILD_GUI=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF -DWITH_PYTHON=OFF -DBUILD_CLI=OFF -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_TOOLCHAIN_FILE=../cmake/qnx_7.0.0_linux_x86_64.cmake',
                     cleanBuild: true,
                     installation: 'InSearchPath',
                     steps: [[withCmake: true, args: '--parallel']]

@@ -502,7 +502,6 @@ static bool free_attachment(const tweak_app_item_snapshot* snapshot,
 
 void tweak_finalize_library() {
   if (invalid_context()) {
-    TWEAK_LOG_ERROR("%s : Library hasn't been initialized correctly", __func__);
     return;
   }
 
